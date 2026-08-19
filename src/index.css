@@ -1,1 +1,225 @@
 @import "tailwindcss";
+
+/* ============ Theme tokens ============ */
+:root,
+[data-theme="day"] {
+  --bg: #edefe8;
+  --panel: #f6f7f2;
+  --panel-2: #fdfdf9;
+  --ink: #1b231e;
+  --ink-soft: #4c5a51;
+  --ink-faint: #87938a;
+  --line: #d8ddd0;
+  --hover: #e3e7db;
+  --accent: #226b52;
+  --accent-deep: #17503c;
+  --accent-ink: #f0f6ef;
+  --accent-soft: #dce9de;
+  --danger: #c0453c;
+  --danger-soft: #f2dcd6;
+  --dot: rgba(27, 35, 30, 0.11);
+  --glow1: rgba(34, 107, 82, 0.16);
+  --glow2: rgba(214, 161, 60, 0.15);
+  --shadow: 0 22px 48px -20px rgba(23, 33, 27, 0.32);
+  --shadow-sm: 0 10px 24px -14px rgba(23, 33, 27, 0.28);
+}
+
+[data-theme="night"] {
+  --bg: #12171b;
+  --panel: #1a2126;
+  --panel-2: #212a31;
+  --ink: #e7ede6;
+  --ink-soft: #a9b6ac;
+  --ink-faint: #6e7c72;
+  --line: #2b353c;
+  --hover: #242e35;
+  --accent: #e3b455;
+  --accent-deep: #f0c877;
+  --accent-ink: #221a08;
+  --accent-soft: #37301a;
+  --danger: #e5655c;
+  --danger-soft: #3a2321;
+  --dot: rgba(231, 237, 230, 0.07);
+  --glow1: rgba(227, 180, 85, 0.09);
+  --glow2: rgba(94, 141, 123, 0.11);
+  --shadow: 0 24px 50px -20px rgba(0, 0, 0, 0.65);
+  --shadow-sm: 0 12px 26px -14px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="ocean"] {
+  --bg: #0e1720;
+  --panel: #14202b;
+  --panel-2: #192836;
+  --ink: #dfe9ef;
+  --ink-soft: #9fb4c0;
+  --ink-faint: #64798a;
+  --line: #23384a;
+  --hover: #1b2b39;
+  --accent: #43b3a7;
+  --accent-deep: #6fd0c4;
+  --accent-ink: #062019;
+  --accent-soft: #173833;
+  --danger: #e5655c;
+  --danger-soft: #3a2321;
+  --dot: rgba(223, 233, 239, 0.06);
+  --glow1: rgba(67, 179, 167, 0.13);
+  --glow2: rgba(86, 130, 190, 0.12);
+  --shadow: 0 24px 50px -20px rgba(0, 0, 0, 0.65);
+  --shadow-sm: 0 12px 26px -14px rgba(0, 0, 0, 0.6);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    transition:
+      background-color 0.3s ease,
+      border-color 0.3s ease,
+      color 0.18s ease,
+      fill 0.18s ease,
+      stroke 0.18s ease;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Golos Text", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--ink-faint);
+  }
+}
+
+.font-display {
+  font-family: "Unbounded", "Golos Text", sans-serif;
+}
+
+/* ============ Ambient background ============ */
+.bg-dots {
+  background-image: radial-gradient(var(--dot) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+}
+
+.noise {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============ Motion ============ */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise 0.5s cubic-bezier(0.22, 0.9, 0.34, 1) both;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-pop {
+  animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.12) both;
+}
+
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fadein {
+  animation: fadein 0.25s ease both;
+}
+
+@keyframes checkpop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.animate-checkpop {
+  animation: checkpop 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+@keyframes drift1 {
+  from {
+    transform: translate3d(-3%, -2%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(6%, 5%, 0) scale(1.18);
+  }
+}
+.animate-drift1 {
+  animation: drift1 16s ease-in-out infinite alternate;
+}
+
+@keyframes drift2 {
+  from {
+    transform: translate3d(4%, 3%, 0) scale(1.1);
+  }
+  to {
+    transform: translate3d(-5%, -4%, 0) scale(1);
+  }
+}
+.animate-drift2 {
+  animation: drift2 22s ease-in-out infinite alternate;
+}
+
+@keyframes livedot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.72);
+  }
+}
+.animate-livedot {
+  animation: livedot 1.6s ease-in-out infinite;
+}
