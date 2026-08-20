@@ -287,7 +287,7 @@ export default function App() {
               <StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} />
             </Suspense>
           )}
-          {tab === "sleep" \&\& (
+          {tab === "sleep" && (
             <SleepView sleep={sleep} lang={lang} t={t} />
           )}
           {tab === "notes" && (
