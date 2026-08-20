@@ -338,14 +338,18 @@ const en: Record<TKey, string> = {
   sleepWakeTime: "Wake time",
 };
 
-export const STRINGS: Record<Lang, Record<TKey, string>> = { ru, en };
+export const STRINGS: Record<Lang, Record<TKey, string>> = { ru, en, be, uk, de, fr, es };
+
 
 export const MOODS: Record<Lang, string[]> = {
   ru: ["Тяжело", "Так себе", "Нормально", "Хорошо", "Отлично"],
   en: ["Rough", "Meh", "Okay", "Good", "Great"],
+  be: ["Цяжка", "Нормальна", "Добра", "Добра", "Выдатна"],
+  uk: ["Важко", "Так собі", "Нормально", "Добре", "Чудово"],
+  de: ["Schwer", "Okay", "In Ordnung", "Gut", "Großartig"],
+  fr: ["Difficile", "Bof", "Ça va", "Bien", "Excellent"],
+  es: ["Difícil", "Regular", "Bien", "Bueno", "Excelente"],
 };
-
-export const localeOf = (lang: Lang) => (lang === "ru" ? "ru-RU" : "en-US");
 
 export interface DayTemplate {
   id: string;
@@ -392,3 +396,16 @@ export const TEMPLATES: DayTemplate[] = [
     },
   },
 ];
+
+export function localeOf(lang: Lang): string {
+  const map: Record<Lang, string> = {
+    ru: "ru-RU",
+    en: "en-US",
+    be: "be-BY",
+    uk: "uk-UA",
+    de: "de-DE",
+    fr: "fr-FR",
+    es: "es-ES",
+  };
+  return map[lang];
+}
