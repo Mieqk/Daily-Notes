@@ -277,7 +277,7 @@ export default function DailyView(props: DailyViewProps) {
       {/* ===== Mood ===== */}
       <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3.5" style={{ boxShadow: "var(--shadow-sm)" }}>
         <span className="px-1 text-[12.5px] font-semibold text-[var(--ink-soft)]">{t("mood")}</span>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {MOODS[lang].map((label, i) => {
             const active = moods[date] === i;
             return (
@@ -295,7 +295,9 @@ export default function DailyView(props: DailyViewProps) {
                 }`}
                 style={active ? { boxShadow: "var(--shadow-sm)" } : undefined}
               >
-                <MoodVisual level={i} emoji={moodEmoji[i]} className="h-6 w-6 text-[22px]" />
+                <span className="flex h-6 w-6 items-center justify-center text-[20px] leading-none">
+                  {moodEmoji[i] || <MoodVisual level={i} emoji="" className="h-6 w-6" />}
+                </span>
                 <span className={`text-[13px] font-semibold ${active ? "" : "hidden sm:inline"}`}>{label}</span>
               </button>
             );

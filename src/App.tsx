@@ -164,6 +164,7 @@ export default function App() {
     daily: { title: t("dailyTitle"), sub: t("dailySub") },
     stats: { title: t("statsTitle"), sub: t("statsSub") },
     notes: { title: t("notesTitle"), sub: t("notesSub") },
+    sleep: { title: t("sleepTitle"), sub: t("sleepSub") },
     settings: { title: t("settingsTitle"), sub: t("settingsSub") },
   };
 
@@ -285,6 +286,9 @@ export default function App() {
             >
               <StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} />
             </Suspense>
+          )}
+          {tab === "sleep" \&\& (
+            <SleepView sleep={sleep} lang={lang} t={t} />
           )}
           {tab === "notes" && (
             <NotesView
