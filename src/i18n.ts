@@ -338,8 +338,6 @@ const en: Record<TKey, string> = {
   sleepWakeTime: "Wake time",
 };
 
-export const STRINGS: Record<Lang, Record<TKey, string>> = { ru, en, be, uk, de, fr, es };
-
 const be: Record<TKey, string> = {
   name: "Дзённыя Нататкі",
   tagline: "дзённік і план дня",
@@ -1201,38 +1199,68 @@ export interface DayTemplate {
 export const TEMPLATES: DayTemplate[] = [
   {
     id: "work",
-    name: { ru: "Работа", en: "Work" },
+    name: { ru: "Работа", en: "Work", be: "Праца", uk: "Робота", de: "Arbeit", fr: "Travail", es: "Trabajo" },
     tasks: {
       ru: ["Главная задача до обеда", "Разобрать почту и сообщения", "План на завтра", "Итоги дня: что получилось"],
       en: ["Top task before noon", "Clear inbox & messages", "Plan for tomorrow", "Day review: what went well"],
+      be: ["Галоўная задача да абеду", "Разабраць пошту і паведамленні", "План на заўтра", "Вынікі дня: што атрымалася"],
+      uk: ["Головне завдання до обіду", "Розібрати пошту і повідомлення", "План на завтра", "Підсумки дня: що вийшло"],
+      de: ["Wichtigste Aufgabe vor dem Mittag", "Post und Nachrichten erledigen", "Plan für morgen", "Tagesrückblick: was lief gut"],
+      fr: ["Tâche principale avant midi", "Traiter emails et messages", "Plan pour demain", "Bilan du jour: ce qui a fonctionné"],
+      es: ["Tarea principal antes del mediodía", "Revisar correo y mensajes", "Plan para mañana", "Resumen del día: qué salió bien"],
     },
     prompt: {
       ru: "Рабочий день. Фокус дня: \n\nЧто продвинулось: \n\nЧто мешает: ",
       en: "Work day. Focus of the day: \n\nWhat moved forward: \n\nWhat is blocking: ",
+      be: "Працоўны дзень. Фокус дня: \n\nШто прасунулася: \n\nШто замінае: ",
+      uk: "Робочий день. Фокус дня: \n\nЩо просунулося: \n\nЩо заважає: ",
+      de: "Arbeitstag. Fokus des Tages: \n\nWas vorangekommen ist: \n\nWas blockiert: ",
+      fr: "Jour de travail. Focus du jour: \n\nCe qui a avancé: \n\nCe qui bloque: ",
+      es: "Día laboral. Enfoque del día: \n\nQué avanzó: \n\nQué está bloqueando: ",
     },
   },
   {
     id: "rest",
-    name: { ru: "Отдых", en: "Rest" },
+    name: { ru: "Отдых", en: "Rest", be: "Адпачынак", uk: "Відпочинок", de: "Erholung", fr: "Repos", es: "Descanso" },
     tasks: {
       ru: ["Прогулка 30 минут", "Без соцсетей до обеда", "Вечер с книгой или фильмом", "Поблагодарить себя за неделю"],
       en: ["30-minute walk", "No social media till noon", "Evening with a book or film", "Thank myself for the week"],
+      be: ["Прагулка 30 хвілін", "Без сацсетак да абеду", "Вечар з кнігай ці фільмам", "Падзякаваць сябе за тыдзень"],
+      uk: ["Прогулянка 30 хвилин", "Без соцмереж до обіду", "Вечір з книгою чи фільмом", "Подякувати себе за тиждень"],
+      de: ["30 Minuten spazieren", "Keine Social Media bis mittags", "Abend mit Buch oder Film", "Mir selbst für die Woche danken"],
+      fr: ["Marche de 30 minutes", "Pas de réseaux sociaux avant midi", "Soirée avec un livre ou un film", "Me remercier pour la semaine"],
+      es: ["Caminata de 30 minutos", "Sin redes sociales hasta el mediodía", "Noche con libro o película", "Agradecerme por la semana"],
     },
     prompt: {
       ru: "День восстановления. Что наполнило энергией: \n\nЧего хотелось бы больше: ",
       en: "Recovery day. What refilled my energy: \n\nWhat I would like more of: ",
+      be: "Дзень аднаўлення. Што напоўніла энергіяй: \n\nЧаго хацелася б больш: ",
+      uk: "День відновлення. Що наповнило енергією: \n\nЧого хотілося б більше: ",
+      de: "Erholungstag. Was meine Energie aufgefüllt hat: \n\nWas ich mehr möchte: ",
+      fr: "Jour de récupération. Ce qui a rempli mon énergie: \n\nCe que je voudrais plus: ",
+      es: "Día de recuperación. Qué rellenó mi energía: \n\nDe qué me gustaría más: ",
     },
   },
   {
     id: "create",
-    name: { ru: "Творчество", en: "Creative" },
+    name: { ru: "Творчество", en: "Creative", be: "Творчасць", uk: "Творчість", de: "Kreativ", fr: "Créatif", es: "Creativo" },
     tasks: {
       ru: ["Утренняя страница", "30 минут практики", "Собрать 3 идеи", "Показать кому-то результат"],
       en: ["Morning pages", "30 minutes of practice", "Collect 3 ideas", "Show the result to someone"],
+      be: ["Ранішняя старонка", "30 хвілін практыкі", "Сабраць 3 ідэі", "Паказаць камусьці вынік"],
+      uk: ["Ранкова сторінка", "30 хвилин практики", "Зібрати 3 ідеї", "Показати комусь результат"],
+      de: ["Morgenseiten", "30 Minuten Übung", "3 Ideen sammeln", "Das Ergebnis jemandem zeigen"],
+      fr: ["Pages du matin", "30 minutes de pratique", "Collecter 3 idées", "Montrer le résultat à quelqu'un"],
+      es: ["Páginas matutinas", "30 minutos de práctica", "Recoger 3 ideas", "Mostrar el resultado a alguien"],
     },
     prompt: {
       ru: "Творческий день. Идея дня: \n\nЧто сделал(а) руками или головой: \n\nИнсайт: ",
       en: "Creative day. Idea of the day: \n\nWhat I made with hands or mind: \n\nInsight: ",
+      be: "Творчы дзень. Ідэя дня: \n\nШто зрабіў(ла) рукамі ці галавой: \n\nІнсайт: ",
+      uk: "Творчий день. Ідея дня: \n\nЩо зробив(ла) руками чи головою: \n\nІнсайт: ",
+      de: "Kreativer Tag. Idee des Tages: \n\nWas ich mit Händen oder Kopf gemacht habe: \n\nErkenntnis: ",
+      fr: "Jour créatif. Idée du jour: \n\nCe que j'ai fait avec les mains ou l'esprit: \n\nInsight: ",
+      es: "Día creativo. Idea del día: \n\nQué hice con las manos o la mente: \n\nInsight: ",
     },
   },
 ];
@@ -1249,3 +1277,5 @@ export function localeOf(lang: Lang): string {
   };
   return map[lang];
 }
+
+export const STRINGS: Record<Lang, Record<TKey, string>> = { ru, en, be, uk, de, fr, es };
