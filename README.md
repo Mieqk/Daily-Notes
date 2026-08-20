@@ -36,7 +36,9 @@ npm install
 # Start development server
 npm run dev
 
+```
+
 Build for Production
-
+```bash
 npm run build
-
+```
