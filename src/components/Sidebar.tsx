@@ -21,6 +21,7 @@ import {
   PaletteIcon,
   PenIcon,
   StatsIcon,
+  SleepIcon,
 } from "../icons";
 
 interface SidebarProps {
@@ -46,6 +47,7 @@ type MenuId = "theme" | "lang" | null;
 const TABS: { id: Tab; icon: (p: { className?: string }) => ReactNode; key: TKey }[] = [
   { id: "daily", icon: CalendarIcon, key: "tabDaily" },
   { id: "stats", icon: StatsIcon, key: "tabStats" },
+  { id: "sleep", icon: SleepIcon, key: "tabSleep" },
   { id: "notes", icon: NotebookIcon, key: "tabNotes" },
   { id: "settings", icon: GearIcon, key: "tabSettings" },
 ];
@@ -274,68 +276,6 @@ export default function Sidebar({
       </div>
     </>
   );
-
-  const menuButton = (
-    id: Exclude<MenuId, null>,
-    icon: ReactNode,
-    label: string,
-    value: string,
-    panel: ReactNode,
-    direction: "up" | "down",
-    compact = false
-  ) => {
-    const open = menu === id;
-    return (
-      <div className="relative">
-        <button
-          onClick={() => toggle(id)}
-          aria-expanded={open}
-          className={
-            compact
-              ? `grid h-10 w-10 shrink-0 place-items-center rounded-xl border transition-all duration-200 active:scale-95 ${
-                  open
-                    ? "border-[var(--accent)] bg-[var(--hover)] text-[var(--accent)]"
-                    : "border-[var(--line)] bg-[var(--panel-2)] text-[var(--ink-soft)] hover:border-[var(--ink-faint)] hover:text-[var(--ink)]"
-                }`
-              : `flex h-12 w-full items-center gap-3 rounded-xl border px-3 text-left transition-all duration-200 active:scale-[0.98] ${
-                  open
-                    ? "border-[var(--accent)] bg-[var(--hover)]"
-                    : "border-[var(--line)] bg-[var(--panel-2)] hover:-translate-y-0.5 hover:border-[var(--ink-faint)]"
-                }`
-          }
-          style={compact ? undefined : { boxShadow: "var(--shadow-sm)" }}
-        >
-          {compact ? (
-            icon
-          ) : (
-            <>
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
-                {icon}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[11px] font-medium text-[var(--ink-faint)]">{label}</span>
-                <span className="block truncate text-sm font-semibold">{value}</span>
-              </span>
-              <ChevronIcon
-                className={`h-4 w-4 shrink-0 text-[var(--ink-faint)] transition-transform duration-200 ${
-                  open ? "rotate-180" : ""
-                }`}
-              />
-            </>
-          )}
-        </button>
-        <Dropdown
-          open={open}
-          onClose={close}
-          direction={direction}
-          align={direction === "up" ? "start" : "end"}
-          width={252}
-        >
-          {panel}
-        </Dropdown>
-      </div>
-    );
-  };
 
   return (
     <>

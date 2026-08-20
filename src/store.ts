@@ -4,7 +4,7 @@ import { MOODS, localeOf } from "./i18n";
 import type { Task, SleepData } from "./types";
 
 export type { Task, SleepData };
-export type Tab = "daily" | "stats" | "notes" | "settings";
+export type Tab = "daily" | "stats" | "notes" | "sleep" | "settings";
 export type BgId = "dots" | "grid" | "paper" | "space" | "lines" | "hex" | "waves";
 export type WritingFontId = "body" | "serif" | "mono" | "hand1" | "hand2";
 

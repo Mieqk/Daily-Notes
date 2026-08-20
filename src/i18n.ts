@@ -5,6 +5,7 @@ const ru = {
   tagline: "дневник и план дня",
   sections: "Разделы",
   tabDaily: "Дейли ноут",
+  tabSleep: "Сон",
   tabStats: "Статистика",
   tabNotes: "Заметки",
   tabSettings: "Настройки",
@@ -188,6 +189,7 @@ const en: Record<TKey, string> = {
   tagline: "journal & day planner",
   sections: "Sections",
   tabDaily: "Daily note",
+  tabSleep: "Sleep",
   tabStats: "Stats",
   tabNotes: "Notes",
   tabSettings: "Settings",
@@ -370,6 +372,7 @@ const be: Record<TKey, string> = {
   sections: "Раздзелы",
   tabDaily: "Дзённы запіс",
   tabStats: "Статыстыка",
+  tabSleep: "Сон",
   tabNotes: "Нататкі",
   tabSettings: "Налады",
   personalize: "Персаналізацыя",
@@ -553,6 +556,7 @@ const uk: Record<TKey, string> = {
   tabStats: "Статистика",
   tabNotes: "Нотатки",
   tabSettings: "Налаштування",
+  tabSleep: "Сон",
   personalize: "Персоналізація",
   theme: "Тема",
   language: "Мова",
@@ -736,6 +740,7 @@ const de: Record<TKey, string> = {
   tabSettings: "Einstellungen",
   personalize: "Personalisieren",
   theme: "Thema",
+  tabSleep: "Schlaf",
   language: "Sprache",
   themeTitle: "Erscheinungsbild",
   langTitle: "Oberflächensprache",
@@ -919,6 +924,7 @@ const fr: Record<TKey, string> = {
   theme: "Thème",
   language: "Langue",
   themeTitle: "Thème d'apparence",
+  tabSleep: "Sommeil",
   langTitle: "Langue de l'interface",
   storageHint: "Les données sont stockées localement dans votre navigateur",
   lockBtn: "Verrouiller l'appli",
@@ -1101,6 +1107,7 @@ const es: Record<TKey, string> = {
   langTitle: "Idioma de la interfaz",
   storageHint: "Los datos se almacenan localmente en su navegador",
   lockBtn: "Bloquear aplicación",
+  tabSleep: "Sueño",
 
   dailyTitle: "Nota diaria",
   dailySub: "diario, tareas y estado de ánimo del día seleccionado",
@@ -1275,6 +1282,7 @@ export const MOODS: Record<Lang, string[]> = {
   fr: ["Difficile", "Bof", "Ça va", "Bien", "Excellent"],
   es: ["Difícil", "Regular", "Bien", "Bueno", "Excelente"],
 };
+export const MOOD_EMOJIS = ["😫", "😕", "😐", "🙂", "🤩"];
 
 export interface DayTemplate {
   id: string;
