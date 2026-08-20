@@ -42,3 +42,42 @@ Build for Production
 ```bash
 npm run build
 ```
+🛠️ Tech Stack
+
+    Frontend: React / Vue.js (choose your framework)
+    Styling: Tailwind CSS
+    State Management: Zustand / Redux Toolkit
+    Storage: LocalStorage / IndexedDB
+    Build Tool: Vite
+
+📖 Usage
+
+    Rate Your Day - Select your current mood using the emoji scale
+    Write Notes - Document your thoughts, ideas, and gratitude
+    Add Tasks - Create a to-do list for the day
+    Track Progress - Watch your streak grow and maintain consistency
+
+🗺️ Roadmap
+
+    Data visualization and analytics
+    Export entries to PDF/Markdown
+    Cloud sync across devices
+    Custom mood emojis
+    Calendar view
+    Mobile app version
+
+Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+    Fork the repository
+    Create your feature branch (git checkout -b feature/AmazingFeature)
+    Commit your changes (git commit -m 'Add some AmazingFeature')
+    Push to the branch (git push origin feature/AmazingFeature)
+    Open a Pull Request
+
+License
+This project is licensed under the MIT License - see the LICENSE
+ file for details.
+👨‍💻 Author
+Miek - Initial work
+Made with ❤️ for better self-reflection and productivity
