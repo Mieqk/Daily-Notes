@@ -23,6 +23,7 @@ import {
   LeafIcon,
   MicIcon,
   MoodVisual,
+  PenIcon,
   PlusIcon,
   PrinterIcon,
   TagIcon,
@@ -366,6 +367,13 @@ export default function DailyView(props: DailyViewProps) {
                 <span className="hidden sm:inline">{t("addPhoto")}</span>
               </button>
               <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
+              <span
+                className="hidden h-7 items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-[11px] font-semibold text-[var(--ink-soft)] min-[420px]:flex"
+                title={`${t("secFont")}: ${t("settingsTitle")}`}
+              >
+                <PenIcon className="h-3 w-3 text-[var(--accent)]" />
+                {writingFont === "body" ? t("fontBody") : writingFont === "serif" ? t("fontSerif") : t("fontMono")}
+              </span>
               <span className="ml-auto text-[11.5px] tabular-nums text-[var(--ink-faint)]">
                 {countWords(value)} {t("words")} · {value.length} {t("chars")}
               </span>

@@ -25,6 +25,8 @@ interface SettingsViewProps {
   onLang: (l: Lang) => void;
   writingFont: WritingFontId;
   onWritingFont: (f: WritingFontId) => void;
+  fontScale: number;
+  onFontScale: (n: number) => void;
   bg: BgId;
   onBg: (b: BgId) => void;
   moodEmoji: string[];
@@ -98,6 +100,8 @@ export default function SettingsView(props: SettingsViewProps) {
     onLang,
     writingFont,
     onWritingFont,
+    fontScale,
+    onFontScale,
     bg,
     onBg,
     moodEmoji,
@@ -216,6 +220,50 @@ export default function SettingsView(props: SettingsViewProps) {
                   </span>
                   <span className="mt-2 flex items-center justify-center gap-1 text-[11.5px] font-bold">
                     {t(f.key)}
+                    {active && <CheckIcon className="animate-checkpop h-3 w-3 text-[var(--accent)]" />}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {/* live preview — видно сразу, какой шрифт выбран */}
+          <div
+            className="mt-3 rounded-xl border border-dashed border-[var(--line)] bg-[var(--panel-2)] px-4 py-3"
+            style={{ fontFamily: FONT_STACKS[writingFont] }}
+          >
+            <p className="text-[15px] leading-relaxed">{t("fontSample")}</p>
+            <p className="mt-1 text-[11.5px] font-semibold uppercase tracking-[0.12em] text-[var(--accent-deep)]" style={{ fontFamily: "inherit" }}>
+              {t("secFont")} · {writingFont === "body" ? t("fontBody") : writingFont === "serif" ? t("fontSerif") : t("fontMono")}
+            </p>
+          </div>
+        </Section>
+
+        {/* Text size */}
+        <Section icon={<PenIcon className="h-4.5 w-4.5" />} title={t("secText")} sub={t("secTextSub")} delay={150}>
+          <div className="grid grid-cols-3 gap-2">
+            {(
+              [
+                { v: 0, key: "sizeS", px: 15 },
+                { v: 1, key: "sizeM", px: 20 },
+                { v: 2, key: "sizeL", px: 26 },
+              ] as { v: number; key: TKey; px: number }[]
+            ).map((s) => {
+              const active = fontScale === s.v;
+              return (
+                <button
+                  key={s.v}
+                  onClick={() => onFontScale(s.v)}
+                  className={`flex h-[74px] flex-col items-center justify-center gap-1 rounded-xl border transition-all duration-200 active:scale-[0.97] ${
+                    active
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                      : "border-[var(--line)] bg-[var(--panel-2)] hover:-translate-y-0.5 hover:border-[var(--ink-faint)]"
+                  }`}
+                >
+                  <span className="font-display font-bold leading-none" style={{ fontSize: s.px }}>
+                    Аа
+                  </span>
+                  <span className="flex items-center gap-1 text-[11.5px] font-bold">
+                    {t(s.key)}
                     {active && <CheckIcon className="animate-checkpop h-3 w-3 text-[var(--accent)]" />}
                   </span>
                 </button>

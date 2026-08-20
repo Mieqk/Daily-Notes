@@ -305,6 +305,8 @@ export default function App() {
               onLang={setLang}
               writingFont={writingFont}
               onWritingFont={setWritingFont}
+              fontScale={fontScale}
+              onFontScale={setFontScale}
               bg={bg}
               onBg={setBg}
               moodEmoji={moodEmoji}

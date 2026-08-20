@@ -138,14 +138,22 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
     const { x = 0, y = 0, value = 0 } = props;
     const emoji = moodEmoji[value];
     if (emoji) {
+      /* не больше 2 символов, иначе длинные подписи налезут друг на друга */
+      const label = Array.from(emoji).slice(0, 2).join("");
       return (
-        <text x={x - 6} y={y + 5} textAnchor="end" fontSize={12}>
-          {emoji}
+        <text
+          x={x - 24}
+          y={y}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={13}
+        >
+          {label}
         </text>
       );
     }
     return (
-      <g transform={`translate(${x - 22}, ${y - 8})`} style={{ color: "var(--ink-faint)" }}>
+      <g transform={`translate(${x - 32}, ${y - 8})`} style={{ color: "var(--ink-faint)" }}>
         <MoodFace level={value} className="h-4 w-4" />
       </g>
     );
@@ -303,7 +311,7 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
                     <YAxis
                       domain={[0, 4]}
                       ticks={[0, 1, 2, 3, 4]}
-                      width={30}
+                      width={48}
                       tickLine={false}
                       axisLine={false}
                       tick={moodTick as never}
