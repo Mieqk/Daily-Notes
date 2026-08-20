@@ -1,86 +1,143 @@
 # Daily Note 📔
 
-A minimalist digital journal and daily planner that helps you track your mood, capture thoughts, and manage tasks in one beautiful place.
+Минималистичный цифровой дневник и ежедневный планировщик, который помогает отслеживать настроение, фиксировать мысли и управлять задачами в одном красивом месте.
 
 ![Daily Note Interface](screenshot.png)
 
-## ✨ Features
+## ✨ Особенности
 
-- **📝 Daily Journaling** - Write down your thoughts, ideas, and gratitude
-- **😊 Mood Tracking** - Rate your day on a 5-point scale
-- **✅ Task Management** - Plan and track daily tasks with progress visualization
-- ** Streak Counter** - Build a consistent journaling habit
-- **💾 Auto-save** - Never lose your thoughts with automatic saving
-- **🎨 Customization** - Light/dark themes and multi-language support
-- **📊 Statistics** - Track your progress over time (coming soon)
+- **📝 Ежедневные записи** — Записывайте свои мысли, идеи и благодарности
+- **😊 Трекер настроения** — Оценивайте день по 5-балльной шкале
+- **✅ Управление задачами** — Планируйте и отслеживайте ежедневные задачи с визуализацией прогресса
+- **🔥 Счётчик серий** — Формируйте привычку вести дневник регулярно
+- **💾 Автосохранение** — Никогда не потеряете свои мысли благодаря автоматическому сохранению
+- **🎨 Настройка внешнего вида** — Светлые/тёмные темы, выбор шрифта, фоновые узоры
+- **🌍 Мультиязычность** — Русский, English, Беларуская, Українська, Deutsch, Français, Español
+- **📊 Статистика** — Отслеживайте свой прогресс во времени
+- **😴 Трекер сна** — Отслеживайте качество и продолжительность сна
+- **🔒 PIN-защита** — Защита данных PIN-кодом при входе
+- **📤 Экспорт данных** — Экспорт в Markdown и JSON
+- **🔍 Поиск по архиву** — Быстрый поиск по всем записям, задачам и тегам
+- **🎤 Голосовой ввод** — Диктовка текста заметок
+- **📷 Фото к записям** — Добавляйте до 6 фотографий к каждой записи
+- **⏰ Напоминания** — Браузерные уведомления в выбранное время
 
-## 🚀 Quick Start
+## 🚀 Быстрый старт
 
-### Prerequisites
+### Требования
 
 - Node.js 18+ 
-- npm or yarn
+- npm или yarn
 
-### Installation
+### Установка
 
 ```bash
-# Clone the repository
+# Клонируйте репозиторий
 git clone https://github.com/yourusername/daily-note.git
 
-# Navigate to the project
+# Перейдите в директорию проекта
 cd daily-note
 
-# Install dependencies
+# Установите зависимости
 npm install
 
-# Start development server
+# Запустите сервер разработки
 npm run dev
-
 ```
 
-Build for Production
+### Сборка для продакшена
+
 ```bash
 npm run build
 ```
-🛠️ Tech Stack
 
-    Frontend: React / Vue.js (choose your framework)
-    Styling: Tailwind CSS
-    State Management: Zustand / Redux Toolkit
-    Storage: LocalStorage / IndexedDB
-    Build Tool: Vite
+Собранные файлы появятся в папке `dist/`.
 
-📖 Usage
+## 🛠️ Технологический стек
 
-    Rate Your Day - Select your current mood using the emoji scale
-    Write Notes - Document your thoughts, ideas, and gratitude
-    Add Tasks - Create a to-do list for the day
-    Track Progress - Watch your streak grow and maintain consistency
+- **Frontend:** React 18 + TypeScript
+- **Styling:** Tailwind CSS
+- **State Management:** React Hooks (useState, useStored)
+- **Storage:** LocalStorage
+- **Build Tool:** Vite
+- **Charts:** Recharts
 
-🗺️ Roadmap
+## 📖 Использование
 
-    Data visualization and analytics
-    Export entries to PDF/Markdown
-    Cloud sync across devices
-    Custom mood emojis
-    Calendar view
-    Mobile app version
+### Дейли ноут (Daily Note)
 
-Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. **Оцените день** — Выберите настроение с помощью эмодзи-шкалы (5 уровней)
+2. **Запишите мысли** — Ведите дневник, фиксируйте идеи, итоги дня, благодарности
+3. **Добавьте задачи** — Создайте список дел на день с отслеживанием выполнения
+4. **Примените шаблон** — Используйте готовые шаблоны: Работа, Отдых, Творчество
+5. **Добавьте теги** — Категоризируйте записи хештегами
+6. **Прикрепите фото** — Добавьте до 6 изображений к записи
+7. **Голосовой ввод** — Надиктуйте текст вместо набора
 
-    Fork the repository
-    Create your feature branch (git checkout -b feature/AmazingFeature)
-    Commit your changes (git commit -m 'Add some AmazingFeature')
-    Push to the branch (git push origin feature/AmazingFeature)
-    Open a Pull Request
+### Статистика
 
-License
-This project is licensed under the MIT License - see the LICENSE
- file for details.
- 
-👨‍💻 Author
+- График настроения по дням
+- Корреляция настроения и выполненных задач
+- Тепловая карта продуктивности (16 недель)
+- Общая статистика: записи, задачи, слова, серии
 
-Miek - Initial work
+### Заметки (Архив)
 
-Made with ❤️ for better self-reflection and productivity
+- Поиск по всем записям
+- Фильтрация по тегам
+- Просмотр истории дней
+
+### Настройки
+
+- **Тема оформления:** Светлая, Ночная, Океан, Лаванда, Вишня
+- **Язык интерфейса:** 7 языков на выбор
+- **Шрифт записей:** Основной, Книжный, Моноширинный
+- **Размер текста:** 3 уровня масштаба
+- **Фоновый узор:** Точки, Сетка, Бумага, Космос, Линии, Гексагон, Волны
+- **Эмодзи настроения:** Настройте свои эмодзи для каждого уровня
+- **PIN-код:** Включите защиту при входе
+- **Экспорт данных:** Скачайте все данные в Markdown или JSON
+- **Очистка:** Полное удаление всех данных
+
+## 🗺️ Roadmap
+
+- [ ] Мобильное приложение (React Native / PWA)
+- [ ] Синхронизация между устройствами
+- [ ] Календарный вид
+- [ ] Расширенная аналитика сна
+- [ ] Интеграция с календарями (Google Calendar, Outlook)
+- [ ] Совместный доступ к записям
+- [ ] Темы от сообщества
+- [ ] Плагины и расширения
+
+## 🔐 Приватность
+
+Все данные хранятся **только локально** в вашем браузере (LocalStorage). Никакая информация не отправляется на серверы или третьим лицам. Вы полностью владеете своими данными.
+
+- PIN-код хешируется и хранится только в браузере
+- Экспорт данных позволяет сделать резервную копию
+- Полная очистка данных доступна в настройках
+
+## 🤝 Вклад в проект
+
+Приветствуются любые вклады! Пожалуйста, не стесняйтесь отправить Pull Request.
+
+1. Форкните репозиторий
+2. Создайте ветку (`git checkout -b feature/AmazingFeature`)
+3. Закоммитьте изменения (`git commit -m 'Add some AmazingFeature'`)
+4. Отправьте в ветку (`git push origin feature/AmazingFeature`)
+5. Откройте Pull Request
+
+## 📄 Лицензия
+
+Этот проект лицензирован под MIT License — подробности в файле LICENSE.
+
+## 👨‍💻 Автор
+
+Miek — начальная работа
+
+Сделано с ❤️ для лучшей саморефлексии и продуктивности
+
+---
+
+**Совет:** Для лучшего опыта используйте современные браузеры (Chrome, Firefox, Safari, Edge) последних версий.
