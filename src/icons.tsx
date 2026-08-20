@@ -239,3 +239,12 @@ export function MoodFace({
     </svg>
   );
 }
+
+export const SleepIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M8 3.5v17M16 3.5v17" />
+    <path d="M4 8a8 8 0 0 1 16 0" />
+    <path d="M6 12a6 6 0 0 1 12 0" />
+    <path d="M8 16a4 4 0 0 1 8 0" />
+  </svg>
+);

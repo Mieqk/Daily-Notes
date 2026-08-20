@@ -166,6 +166,17 @@ const ru = {
   sleepAwake: "Пробуждения",
   sleepBedtime: "Время отхода ко сну",
   sleepWakeTime: "Время подъёма",
+  sleepExcellent: "Отлично",
+  sleepGood: "Хорошо",
+  sleepAverage: "Нормально",
+  sleepPoor: "Плохо",
+  sleepNoData: "Нет данных о сне за выбранный период",
+  sleepHoursSub: "продолжительность сна по дням",
+  sleepQualitySub: "оценка качества сна по дням",
+  sleepPhases: "Фазы сна",
+  sleepPhasesSub: "время в каждой фазе за период",
+  sleepRecent: "Последние записи",
+  sleepRecentSub: "детали последних записей о сне",
 };
 
 export type TKey = keyof typeof ru;
@@ -336,6 +347,17 @@ const en: Record<TKey, string> = {
   sleepAwake: "Awake",
   sleepBedtime: "Bedtime",
   sleepWakeTime: "Wake time",
+  sleepExcellent: "Excellent",
+  sleepGood: "Good",
+  sleepAverage: "Fair",
+  sleepPoor: "Poor",
+  sleepNoData: "No sleep data for selected period",
+  sleepHoursSub: "sleep duration by day",
+  sleepQualitySub: "sleep quality rating by day",
+  sleepPhases: "Sleep phases",
+  sleepPhasesSub: "time in each phase for the period",
+  sleepRecent: "Recent entries",
+  sleepRecentSub: "details of recent sleep entries",
 };
 
 const be: Record<TKey, string> = {
@@ -504,6 +526,17 @@ const be: Record<TKey, string> = {
   sleepAwake: "Абуджэнні",
   sleepBedtime: "Час адыходу да сну",
   sleepWakeTime: "Час подъёму",
+  sleepExcellent: "Выдатна",
+  sleepGood: "Добра",
+  sleepAverage: "Нармальна",
+  sleepPoor: "Кепска",
+  sleepNoData: "Няма даных аб сне за выбраны перыяд",
+  sleepHoursSub: "працягласць сну па днях",
+  sleepQualitySub: "ацэнка якасці сну па днях",
+  sleepPhases: "Фазы сну",
+  sleepPhasesSub: "час у кожнай фазе за перыяд",
+  sleepRecent: "Апошнія запісы",
+  sleepRecentSub: "дэталі апошніх запісаў аб сне",
 };
 
 const uk: Record<TKey, string> = {
@@ -672,6 +705,17 @@ const uk: Record<TKey, string> = {
   sleepAwake: "Пробудження",
   sleepBedtime: "Час відходу до сну",
   sleepWakeTime: "Час підйому",
+  sleepExcellent: "Чудово",
+  sleepGood: "Добре",
+  sleepAverage: "Нормально",
+  sleepPoor: "Погано",
+  sleepNoData: "Немає даних про сон за вибраний період",
+  sleepHoursSub: "тривалість сну по днях",
+  sleepQualitySub: "оцінка якості сну по днях",
+  sleepPhases: "Фази сну",
+  sleepPhasesSub: "час у кожній фазі за період",
+  sleepRecent: "Останні записи",
+  sleepRecentSub: "деталі останніх записів про сон",
 };
 
 const de: Record<TKey, string> = {
@@ -840,6 +884,17 @@ const de: Record<TKey, string> = {
   sleepAwake: "Wach",
   sleepBedtime: "Schlafenszeit",
   sleepWakeTime: "Weckzeit",
+  sleepExcellent: "Ausgezeichnet",
+  sleepGood: "Gut",
+  sleepAverage: "Mäßig",
+  sleepPoor: "Schlecht",
+  sleepNoData: "Keine Schlafdaten für den ausgewählten Zeitraum",
+  sleepHoursSub: "Schlafdauer pro Tag",
+  sleepQualitySub: "Schlafqualitätsbewertung pro Tag",
+  sleepPhases: "Schlafphasen",
+  sleepPhasesSub: "Zeit in jeder Phase für den Zeitraum",
+  sleepRecent: "Letzte Einträge",
+  sleepRecentSub: "Details der letzten Schlafeinträge",
 };
 
 const fr: Record<TKey, string> = {
@@ -1008,6 +1063,17 @@ const fr: Record<TKey, string> = {
   sleepAwake: "Éveillé",
   sleepBedtime: "Heure du coucher",
   sleepWakeTime: "Heure du réveil",
+  sleepExcellent: "Excellent",
+  sleepGood: "Bon",
+  sleepAverage: "Moyen",
+  sleepPoor: "Mauvais",
+  sleepNoData: "Aucune donnée de sommeil pour la période sélectionnée",
+  sleepHoursSub: "durée du sommeil par jour",
+  sleepQualitySub: "évaluation de la qualité du sommeil par jour",
+  sleepPhases: "Phases de sommeil",
+  sleepPhasesSub: "temps dans chaque phase pour la période",
+  sleepRecent: "Entrées récentes",
+  sleepRecentSub: "détails des entrées de sommeil récentes",
 };
 
 const es: Record<TKey, string> = {
@@ -1176,6 +1242,17 @@ const es: Record<TKey, string> = {
   sleepAwake: "Despierto",
   sleepBedtime: "Hora de acostarse",
   sleepWakeTime: "Hora de despertar",
+  sleepExcellent: "Excelente",
+  sleepGood: "Bueno",
+  sleepAverage: "Regular",
+  sleepPoor: "Malo",
+  sleepNoData: "Sin datos de sueño para el período seleccionado",
+  sleepHoursSub: "duración del sueño por día",
+  sleepQualitySub: "calificación de calidad del sueño por día",
+  sleepPhases: "Fases del sueño",
+  sleepPhasesSub: "tiempo en cada fase para el período",
+  sleepRecent: "Entradas recientes",
+  sleepRecentSub: "detalles de entradas de sueño recientes",
 };
 
 
