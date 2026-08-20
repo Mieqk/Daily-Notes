@@ -6,12 +6,14 @@ import type { Task, SleepData } from "./types";
 export type { Task, SleepData };
 export type Tab = "daily" | "stats" | "notes" | "settings";
 export type BgId = "dots" | "grid" | "paper" | "space" | "lines" | "hex" | "waves";
-export type WritingFontId = "body" | "serif" | "mono";
+export type WritingFontId = "body" | "serif" | "mono" | "hand1" | "hand2";
 
 export const FONT_STACKS: Record<WritingFontId, string> = {
   body: "'Golos Text', 'Segoe UI', system-ui, sans-serif",
   serif: "'Lora', Georgia, 'Times New Roman', serif",
   mono: "'JetBrains Mono', 'Courier New', monospace",
+  hand1: "'Caveat', 'Comic Sans MS', cursive",
+  hand2: "'Pacifico', 'Brush Script MT', cursive",
 };
 
 function read<T>(key: string, fallback: T): T {
