@@ -184,12 +184,12 @@ export default function App() {
       <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
         {bg === "dots" && <div className="bg-dots absolute inset-0 opacity-70" />}
         {bg === "grid" && <div className="bg-grid absolute inset-0 opacity-70" />}
-        {(bg === "paper" || bg === "space") && (
+        {(bg === "paper" || bg === "space" || bg === "lines" || bg === "hex" || bg === "waves") && (
           <img
             src={BG_IMAGES[bg]}
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
-            style={{ opacity: bg === "paper" ? 0.5 : 0.32 }}
+            style={{ opacity: bg === "paper" ? 0.5 : bg === "space" ? 0.32 : 0.15 }}
           />
         )}
         <div

@@ -140,23 +140,23 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
     const safeValue = Math.max(0, Math.min(4, value));
     const emoji = moodEmoji[safeValue];
     if (emoji) {
-      /* не больше 2 символов, иначе длинные подписи налезут друг на друга */
-      const label = Array.from(emoji).slice(0, 2).join("");
+      /* не больше 1 символа, иначе длинные подписи налезут друг на друга */
+      const label = Array.from(emoji).slice(0, 1).join("");
       return (
         <text
-          x={x - 24}
+          x={x - 28}
           y={y}
           textAnchor="middle"
           dominantBaseline="central"
-          fontSize={13}
+          fontSize={11}
         >
           {label}
         </text>
       );
     }
     return (
-      <g transform={`translate(${x - 32}, ${y - 8})`} style={{ color: "var(--ink-faint)" }}>
-        <MoodFace level={safeValue} className="h-4 w-4" />
+      <g transform={`translate(${x - 36}, ${y - 8})`} style={{ color: "var(--ink-faint)" }}>
+        <MoodFace level={safeValue} className="h-3.5 w-3.5" />
       </g>
     );
   };
