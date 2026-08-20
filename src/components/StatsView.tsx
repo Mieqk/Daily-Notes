@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import type { Lang, TKey } from "../i18n";
 import { MOODS, localeOf } from "../i18n";
-import type { Task } from "../store";
+import type { Task, SleepData } from "../store";
 import { countWords, fromISO, shiftISO, todayISO } from "../store";
 import { FlameIcon, MoodFace, MoodVisual, StatsIcon } from "../icons";
 
@@ -21,6 +21,7 @@ interface StatsViewProps {
   notes: Record<string, string>;
   tasks: Record<string, Task[]>;
   moods: Record<string, number>;
+  sleep: Record<string, SleepData>;
   moodEmoji: string[];
   lang: Lang;
   t: (k: TKey) => string;

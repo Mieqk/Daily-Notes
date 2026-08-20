@@ -3,5 +3,31 @@
 dist/
 build/
 *.js
-*.css
+*.ts
+*.tsx
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Temp files
+*.tmp
 ```

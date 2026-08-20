@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type { Lang, TKey } from "../i18n";
 import { MOODS, TEMPLATES, localeOf } from "../i18n";
-import type { Task, WritingFontId } from "../store";
+import type { Task, WritingFontId, SleepData } from "../store";
 import {
   FONT_STACKS,
   countWords,
@@ -52,6 +52,8 @@ interface DailyViewProps {
   setReminder: React.Dispatch<React.SetStateAction<Reminder>>;
   moodEmoji: string[];
   writingFont: WritingFontId;
+  sleep: SleepData | null;
+  onSaveSleep: (data: SleepData) => void;
   lang: Lang;
   t: (k: TKey) => string;
   showToast: (msg: string) => void;
@@ -77,6 +79,8 @@ export default function DailyView(props: DailyViewProps) {
     setReminder,
     moodEmoji,
     writingFont,
+    sleep,
+    onSaveSleep,
     lang,
     t,
     showToast,
@@ -99,6 +103,22 @@ export default function DailyView(props: DailyViewProps) {
   const statusTimer = useRef<number>(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<{ stop: () => void } | null>(null);
+
+  // Sleep form state
+  const [sleepForm, setSleepForm] = useState<SleepData>(() => sleep ?? {
+    hours: 7,
+    quality: 3,
+    deep: 2,
+    light: 4,
+    rem: 1.5,
+    awake: 0.5,
+    bedtime: "23:00",
+    wakeTime: "07:00",
+  });
+
+  useEffect(() => {
+    if (sleep) setSleepForm(sleep);
+  }, [sleep]);
 
   useEffect(() => () => window.clearTimeout(statusTimer.current), []);
   useEffect(() => () => recRef.current?.stop(), []);
@@ -621,6 +641,120 @@ export default function DailyView(props: DailyViewProps) {
               <PrinterIcon className="h-4 w-4" />
               {t("printDay")}
             </button>
+          </div>
+
+          {/* Sleep Tracker */}
+          <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
+            <h3 className="mb-3 text-[14.5px] font-bold">{t("sleepTitle")}</h3>
+            <p className="mb-4 text-xs text-[var(--ink-faint)]">{t("sleepSub")}</p>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {/* Bedtime & Wake time */}
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepBedtime")}</label>
+                <input
+                  type="time"
+                  value={sleepForm.bedtime}
+                  onChange={(e) => setSleepForm({ ...sleepForm, bedtime: e.target.value })}
+                  onBlur={() => onSaveSleep(sleepForm)}
+                  className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepWakeTime")}</label>
+                <input
+                  type="time"
+                  value={sleepForm.wakeTime}
+                  onChange={(e) => setSleepForm({ ...sleepForm, wakeTime: e.target.value })}
+                  onBlur={() => onSaveSleep(sleepForm)}
+                  className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+                />
+              </div>
+
+              {/* Hours */}
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepHours")}</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="24"
+                  step="0.5"
+                  value={sleepForm.hours}
+                  onChange={(e) => setSleepForm({ ...sleepForm, hours: parseFloat(e.target.value) || 0 })}
+                  onBlur={() => onSaveSleep(sleepForm)}
+                  className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+                />
+              </div>
+
+              {/* Quality */}
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepQuality")}</label>
+                <select
+                  value={sleepForm.quality}
+                  onChange={(e) => setSleepForm({ ...sleepForm, quality: parseInt(e.target.value) })}
+                  onBlur={() => onSaveSleep(sleepForm)}
+                  className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+                >
+                  {[1, 2, 3, 4, 5].map((q) => (
+                    <option key={q} value={q}>{q}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Sleep phases */}
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepDeep")}</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="12"
+                  step="0.5"
+                  value={sleepForm.deep}
+                  onChange={(e) => setSleepForm({ ...sleepForm, deep: parseFloat(e.target.value) || 0 })}
+                  onBlur={() => onSaveSleep(sleepForm)}
+                  className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepLight")}</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="12"
+                  step="0.5"
+                  value={sleepForm.light}
+                  onChange={(e) => setSleepForm({ ...sleepForm, light: parseFloat(e.target.value) || 0 })}
+                  onBlur={() => onSaveSleep(sleepForm)}
+                  className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepREM")}</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="6"
+                  step="0.5"
+                  value={sleepForm.rem}
+                  onChange={(e) => setSleepForm({ ...sleepForm, rem: parseFloat(e.target.value) || 0 })}
+                  onBlur={() => onSaveSleep(sleepForm)}
+                  className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepAwake")}</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="6"
+                  step="0.5"
+                  value={sleepForm.awake}
+                  onChange={(e) => setSleepForm({ ...sleepForm, awake: parseFloat(e.target.value) || 0 })}
+                  onBlur={() => onSaveSleep(sleepForm)}
+                  className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

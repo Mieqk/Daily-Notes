@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import type { Lang, TKey } from "./i18n";
 import { STRINGS, localeOf } from "./i18n";
 import type { ThemeId } from "./themes";
-import type { BgId, Tab, Task, WritingFontId } from "./store";
+import type { BgId, Tab, Task, SleepData, WritingFontId } from "./store";
 import {
   buildMarkdown,
   downloadText,
@@ -39,6 +39,7 @@ export default function App() {
   const [writingFont, setWritingFont] = useStored<WritingFontId>("dn.wfont", "body");
   const [bg, setBg] = useStored<BgId>("dn.bg", "dots");
   const [pinHash, setPinHash] = useStored<string | null>("dn.pin", null);
+  const [sleep, setSleep] = useStored<Record<string, SleepData>>("dn.sleep", {});
 
   /* ---------- session state ---------- */
   const [date, setDate] = useState<string>(todayISO());
@@ -131,7 +132,7 @@ export default function App() {
   const exportJson = () =>
     downloadText(
       "daily-notes.json",
-      JSON.stringify({ notes, tasks, moods, tags, reminder, moodEmoji, writingFont, theme, lang, bg }, null, 2),
+      JSON.stringify({ notes, tasks, moods, tags, reminder, moodEmoji, writingFont, theme, lang, bg, sleep }, null, 2),
       "application/json;charset=utf-8"
     );
 
@@ -267,6 +268,8 @@ export default function App() {
               setReminder={setReminder}
               moodEmoji={moodEmoji}
               writingFont={writingFont}
+              sleep={sleep[date] ?? null}
+              onSaveSleep={(data: SleepData) => setSleep({ ...sleep, [date]: data })}
               lang={lang}
               t={t}
               showToast={showToast}
@@ -280,7 +283,7 @@ export default function App() {
                 </div>
               }
             >
-              <StatsView notes={notes} tasks={tasks} moods={moods} moodEmoji={moodEmoji} lang={lang} t={t} />
+              <StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} />
             </Suspense>
           )}
           {tab === "notes" && (
