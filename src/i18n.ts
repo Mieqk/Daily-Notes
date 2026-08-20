@@ -1,4 +1,4 @@
-export type Lang = "ru" | "en";
+export type Lang = "ru" | "en" | "be" | "uk" | "de" | "fr" | "es";
 
 const ru = {
   name: "Дейли Ноутс",
@@ -119,6 +119,9 @@ const ru = {
   bgGrid: "Сетка",
   bgPaper: "Бумага",
   bgSpace: "Космос",
+  bgLines: "Линии",
+  bgHex: "Гексагон",
+  bgWaves: "Волны",
   secData: "Данные",
   secDataSub: "всё хранится только у вас",
   exportMd: "Экспорт Markdown",
@@ -152,6 +155,17 @@ const ru = {
   toastPinOn: "PIN-код установлен",
   toastPinOff: "PIN-код убран",
   noMood: "не выбрано",
+
+  sleepTitle: "Сон",
+  sleepSub: "отслеживание качества сна",
+  sleepHours: "Часов сна",
+  sleepQuality: "Качество сна",
+  sleepDeep: "Глубокий",
+  sleepLight: "Лёгкий",
+  sleepREM: "REM-фаза",
+  sleepAwake: "Пробуждения",
+  sleepBedtime: "Время отхода ко сну",
+  sleepWakeTime: "Время подъёма",
 };
 
 export type TKey = keyof typeof ru;
@@ -275,6 +289,9 @@ const en: Record<TKey, string> = {
   bgGrid: "Grid",
   bgPaper: "Paper",
   bgSpace: "Space",
+  bgLines: "Lines",
+  bgHex: "Hexagon",
+  bgWaves: "Waves",
   secData: "Data",
   secDataSub: "everything stays on your device",
   exportMd: "Export Markdown",
@@ -308,6 +325,17 @@ const en: Record<TKey, string> = {
   toastPinOn: "PIN code is set",
   toastPinOff: "PIN code removed",
   noMood: "not set",
+
+  sleepTitle: "Sleep",
+  sleepSub: "sleep quality tracking",
+  sleepHours: "Hours of sleep",
+  sleepQuality: "Sleep quality",
+  sleepDeep: "Deep",
+  sleepLight: "Light",
+  sleepREM: "REM",
+  sleepAwake: "Awake",
+  sleepBedtime: "Bedtime",
+  sleepWakeTime: "Wake time",
 };
 
 export const STRINGS: Record<Lang, Record<TKey, string>> = { ru, en };
