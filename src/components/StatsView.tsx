@@ -136,7 +136,8 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
 
   const moodTick = (props: { x?: number; y?: number; value?: number }) => {
     const { x = 0, y = 0, value = 0 } = props;
-    const emoji = moodEmoji[value];
+    const safeValue = Math.max(0, Math.min(4, value));
+    const emoji = moodEmoji[safeValue];
     if (emoji) {
       /* не больше 2 символов, иначе длинные подписи налезут друг на друга */
       const label = Array.from(emoji).slice(0, 2).join("");
@@ -154,7 +155,7 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
     }
     return (
       <g transform={`translate(${x - 32}, ${y - 8})`} style={{ color: "var(--ink-faint)" }}>
-        <MoodFace level={value} className="h-4 w-4" />
+        <MoodFace level={safeValue} className="h-4 w-4" />
       </g>
     );
   };
@@ -179,7 +180,7 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
         <div className="mt-1 flex items-center gap-1.5 text-[var(--ink-soft)]">
           {d.mood !== null ? (
             <>
-              <MoodVisual level={d.mood} emoji={moodEmoji[d.mood]} className="h-4 w-4 text-[12px]" />
+              <MoodVisual level={Math.max(0, Math.min(4, d.mood))} emoji={moodEmoji[Math.max(0, Math.min(4, d.mood))]} className="h-4 w-4 text-[12px]" />
               {MOODS[lang][d.mood]}
             </>
           ) : (
@@ -205,8 +206,8 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
         avgMood !== null ? (
           <span className="flex items-center gap-2">
             <MoodVisual
-              level={Math.round(avgMood)}
-              emoji={moodEmoji[Math.round(avgMood)]}
+              level={Math.max(0, Math.min(4, Math.round(avgMood)))}
+              emoji={moodEmoji[Math.max(0, Math.min(4, Math.round(avgMood)))]}
               className="h-6 w-6 text-[20px] text-[var(--accent)]"
             />
             {avgMood.toFixed(1)}

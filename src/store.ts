@@ -5,7 +5,7 @@ import type { Task } from "./types";
 
 export type { Task };
 export type Tab = "daily" | "stats" | "notes" | "settings";
-export type BgId = "dots" | "grid" | "paper" | "space";
+export type BgId = "dots" | "grid" | "paper" | "space" | "lines" | "hex" | "waves";
 export type WritingFontId = "body" | "serif" | "mono";
 
 export const FONT_STACKS: Record<WritingFontId, string> = {

@@ -45,6 +45,11 @@ interface SettingsViewProps {
 const LANGS: { id: Lang; badge: string; native: string }[] = [
   { id: "ru", badge: "RU", native: "Русский" },
   { id: "en", badge: "EN", native: "English" },
+  { id: "be", badge: "BE", native: "Беларуская" },
+  { id: "uk", badge: "UK", native: "Українська" },
+  { id: "de", badge: "DE", native: "Deutsch" },
+  { id: "fr", badge: "FR", native: "Français" },
+  { id: "es", badge: "ES", native: "Español" },
 ];
 
 const FONTS: { id: WritingFontId; key: TKey }[] = [
@@ -58,6 +63,9 @@ const BGS: { id: BgId; key: TKey }[] = [
   { id: "grid", key: "bgGrid" },
   { id: "paper", key: "bgPaper" },
   { id: "space", key: "bgSpace" },
+  { id: "lines", key: "bgLines" },
+  { id: "hex", key: "bgHex" },
+  { id: "waves", key: "bgWaves" },
 ];
 
 function Section({
@@ -295,6 +303,15 @@ export default function SettingsView(props: SettingsViewProps) {
                     )}
                     {b.id === "space" && (
                       <img src={BG_IMAGES.space} alt="" className="h-full w-full object-cover" />
+                    )}
+                    {b.id === "lines" && (
+                      <img src={BG_IMAGES.lines} alt="" className="h-full w-full object-cover" />
+                    )}
+                    {b.id === "hex" && (
+                      <img src={BG_IMAGES.hex} alt="" className="h-full w-full object-cover" />
+                    )}
+                    {b.id === "waves" && (
+                      <img src={BG_IMAGES.waves} alt="" className="h-full w-full object-cover" />
                     )}
                   </span>
                   <span className={`block py-1.5 text-center text-[11px] font-bold ${active ? "bg-[var(--accent-soft)] text-[var(--accent-deep)]" : ""}`}>
