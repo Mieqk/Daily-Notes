@@ -589,7 +589,7 @@ export default function DailyView(props: DailyViewProps) {
                 <dd className="flex items-center gap-2 font-semibold">
                   {moods[date] !== undefined ? (
                     <>
-                      <MoodVisual level={moods[date]} emoji={moodEmoji[moods[date]]} className="h-5 w-5 text-[18px]" />
+                      <MoodVisual level={Math.max(0, Math.min(4, moods[date]))} emoji={moodEmoji[Math.max(0, Math.min(4, moods[date]))]} className="h-5 w-5 text-[18px]" />
                       {MOODS[lang][moods[date]]}
                     </>
                   ) : (
