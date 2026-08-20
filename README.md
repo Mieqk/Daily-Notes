@@ -33,7 +33,7 @@
 
 ```bash
 # Клонируйте репозиторий
-git clone https://github.com/yourusername/daily-note.git
+git clone https://github.com/Mieqk/Daily-Notes.git
 
 # Перейдите в директорию проекта
 cd daily-note
