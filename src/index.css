@@ -68,6 +68,50 @@
   --shadow-sm: 0 12px 26px -14px rgba(0, 0, 0, 0.6);
 }
 
+[data-theme="lavender"] {
+  --bg: #eceaf2;
+  --panel: #f4f2f8;
+  --panel-2: #faf9fc;
+  --ink: #221e30;
+  --ink-soft: #55506a;
+  --ink-faint: #8d87a3;
+  --line: #d9d5e6;
+  --hover: #e2dfee;
+  --accent: #6a55c8;
+  --accent-deep: #4f3da3;
+  --accent-ink: #f3f0fd;
+  --accent-soft: #e2dcf6;
+  --danger: #c0453c;
+  --danger-soft: #f2dcd6;
+  --dot: rgba(34, 30, 48, 0.1);
+  --glow1: rgba(106, 85, 200, 0.15);
+  --glow2: rgba(200, 130, 180, 0.14);
+  --shadow: 0 22px 48px -20px rgba(35, 28, 60, 0.35);
+  --shadow-sm: 0 10px 24px -14px rgba(35, 28, 60, 0.3);
+}
+
+[data-theme="cherry"] {
+  --bg: #16121a;
+  --panel: #1e1823;
+  --panel-2: #251e2c;
+  --ink: #efe7ee;
+  --ink-soft: #b7a9ba;
+  --ink-faint: #7c6e80;
+  --line: #342a3d;
+  --hover: #2a2232;
+  --accent: #e0637c;
+  --accent-deep: #f08ba0;
+  --accent-ink: #2a0d15;
+  --accent-soft: #3c2130;
+  --danger: #e5655c;
+  --danger-soft: #3a2321;
+  --dot: rgba(239, 231, 238, 0.06);
+  --glow1: rgba(224, 99, 124, 0.12);
+  --glow2: rgba(140, 90, 180, 0.12);
+  --shadow: 0 24px 50px -20px rgba(0, 0, 0, 0.65);
+  --shadow-sm: 0 12px 26px -14px rgba(0, 0, 0, 0.6);
+}
+
 @layer base {
   *,
   *::before,
@@ -120,10 +164,17 @@
   font-family: "Unbounded", "Golos Text", sans-serif;
 }
 
-/* ============ Ambient background ============ */
+/* ============ Ambient backgrounds ============ */
 .bg-dots {
   background-image: radial-gradient(var(--dot) 1px, transparent 1.4px);
   background-size: 22px 22px;
+}
+
+.bg-grid {
+  background-image:
+    linear-gradient(var(--dot) 1px, transparent 1px),
+    linear-gradient(90deg, var(--dot) 1px, transparent 1px);
+  background-size: 30px 30px;
 }
 
 .noise {
@@ -222,4 +273,57 @@
 }
 .animate-livedot {
   animation: livedot 1.6s ease-in-out infinite;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-9px);
+  }
+  40% {
+    transform: translateX(8px);
+  }
+  60% {
+    transform: translateX(-6px);
+  }
+  80% {
+    transform: translateX(5px);
+  }
+}
+.animate-shake {
+  animation: shake 0.4s ease both;
+}
+
+@keyframes pulsering {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 12px transparent;
+  }
+}
+.animate-pulsering {
+  animation: pulsering 1.2s ease-out infinite;
+}
+
+/* ============ Print (Экспорт в PDF через печать) ============ */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #print-sheet,
+  #print-sheet * {
+    visibility: visible !important;
+  }
+  #print-sheet {
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
+    padding: 40px !important;
+    background: #ffffff !important;
+    color: #17201b !important;
+  }
 }

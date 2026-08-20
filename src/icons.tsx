@@ -18,6 +18,14 @@ export const CalendarIcon = ({ className = "h-5 w-5" }: IconProps) => (
   </svg>
 );
 
+export const StatsIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M4 20V4" />
+    <path d="M4 20h16" />
+    <path d="M8.5 16v-5M13 16V7.5M17.5 16v-3" strokeWidth={2.2} />
+  </svg>
+);
+
 export const NotebookIcon = ({ className = "h-5 w-5" }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} {...base}>
     <path d="M6 3.5h11.5a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19V5A1.5 1.5 0 0 1 6 3.5Z" />
@@ -111,12 +119,102 @@ export const PenIcon = ({ className = "h-5 w-5" }: IconProps) => (
   </svg>
 );
 
-export const ClockIcon = ({ className = "h-5 w-5" }: IconProps) => (
+export const MicIcon = ({ className = "h-5 w-5" }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} {...base}>
-    <circle cx="12" cy="12" r="8.5" />
-    <path d="M12 7.5V12l3 2.5" />
+    <rect x="9.2" y="3.5" width="5.6" height="10" rx="2.8" />
+    <path d="M6 11.5a6 6 0 0 0 12 0M12 17.5V21M9 21h6" />
   </svg>
 );
+
+export const ImageIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <rect x="3.5" y="5" width="17" height="14" rx="2.5" />
+    <circle cx="9" cy="10" r="1.6" />
+    <path d="M5 17.5l4.5-4.5 3 3 3-3 3.5 3.5" />
+  </svg>
+);
+
+export const TagIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M12.5 3.5H5.5a2 2 0 0 0-2 2v7l8.8 8.8a2 2 0 0 0 2.8 0l6.2-6.2a2 2 0 0 0 0-2.8L12.5 3.5Z" />
+    <circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const DownloadIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M12 3.5v11M7.5 10.5l4.5 4.5 4.5-4.5M4.5 17v1.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V17" />
+  </svg>
+);
+
+export const PrinterIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M7 8V3.5h10V8M7 17H4.5A1.5 1.5 0 0 1 3 15.5v-6A1.5 1.5 0 0 1 4.5 8h15A1.5 1.5 0 0 1 21 9.5v6a1.5 1.5 0 0 1-1.5 1.5H17" />
+    <rect x="7" y="14" width="10" height="6.5" rx="1" />
+  </svg>
+);
+
+export const LockIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <rect x="5.5" y="10.5" width="13" height="10" rx="2" />
+    <path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" />
+    <circle cx="12" cy="15.5" r="1.3" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const BellIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M12 3.5a5.8 5.8 0 0 1 5.8 5.8c0 4.6 1.4 5.9 1.4 5.9H4.8s1.4-1.3 1.4-5.9A5.8 5.8 0 0 1 12 3.5Z" />
+    <path d="M10 18.5a2 2 0 0 0 4 0" />
+  </svg>
+);
+
+export const BriefcaseIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <rect x="3.5" y="7.5" width="17" height="12" rx="2" />
+    <path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5M3.5 12.5h17" />
+  </svg>
+);
+
+export const LeafIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M5 19C5 9 11 4.5 19.5 4.5c0 9.5-5 14.5-13 14.5" />
+    <path d="M5 19c2-5 5-8.5 9.5-10.5" />
+  </svg>
+);
+
+export const BrushIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M20 4.5s-7.6 5.4-10.4 8.2a2.4 2.4 0 0 0 3.4 3.4C15.8 13.3 20 4.5 20 4.5Z" />
+    <path d="M8.5 14.5c-2.2 0-3.9 1.7-4 5 2.3 0 5.5.3 6.6-2.4" />
+  </svg>
+);
+
+export const BackspaceIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M8.5 5.5h10A2 2 0 0 1 20.5 7.5v9a2 2 0 0 1-2 2h-10L3 12l5.5-6.5Z" />
+    <path d="M11.5 9.5l5 5M16.5 9.5l-5 5" />
+  </svg>
+);
+
+export function MoodVisual({
+  level,
+  emoji,
+  className = "h-6 w-6",
+}: {
+  level: number;
+  emoji?: string;
+  className?: string;
+}) {
+  if (emoji) {
+    return (
+      <span className={`${className} inline-flex items-center justify-center leading-none`}>
+        <span style={{ fontSize: "1em" }}>{emoji}</span>
+      </span>
+    );
+  }
+  return <MoodFace level={level} className={className} />;
+}
 
 export function MoodFace({
   level,
