@@ -53,6 +53,11 @@ const TABS: { id: Tab; icon: (p: { className?: string }) => ReactNode; key: TKey
 const LANGS: { id: Lang; badge: string; native: string }[] = [
   { id: "ru", badge: "RU", native: "Русский" },
   { id: "en", badge: "EN", native: "English" },
+  { id: "be", badge: "BE", native: "Беларуская" },
+  { id: "uk", badge: "UK", native: "Українська" },
+  { id: "de", badge: "DE", native: "Deutsch" },
+  { id: "fr", badge: "FR", native: "Français" },
+  { id: "es", badge: "ES", native: "Español" },
 ];
 
 /* ================= Mini calendar ================= */
@@ -359,7 +364,7 @@ export default function Sidebar({
           })}
         </nav>
         {menuButton("theme", <PaletteIcon className="h-4.5 w-4.5" />, t("theme"), themeMeta(theme).name[lang], themePanel, "down", true)}
-        {menuButton("lang", <GlobeIcon className="h-4.5 w-4.5" />, t("language"), lang === "ru" ? "Русский" : "English", langPanel, "down", true)}
+        {menuButton("lang", <GlobeIcon className="h-4.5 w-4.5" />, t("language"), LANGS.find(l => l.id === lang)?.native ?? "English", langPanel, "down", true)}
       </div>
 
       {/* ================= Desktop sidebar ================= */}
@@ -478,7 +483,7 @@ export default function Sidebar({
             "lang",
             <GlobeIcon className="h-4 w-4" />,
             t("language"),
-            lang === "ru" ? "Русский" : "English",
+            LANGS.find(l => l.id === lang)?.native ?? "English",
             langPanel,
             "up"
           )}

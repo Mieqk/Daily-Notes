@@ -56,6 +56,8 @@ const FONTS: { id: WritingFontId; key: TKey }[] = [
   { id: "body", key: "fontBody" },
   { id: "serif", key: "fontSerif" },
   { id: "mono", key: "fontMono" },
+  { id: "hand1", key: "fontHand1" },
+  { id: "hand2", key: "fontHand2" },
 ];
 
 const BGS: { id: BgId; key: TKey }[] = [

@@ -140,15 +140,16 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
     const safeValue = Math.max(0, Math.min(4, value));
     const emoji = moodEmoji[safeValue];
     if (emoji) {
-      /* не больше 1 символа, иначе длинные подписи налезут друг на друга */
+      /* используем первый графемный кластер, чтобы составные emoji не ломались */
       const label = Array.from(emoji).slice(0, 1).join("");
       return (
         <text
-          x={x - 28}
+          x={x}
           y={y}
           textAnchor="middle"
           dominantBaseline="central"
-          fontSize={11}
+          fontSize={12}
+          style={{ textRendering: "optimizeLegibility" }}
         >
           {label}
         </text>
