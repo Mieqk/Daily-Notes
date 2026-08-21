@@ -20,6 +20,7 @@ const StatsView = lazy(() => import("./components/StatsView"));
 import NotesView from "./components/NotesView";
 import SettingsView from "./components/SettingsView";
 import LockScreen from "./components/LockScreen";
+import SleepView from "./components/SleepView";
 
 const FONT_SCALES = ["93.75%", "100%", "109%"];
 
