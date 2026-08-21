@@ -18,9 +18,11 @@ import {
   TrashIcon,
   LogOutIcon,
   UserIcon,
+  LoginIcon,
 } from "../icons";
 import { useAuth } from "../contexts/AuthContext";
 import { isLocalMode } from "../lib/sync";
+import AuthScreen from "./AuthScreen";
 
 interface SettingsViewProps {
   theme: ThemeId;
@@ -109,6 +111,7 @@ function Section({
 export default function SettingsView(props: SettingsViewProps) {
   const { user, signOut } = useAuth();
   const localMode = isLocalMode();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   
   const {
     theme,
@@ -477,6 +480,13 @@ export default function SettingsView(props: SettingsViewProps) {
               <p className="text-[11px] text-[var(--ink-faint)]">
                 {t("localModeHint") || "Войдите в аккаунт для синхронизации между устройствами"}
               </p>
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 text-[13px] font-bold text-[var(--accent-ink)] transition-all hover:brightness-110 active:scale-95"
+              >
+                <LoginIcon className="h-4 w-4" />
+                {t("loginBtn") || "Войти для синхронизации"}
+              </button>
             </div>
           ) : null}
         </Section>
@@ -547,6 +557,21 @@ export default function SettingsView(props: SettingsViewProps) {
                 {t("erase")}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auth Modal for local mode users */}
+      {showAuthModal && (
+        <div
+          className="animate-fadein fixed inset-0 z-50 grid place-items-center bg-black/50 p-4 backdrop-blur-[2px]"
+          onMouseDown={() => setShowAuthModal(false)}
+        >
+          <div
+            className="animate-pop w-full max-w-md"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <AuthScreen onContinueLocally={() => setShowAuthModal(false)} />
           </div>
         </div>
       )}
