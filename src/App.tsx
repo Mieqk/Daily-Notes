@@ -21,6 +21,7 @@ import NotesView from "./components/NotesView";
 import SettingsView from "./components/SettingsView";
 import LockScreen from "./components/LockScreen";
 import SleepView from "./components/SleepView";
+import { Analytics } from "@vercel/analytics/react";
 
 const FONT_SCALES = ["93.75%", "100%", "109%"];
 
@@ -348,6 +349,7 @@ export default function App() {
           </div>
         </div>
       )}
+      <Analytics />
     </div>
   );
 }
