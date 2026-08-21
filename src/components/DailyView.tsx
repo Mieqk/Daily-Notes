@@ -124,6 +124,9 @@ export default function DailyView(props: DailyViewProps) {
     (window as unknown as Record<string, unknown>).SpeechRecognition ??
     (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
 
+  // Расширенное обнаружение поддержки
+  const hasStandardAPI = !!(window as unknown as Record<string, unknown>).SpeechRecognition;
+  const hasWebkitAPI = !!(window as unknown as Record<string, unknown>).webkitSpeechRecognition;
   const isVoiceSupported = !!SR;
 
   const toggleVoice = () => {
@@ -132,7 +135,23 @@ export default function DailyView(props: DailyViewProps) {
       return;
     }
     if (!isVoiceSupported) {
-      showToast(t("voiceUnsupported"));
+      // Подробное сообщение об ошибке для отладки
+      console.warn("Speech Recognition API details:", {
+        hasStandardAPI,
+        hasWebkitAPI,
+        userAgent: navigator.userAgent,
+        isSecureContext: window.isSecureContext,
+        protocol: window.location.protocol
+      });
+      
+      let errorMsg = t("voiceUnsupported");
+      if (!window.isSecureContext) {
+        errorMsg = "Голосовой ввод требует безопасного соединения (HTTPS или localhost). Браузер: " + navigator.userAgent.split(' ')[0];
+      } else if (!hasStandardAPI && !hasWebkitAPI) {
+        errorMsg = "Ваш браузер не поддерживает Web Speech API. Попробуйте Chrome, Edge или Safari.";
+      }
+      
+      showToast(errorMsg);
       return;
     }
     try {
