@@ -16,7 +16,11 @@ import {
   PaletteIcon,
   PenIcon,
   TrashIcon,
+  LogOutIcon,
+  UserIcon,
 } from "../icons";
+import { useAuth } from "../contexts/AuthContext";
+import { isLocalMode } from "../lib/sync";
 
 interface SettingsViewProps {
   theme: ThemeId;
@@ -103,6 +107,9 @@ function Section({
 }
 
 export default function SettingsView(props: SettingsViewProps) {
+  const { user, signOut } = useAuth();
+  const localMode = isLocalMode();
+  
   const {
     theme,
     onTheme,
@@ -434,6 +441,44 @@ export default function SettingsView(props: SettingsViewProps) {
             </div>
           )}
           <p className="mt-3 text-[11px] leading-snug text-[var(--ink-faint)]">{t("pinNote")}</p>
+        </Section>
+      </div>
+
+      {/* Account Section - shown when user is logged in or in local mode */}
+      <div className="mt-5">
+        <Section icon={<UserIcon className="h-4.5 w-4.5" />} title={t("secAccount") || "Аккаунт"} sub={t("secAccountSub") || "управление аккаунтом и синхронизацией"} delay={380}>
+          {user ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-4 py-3">
+                <div className="grid h-10 w-10 place-items-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
+                  <UserIcon className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">{user.email}</p>
+                  <p className="text-xs text-[var(--ink-faint)]">Войти не требуется</p>
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  await signOut();
+                  showToast(t("toastLoggedOut") || "Вы вышли из аккаунта");
+                }}
+                className="flex h-10 items-center justify-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-4 text-[13px] font-semibold text-[var(--ink-soft)] transition-all hover:border-red-500/50 hover:text-red-400 active:scale-95"
+              >
+                <LogOutIcon className="h-4 w-4" />
+                {t("logoutBtn") || "Выйти"}
+              </button>
+            </div>
+          ) : localMode ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-[12.5px] text-[var(--ink-soft)]">
+                {t("localModeText") || "Вы работаете в локальном режиме. Данные хранятся только в этом браузере."}
+              </p>
+              <p className="text-[11px] text-[var(--ink-faint)]">
+                {t("localModeHint") || "Войдите в аккаунт для синхронизации между устройствами"}
+              </p>
+            </div>
+          ) : null}
         </Section>
       </div>
 

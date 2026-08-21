@@ -1402,3 +1402,22 @@ export function localeOf(lang: Lang): string {
 }
 
 export const STRINGS: Record<Lang, Record<TKey, string>> = { ru, en, be, uk, de, fr, es };
+
+// Additional auth-related strings (added for sync feature)
+const ru_auth = {
+  secAccount: "Аккаунт",
+  secAccountSub: "управление аккаунтом и синхронизацией",
+  logoutBtn: "Выйти",
+  toastLoggedOut: "Вы вышли из аккаунта",
+  localModeText: "Вы работаете в локальном режиме. Данные хранятся только в этом браузере.",
+  localModeHint: "Войдите в аккаунт для синхронизации между устройствами",
+};
+
+const en_auth: Record<keyof typeof ru_auth, string> = {
+  secAccount: "Account",
+  secAccountSub: "account & sync management",
+  logoutBtn: "Sign out",
+  toastLoggedOut: "You have been signed out",
+  localModeText: "You are in local mode. Data is stored only in this browser.",
+  localModeHint: "Sign in to sync across devices",
+};

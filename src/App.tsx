@@ -22,11 +22,16 @@ import SettingsView from "./components/SettingsView";
 import LockScreen from "./components/LockScreen";
 import SleepView from "./components/SleepView";
 import InstallPrompt from "./components/InstallPrompt";
+import AuthScreen from "./components/AuthScreen";
 import { Analytics } from "@vercel/analytics/react";
+import { useAuth } from "./contexts/AuthContext";
+import { isLocalMode, setLocalMode, performInitialSync, subscribeToSyncStatus, getSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, type SyncStatus } from "./lib/sync";
 
 const FONT_SCALES = ["93.75%", "100%", "109%"];
 
 export default function App() {
+  const { user, loading: authLoading } = useAuth();
+  
   /* ---------- persisted state ---------- */
   const [tab, setTab] = useStored<Tab>("dn.tab", "daily");
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
@@ -48,6 +53,8 @@ export default function App() {
   const [date, setDate] = useState<string>(todayISO());
   const [locked, setLocked] = useState<boolean>(() => Boolean(pinHash));
   const [toast, setToast] = useState<{ id: number; msg: string } | null>(null);
+  const [showAuth, setShowAuth] = useState<boolean>(true);
+  const [syncStatus, setSyncStatusState] = useState<SyncStatus>('idle');
 
   const now = useNow(1000);
   const locale = localeOf(lang);
@@ -59,6 +66,37 @@ export default function App() {
     const id = window.setTimeout(() => setToast(null), 2600);
     return () => window.clearTimeout(id);
   }, [toast]);
+
+  // Subscribe to sync status
+  useEffect(() => {
+    const unsubscribe = subscribeToSyncStatus(setSyncStatusState);
+    return unsubscribe;
+  }, []);
+
+  // Handle auth state and initial sync
+  useEffect(() => {
+    if (!authLoading) {
+      const localMode = isLocalMode();
+      if (user) {
+        // User is logged in - perform initial sync
+        performInitialSync();
+        setShowAuth(false);
+      } else if (localMode) {
+        // Local mode - skip auth
+        setShowAuth(false);
+      } else {
+        // No user and not local mode - show auth screen
+        setShowAuth(true);
+      }
+    }
+  }, [user, authLoading]);
+
+  // Sync settings when they change
+  useEffect(() => {
+    if (user && !isLocalMode()) {
+      syncSettings(user.id, { theme, lang, font: fontScale, writingFont, bg, moodEmoji });
+    }
+  }, [theme, lang, fontScale, writingFont, bg, moodEmoji, user]);
 
   /* ---------- effects ---------- */
   useEffect(() => {
@@ -182,6 +220,43 @@ export default function App() {
     month: "short",
   }).format(now);
 
+  // Show auth screen if needed
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg)]">
+        <div className="animate-pulse text-[var(--ink-faint)]">Загрузка...</div>
+      </div>
+    );
+  }
+
+  if (showAuth) {
+    return <AuthScreen onContinueLocally={() => { setLocalMode(true); setShowAuth(false); }} />;
+  }
+
+  // Sync status badge
+  const syncBadge = user ? (
+    syncStatus === 'syncing' ? (
+      <span className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
+        Синхронизация...
+      </span>
+    ) : syncStatus === 'error' ? (
+      <span className="flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-semibold text-red-400">
+        Ошибка синхр.
+      </span>
+    ) : (
+      <span className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]">
+        <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+        Синхронизировано
+      </span>
+    )
+  ) : (
+    <span className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]">
+      <span className="h-1.5 w-1.5 rounded-full bg-[var(--ink-faint)]" />
+      Локальный режим
+    </span>
+  );
+
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-[var(--bg)] text-[var(--ink)] md:flex-row">
       {/* ---------- ambient background ---------- */}
@@ -238,6 +313,8 @@ export default function App() {
             </p>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-3">
+            {/* Sync status badge */}
+            {syncBadge}
             <span className="flex items-center gap-2.5">
               <span className="animate-livedot h-2 w-2 rounded-full bg-[var(--accent)]" />
               <span className="font-display text-lg font-semibold tabular-nums tracking-tight">

@@ -1,47 +1,52 @@
 ```
 # Dependencies
 node_modules/
-.pnpm-store/
 
 # Build outputs
 dist/
 build/
-coverage/
-.nyc_output/
-
-# Logs
-*.log
+target/
 
 # Environment variables
 .env
 .env.local
-*.env.*
+.env.*
 
-# IDE files
+# Editor/IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
+*.tmp
 
-# OS files
-.DS_Store
-Thumbs.db
+# Logs
+*.log
 
 # Python cache
 __pycache__/
 *.pyc
 *.pyo
-*.pyd
 
-# Temporary files
-*.tmp
-*.temp
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
 
-# Package manager
-package-lock.json
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Testing
+.mypy_cache/
+.pytest_cache/
+.nyc_output/
+coverage/
+
+# Package manager caches
+.npm/
 .yarn/
-node_modules/
-
-# Vite specific
-.vite/
+.pnpm-store/
+.bazel/
+.cargo/
+.go/
 ```
