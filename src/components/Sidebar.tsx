@@ -193,6 +193,46 @@ export default function Sidebar({
   const toggle = (m: Exclude<MenuId, null>) => setMenu((cur) => (cur === m ? null : m));
   const close = () => setMenu(null);
 
+  const menuButton = (
+    id: Exclude<MenuId, null>,
+    icon: ReactNode,
+    label: string,
+    value: string,
+    panel: ReactNode,
+    direction: "up" | "down",
+    mobile = false
+  ) => {
+    const open = menu === id;
+    return (
+      <div className="relative">
+        <button
+          onClick={() => toggle(id)}
+          className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-all duration-150 ${
+            open
+              ? "bg-[var(--hover)] text-[var(--ink)]"
+              : "text-[var(--ink-faint)] hover:bg-[var(--hover)] hover:text-[var(--ink)]"
+          } ${mobile ? "" : "w-full justify-between"}`}
+        >
+          <span className="flex items-center gap-2">
+            {icon}
+            <span>{label}</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="max-w-[100px] truncate">{value}</span>
+            <ChevronIcon
+              className={`h-3.5 w-3.5 transition-transform ${
+                direction === "up" ? (open ? "rotate-180" : "") : open ? "rotate-180" : ""
+              }`}
+            />
+          </span>
+        </button>
+        <Dropdown open={open} onClose={close} direction={direction} align="start" width={252}>
+          {panel}
+        </Dropdown>
+      </div>
+    );
+  };
+
   const themePanel = (
     <>
       <div className="px-3 pb-1.5 pt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-faint)]">
