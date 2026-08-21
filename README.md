@@ -78,7 +78,7 @@ npm run build
 
 Daily Note распространяется как **PWA (Progressive Web App)** — приложение устанавливается прямо из браузера, без App Store и Google Play. Выглядит и работает как обычное приложение: иконка на домашнем экране, отдельное окно, офлайн-режим.
 
-**Ссылка на приложение:** https://daily-notes-beta.vercel.app
+**Ссылка на приложение:** https://daily-notes-io.vercel.app/
 
 ### 🍏 iPhone и iPad (Safari)
 
