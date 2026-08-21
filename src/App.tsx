@@ -289,7 +289,7 @@ export default function App() {
             </Suspense>
           )}
           {tab === "sleep" && (
-            <SleepView sleep={sleep} lang={lang} t={t} />
+            <SleepView sleep={sleep} lang={lang} t={t} setSleep={(iso, data) => setSleep({ ...sleep, [iso]: data })} />
           )}
           {tab === "notes" && (
             <NotesView

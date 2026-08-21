@@ -2,16 +2,17 @@ import { useMemo, useState } from "react";
 import type { Lang, TKey } from "../i18n";
 import { localeOf } from "../i18n";
 import type { SleepData } from "../store";
-import { fromISO, shiftISO, todayISO } from "../store";
+import { fromISO, shiftISO, todayISO, toISO } from "../store";
 import { SleepIcon } from "../icons";
 
 interface SleepViewProps {
   sleep: Record<string, SleepData>;
   lang: Lang;
   t: (k: TKey) => string;
+  setSleep: (iso: string, data: SleepData | null) => void;
 }
 
-export default function SleepView({ sleep, lang, t }: SleepViewProps) {
+export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) {
   const [range, setRange] = useState<7 | 30>(7);
   const locale = localeOf(lang);
   const today = todayISO();
@@ -77,6 +78,53 @@ export default function SleepView({ sleep, lang, t }: SleepViewProps) {
 
   const hasData = days.some((d) => d.hasEntry);
 
+  const handleFellAsleep = () => {
+    const now = new Date();
+    const iso = todayISO();
+    const timeStr = now.toTimeString().slice(0, 5);
+    const existing = sleep[iso] || null;
+    setSleep(iso, {
+      ...existing,
+      bedtime: timeStr,
+      hours: existing?.hours ?? 0,
+      quality: existing?.quality ?? 3,
+      deep: existing?.deep ?? 0,
+      light: existing?.light ?? 0,
+      rem: existing?.rem ?? 0,
+      awake: existing?.awake ?? 0,
+      wakeTime: existing?.wakeTime ?? null,
+    });
+  };
+
+  const handleWokeUp = () => {
+    const now = new Date();
+    const iso = todayISO();
+    const timeStr = now.toTimeString().slice(0, 5);
+    const existing = sleep[iso] || null;
+    
+    let hours = existing?.hours ?? 0;
+    if (existing?.bedtime) {
+      const [bedH, bedM] = existing.bedtime.split(":").map(Number);
+      const [wakeH, wakeM] = timeStr.split(":").map(Number);
+      const bedMinutes = bedH * 60 + bedM;
+      const wakeMinutes = wakeH * 60 + wakeM;
+      const diffMinutes = wakeMinutes >= bedMinutes ? wakeMinutes - bedMinutes : (24 * 60 - bedMinutes) + wakeMinutes;
+      hours = diffMinutes / 60;
+    }
+    
+    setSleep(iso, {
+      ...existing,
+      wakeTime: timeStr,
+      hours,
+      quality: existing?.quality ?? 3,
+      deep: existing?.deep ?? 0,
+      light: existing?.light ?? 0,
+      rem: existing?.rem ?? 0,
+      awake: existing?.awake ?? 0,
+      bedtime: existing?.bedtime ?? null,
+    });
+  };
+
   return (
     <div className="mx-auto max-w-6xl">
       {/* Range toggle */}
@@ -100,6 +148,41 @@ export default function SleepView({ sleep, lang, t }: SleepViewProps) {
           <SleepIcon className="h-4 w-4" />
           {t("sleepSub")}
         </span>
+      </div>
+
+      {/* Quick action buttons for today */}
+      <div className={`${card} mb-5 animate-rise`} style={{ boxShadow: "var(--shadow-sm)" }}>
+        <div className="mb-3">
+          <h3 className="text-[15px] font-bold">{t("todayBadge")}</h3>
+          <p className="text-xs text-[var(--ink-faint)]">{t("sleepRecentSub")}</p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handleFellAsleep}
+            className="flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-[13px] font-semibold text-[var(--accent-ink)] transition-all duration-200 hover:opacity-90"
+          >
+            <span>🌙</span>
+            {t("sleepFellAsleep")} — {new Date().toTimeString().slice(0, 5)}
+          </button>
+          <button
+            onClick={handleWokeUp}
+            className="flex items-center gap-2 rounded-lg bg-[var(--accent-deep)] px-4 py-2.5 text-[13px] font-semibold text-white transition-all duration-200 hover:opacity-90"
+          >
+            <span>☀️</span>
+            {t("sleepWokeUp")} — {new Date().toTimeString().slice(0, 5)}
+          </button>
+        </div>
+        {sleep[todayISO()]?.bedtime && (
+          <p className="mt-3 text-xs text-[var(--ink-soft)]">
+            {t("sleepBedtime")}: <span className="font-semibold">{sleep[todayISO()].bedtime}</span>
+            {sleep[todayISO()]?.wakeTime && (
+              <>
+                {" | "}{t("sleepWakeTime")}: <span className="font-semibold">{sleep[todayISO()].wakeTime}</span>
+                {" | "}{t("sleepHours")}: <span className="font-semibold">{sleep[todayISO()].hours.toFixed(1)}</span>
+              </>
+            )}
+          </p>
+        )}
       </div>
 
       {/* Stat cards */}
