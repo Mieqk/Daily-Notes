@@ -1,16 +1,24 @@
 ```
-# Dependencies
-node_modules/
-
-# Build outputs
+# Build artifacts
 dist/
 build/
-target/
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.out
 
-# Environment variables
-.env
-.env.local
-.env.*
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+target/
+.gradle/
 
 # Editor/IDE files
 .vscode/
@@ -22,31 +30,17 @@ target/
 # Logs
 *.log
 
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
+# Environment
+.env
+.env.local
+*.env.*
 
-# Coverage reports
+# Coverage
 coverage/
 htmlcov/
 .coverage
 
-# OS generated files
+# System files
 .DS_Store
 Thumbs.db
-
-# Testing
-.mypy_cache/
-.pytest_cache/
-.nyc_output/
-coverage/
-
-# Package manager caches
-.npm/
-.yarn/
-.pnpm-store/
-.bazel/
-.cargo/
-.go/
 ```
