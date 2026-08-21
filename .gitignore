@@ -1,42 +1,47 @@
 ```
-# Build artifacts
-dist/
-build/
-*.o
-*.obj
-*.exe
-*.dll
-*.so
-*.a
-*.out
-
 # Dependencies
 node_modules/
-venv/
-.venv/
-__pycache__/
-.mypy_cache/
-.pytest_cache/
-target/
-.gradle/
+.pnpm-store/
 
-# Editors
+# Build outputs
+dist/
+build/
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+*.env.*
+
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# System
+# OS files
 .DS_Store
 Thumbs.db
-.env
-.env.local
-*.env.*
 
-# Logs and coverage
-*.log
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Temporary files
 *.tmp
-coverage/
-htmlcov/
-.coverage
+*.temp
+
+# Package manager
+package-lock.json
+.yarn/
+node_modules/
+
+# Vite specific
+.vite/
 ```
