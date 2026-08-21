@@ -124,38 +124,56 @@ export default function DailyView(props: DailyViewProps) {
     (window as unknown as Record<string, unknown>).SpeechRecognition ??
     (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
 
+  const isVoiceSupported = !!SR;
+
   const toggleVoice = () => {
     if (listening) {
       recRef.current?.stop();
       return;
     }
-    if (!SR) {
+    if (!isVoiceSupported) {
       showToast(t("voiceUnsupported"));
       return;
     }
-    const rec = new SR();
-    rec.lang = lang === "ru" ? "ru-RU" : "en-US";
-    rec.interimResults = false;
-    rec.continuous = true;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    rec.onresult = (e: any) => {
-      let extra = "";
-      for (let i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) extra += e.results[i][0].transcript + " ";
-      }
-      if (extra) {
-        setNotes((m) => {
-          const cur = m[date] ?? "";
-          return { ...m, [date]: cur + (cur && !cur.endsWith(" ") ? " " : "") + extra.trim() + " " };
-        });
-        bumpStatus();
-      }
-    };
-    rec.onend = () => setListening(false);
-    rec.onerror = () => setListening(false);
-    recRef.current = rec;
-    setListening(true);
-    rec.start();
+    try {
+      const rec = new SR();
+      rec.lang = lang === "ru" ? "ru-RU" : lang === "be" ? "ru-RU" : lang === "uk" ? "uk-UA" : lang === "de" ? "de-DE" : lang === "fr" ? "fr-FR" : lang === "es" ? "es-ES" : "en-US";
+      rec.interimResults = false;
+      rec.continuous = true;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      rec.onresult = (e: any) => {
+        let extra = "";
+        for (let i = 0; i < e.results.length; i++) {
+          if (e.results[i].isFinal) extra += e.results[i][0].transcript + " ";
+        }
+        if (extra) {
+          setNotes((m) => {
+            const cur = m[date] ?? "";
+            return { ...m, [date]: cur + (cur && !cur.endsWith(" ") ? " " : "") + extra.trim() + " " };
+          });
+          bumpStatus();
+        }
+      };
+      rec.onend = () => setListening(false);
+      rec.onerror = (e: any) => {
+        console.warn("Speech recognition error:", e.error);
+        if (e.error === "not-allowed") {
+          showToast(t("voicePermissionDenied"));
+        } else if (e.error === "no-speech") {
+          showToast(t("voiceNoSpeech"));
+        } else {
+          showToast(t("voiceUnsupported"));
+        }
+        setListening(false);
+      };
+      recRef.current = rec;
+      setListening(true);
+      rec.start();
+    } catch (err) {
+      console.error("Failed to start speech recognition:", err);
+      showToast(t("voiceUnsupported"));
+      setListening(false);
+    }
   };
 
   /* ---------- photos ---------- */
