@@ -3,7 +3,7 @@ import type { Lang, TKey } from "../i18n";
 import { localeOf } from "../i18n";
 import type { SleepData } from "../store";
 import { fromISO, shiftISO, todayISO, toISO } from "../store";
-import { SleepIcon } from "../icons";
+import { SleepIcon, ArrowLeftIcon, ArrowRightIcon } from "../icons";
 
 interface SleepViewProps {
   sleep: Record<string, SleepData>;
@@ -16,6 +16,43 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
   const [range, setRange] = useState<7 | 30>(7);
   const locale = localeOf(lang);
   const today = todayISO();
+
+  // Form state for editing sleep data
+  const [editDate, setEditDate] = useState<string>(today);
+  const existingSleep = sleep[editDate];
+  const [sleepForm, setSleepForm] = useState<SleepData>(() => existingSleep ?? {
+    hours: 0,
+    quality: 3,
+    deep: 0,
+    light: 0,
+    rem: 0,
+    awake: 0,
+    bedtime: null,
+    wakeTime: null,
+  });
+
+  // Update form when editDate or sleep changes
+  useMemo(() => {
+    const data = sleep[editDate];
+    if (data) {
+      setSleepForm(data);
+    } else {
+      setSleepForm({
+        hours: 0,
+        quality: 3,
+        deep: 0,
+        light: 0,
+        rem: 0,
+        awake: 0,
+        bedtime: null,
+        wakeTime: null,
+      });
+    }
+  }, [editDate, sleep]);
+
+  const handleSaveSleep = () => {
+    setSleep(editDate, sleepForm);
+  };
 
   const days = useMemo(() => {
     const list: {
@@ -182,6 +219,164 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
               </>
             )}
           </p>
+        )}
+      </div>
+
+      {/* Sleep Editor Form - like Vegetable app */}
+      <div className={`${card} mb-5 animate-rise`} style={{ boxShadow: "var(--shadow-sm)" }}>
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-[15px] font-bold">{t("sleepTitle")}</h3>
+            <p className="text-xs text-[var(--ink-faint)]">{t("sleepSub")}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setEditDate(shiftISO(editDate, -1))}
+              className="grid h-9 w-9 place-items-center rounded-lg border border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] transition-all duration-150 hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+            </button>
+            <span className="min-w-[120px] text-center text-sm font-semibold">
+              {new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" }).format(fromISO(editDate))}
+            </span>
+            <button
+              onClick={() => setEditDate(shiftISO(editDate, 1))}
+              disabled={editDate === today}
+              className={`grid h-9 w-9 place-items-center rounded-lg border border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] transition-all duration-150 active:scale-95 ${
+                editDate === today ? "cursor-not-allowed opacity-40" : "hover:border-[var(--accent)] hover:text-[var(--accent-deep)]"
+              }`}
+            >
+              <ArrowRightIcon className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {/* Bedtime & Wake time */}
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepBedtime")}</label>
+            <input
+              type="time"
+              value={sleepForm.bedtime ?? ""}
+              onChange={(e) => setSleepForm({ ...sleepForm, bedtime: e.target.value || null })}
+              onBlur={handleSaveSleep}
+              className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepWakeTime")}</label>
+            <input
+              type="time"
+              value={sleepForm.wakeTime ?? ""}
+              onChange={(e) => setSleepForm({ ...sleepForm, wakeTime: e.target.value || null })}
+              onBlur={handleSaveSleep}
+              className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            />
+          </div>
+
+          {/* Hours */}
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepHours")}</label>
+            <input
+              type="number"
+              min="0"
+              max="24"
+              step="0.5"
+              value={sleepForm.hours}
+              onChange={(e) => setSleepForm({ ...sleepForm, hours: parseFloat(e.target.value) || 0 })}
+              onBlur={handleSaveSleep}
+              className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            />
+          </div>
+
+          {/* Quality */}
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepQuality")}</label>
+            <select
+              value={sleepForm.quality}
+              onChange={(e) => setSleepForm({ ...sleepForm, quality: parseInt(e.target.value) })}
+              onBlur={handleSaveSleep}
+              className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            >
+              {[1, 2, 3, 4, 5].map((q) => (
+                <option key={q} value={q}>{q}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sleep phases */}
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepDeep")}</label>
+            <input
+              type="number"
+              min="0"
+              max="12"
+              step="0.5"
+              value={sleepForm.deep}
+              onChange={(e) => setSleepForm({ ...sleepForm, deep: parseFloat(e.target.value) || 0 })}
+              onBlur={handleSaveSleep}
+              className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepLight")}</label>
+            <input
+              type="number"
+              min="0"
+              max="12"
+              step="0.5"
+              value={sleepForm.light}
+              onChange={(e) => setSleepForm({ ...sleepForm, light: parseFloat(e.target.value) || 0 })}
+              onBlur={handleSaveSleep}
+              className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepREM")}</label>
+            <input
+              type="number"
+              min="0"
+              max="6"
+              step="0.5"
+              value={sleepForm.rem}
+              onChange={(e) => setSleepForm({ ...sleepForm, rem: parseFloat(e.target.value) || 0 })}
+              onBlur={handleSaveSleep}
+              className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepAwake")}</label>
+            <input
+              type="number"
+              min="0"
+              max="6"
+              step="0.5"
+              value={sleepForm.awake}
+              onChange={(e) => setSleepForm({ ...sleepForm, awake: parseFloat(e.target.value) || 0 })}
+              onBlur={handleSaveSleep}
+              className="mt-1 h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            />
+          </div>
+        </div>
+
+        {/* Quick action buttons for today */}
+        {editDate === today && (
+          <div className="mt-4 flex flex-wrap gap-3 border-t border-[var(--line)] pt-4">
+            <button
+              onClick={handleFellAsleep}
+              className="flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-[13px] font-semibold text-[var(--accent-ink)] transition-all duration-200 hover:opacity-90"
+            >
+              <span>🌙</span>
+              {t("sleepFellAsleep")} — {new Date().toTimeString().slice(0, 5)}
+            </button>
+            <button
+              onClick={handleWokeUp}
+              className="flex items-center gap-2 rounded-lg bg-[var(--accent-deep)] px-4 py-2.5 text-[13px] font-semibold text-white transition-all duration-200 hover:opacity-90"
+            >
+              <span>☀️</span>
+              {t("sleepWokeUp")} — {new Date().toTimeString().slice(0, 5)}
+            </button>
+          </div>
         )}
       </div>
 
