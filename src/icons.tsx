@@ -248,3 +248,18 @@ export const SleepIcon = ({ className = "h-5 w-5" }: IconProps) => (
     <path d="M8 16a4 4 0 0 1 8 0" />
   </svg>
 );
+
+export const UserIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+  </svg>
+);
+
+export const LogOutIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16,17 21,12 16,7" />
+    <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+);
