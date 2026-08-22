@@ -239,7 +239,7 @@ export default function App() {
   }
 
   if (showAuth) {
-    return <AuthScreen onContinueLocally={() => { setLocalMode(true); setShowAuth(false); }} />;
+    return <AuthScreen onContinueLocally={() => { setLocalMode(true); setShowAuth(false); }} theme={theme} onTheme={handleThemeChange} />;
   }
 
   // Sync status badge

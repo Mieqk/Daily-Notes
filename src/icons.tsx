@@ -285,3 +285,53 @@ export const EyeOff = ({ className = "h-5 w-5" }: IconProps) => (
     <line x1="1" y1="1" x2="23" y2="23" />
   </svg>
 );
+
+export const Mail = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M3 7l9 6 9-6" />
+  </svg>
+);
+
+export const UserPlus = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <circle cx="9" cy="8" r="4" />
+    <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+    <path d="M16 3.5h5M18.5 1v5" />
+  </svg>
+);
+
+export const LogIn = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+    <polyline points="10,17 15,12 10,7" />
+    <line x1="15" y1="12" x2="3" y2="12" />
+  </svg>
+);
+
+export const Key = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <circle cx="7.5" cy="12.5" r="4.5" />
+    <path d="M12 12.5h8.5M17.5 9.5v3M20.5 9.5v3" />
+  </svg>
+);
+
+export const Wifi = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+    <path d="M7.5 15.05a7 7 0 0 1 9.08 0" />
+    <path d="M10 17.5a3 3 0 0 1 4.08 0" />
+    <circle cx="12" cy="20" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const WifiOff = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M1 1l22 22" />
+    <path d="M7.5 12.5a5 5 0 0 1 4.5-1.5" />
+    <path d="M10.5 16a3 3 0 0 1 3 0" />
+    <path d="M5 12.55a11 11 0 0 1 10.58-2.08" />
+    <path d="M16.5 15.05a7 7 0 0 1 2.58 2.58" />
+    <circle cx="12" cy="20" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
