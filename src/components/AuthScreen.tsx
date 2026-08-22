@@ -295,7 +295,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
                 disabled={loading}
                 className="group inline-flex items-center gap-2 text-sm font-semibold text-[var(--ink-soft)] transition-colors hover:text-[var(--accent)] disabled:opacity-50"
               >
-                <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                <ArrowLeftIcon className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                 Назад ко входу
               </button>
             ) : (
