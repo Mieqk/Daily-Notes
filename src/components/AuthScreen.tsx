@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Eye, EyeOff, Mail, Lock, UserPlus, LogIn, Key, ArrowLeft, Wifi, WifiOff } from '../icons';
+import { Eye, EyeOff, Mail, LockIcon, UserPlus, LogIn, Key, ArrowLeftIcon, Wifi, WifiOff } from '../icons';
 import type { ThemeId } from '../themes';
 import { THEMES } from '../themes';
 
