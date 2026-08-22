@@ -1,6 +1,1 @@
-```
-# Dependencies
-node_modules/
-# Package lock files
-package-lock.json
-```
+Nothing needs to be added to .gitignore since only a configuration file (vercel.json) was added and there are no build artifacts, dependencies, or temporary files in the changes.
