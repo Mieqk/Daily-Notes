@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Eye, EyeOff } from '../icons';
 
 interface AuthScreenProps {
   onContinueLocally: () => void;
 }
 
 export default function AuthScreen({ onContinueLocally }: AuthScreenProps) {
-  const { signUp, signIn } = useAuth();
+  const { signUp, signIn, resetPassword } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isResetMode, setIsResetMode] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,19 +23,25 @@ export default function AuthScreen({ onContinueLocally }: AuthScreenProps) {
     setSuccessMessage(null);
     setLoading(true);
 
-    if (!email || !password) {
-      setError('Заполните email и пароль');
+    if (!email) {
+      setError('Введите email');
       setLoading(false);
       return;
     }
 
-    if (password.length < 6) {
+    if (!isResetMode && !password) {
+      setError('Введите пароль');
+      setLoading(false);
+      return;
+    }
+
+    if (!isResetMode && password.length < 6) {
       setError('Пароль должен быть не менее 6 символов');
       setLoading(false);
       return;
     }
 
-    if (isLogin) {
+    if (isLogin && !isResetMode) {
       const { error } = await signIn(email, password);
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
@@ -42,6 +51,14 @@ export default function AuthScreen({ onContinueLocally }: AuthScreenProps) {
         } else {
           setError(error.message);
         }
+      }
+    } else if (isResetMode) {
+      const { error } = await resetPassword(email);
+      if (error) {
+        setError(error.message);
+      } else {
+        setSuccessMessage('Инструкции по сбросу пароля отправлены на почту!');
+        setIsResetMode(false);
       }
     } else {
       const { error } = await signUp(email, password);
@@ -99,56 +116,109 @@ export default function AuthScreen({ onContinueLocally }: AuthScreenProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              disabled={loading}
+              disabled={loading || isResetMode}
               className="w-full rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-4 py-3 text-sm outline-none transition-colors focus:border-[var(--accent)]"
               autoComplete="email"
             />
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
-              Пароль
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              disabled={loading}
-              className="w-full rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-4 py-3 text-sm outline-none transition-colors focus:border-[var(--accent)]"
-              autoComplete={isLogin ? 'current-password' : 'new-password'}
-            />
-          </div>
+          {!isResetMode && (
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
+                Пароль
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  disabled={loading}
+                  className="w-full rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-4 py-3 pr-10 text-sm outline-none transition-colors focus:border-[var(--accent)]"
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-faint)] hover:text-[var(--ink-soft)] disabled:opacity-50"
+                  aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isLogin && !isResetMode && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsResetMode(true);
+                  setError(null);
+                  setSuccessMessage(null);
+                  setPassword('');
+                }}
+                disabled={loading}
+                className="text-xs font-medium text-[var(--ink-soft)] underline decoration-[var(--accent)] underline-offset-4 hover:text-[var(--accent)] disabled:opacity-50"
+              >
+                Забыли пароль?
+              </button>
+            </div>
+          )}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (isResetMode && !email)}
             className={`w-full rounded-xl py-3.5 text-sm font-bold transition-all ${
               loading
                 ? 'bg-[var(--ink-faint)] cursor-not-allowed opacity-50'
                 : 'bg-[var(--accent)] text-[var(--accent-ink)] hover:brightness-110 active:scale-[0.98]'
             }`}
           >
-            {loading ? 'Загрузка...' : isLogin ? 'Войти' : 'Зарегистрироваться'}
+            {loading 
+              ? 'Загрузка...' 
+              : isResetMode 
+                ? 'Отправить инструкции' 
+                : isLogin 
+                  ? 'Войти' 
+                  : 'Зарегистрироваться'}
           </button>
         </form>
 
-        {/* Toggle Login/Signup */}
+        {/* Toggle Login/Signup or Back from Reset */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-[var(--ink-soft)]">
-            {isLogin ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}
-            <button
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError(null);
-                setSuccessMessage(null);
-              }}
-              disabled={loading}
-              className="ml-2 font-semibold underline decoration-[var(--accent)] underline-offset-4 hover:text-[var(--accent)] disabled:opacity-50"
-            >
-              {isLogin ? 'Создать' : 'Войти'}
-            </button>
-          </p>
+          {isResetMode ? (
+            <p className="text-sm text-[var(--ink-soft)]">
+              <button
+                onClick={() => {
+                  setIsResetMode(false);
+                  setError(null);
+                  setSuccessMessage(null);
+                }}
+                disabled={loading}
+                className="font-semibold underline decoration-[var(--accent)] underline-offset-4 hover:text-[var(--accent)] disabled:opacity-50"
+              >
+                Назад ко входу
+              </button>
+            </p>
+          ) : (
+            <p className="text-sm text-[var(--ink-soft)]">
+              {isLogin ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}
+              <button
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setError(null);
+                  setSuccessMessage(null);
+                }}
+                disabled={loading}
+                className="ml-2 font-semibold underline decoration-[var(--accent)] underline-offset-4 hover:text-[var(--accent)] disabled:opacity-50"
+              >
+                {isLogin ? 'Создать' : 'Войти'}
+              </button>
+            </p>
+          )}
         </div>
 
         {/* Divider */}
