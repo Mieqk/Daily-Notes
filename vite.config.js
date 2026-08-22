@@ -7,10 +7,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
-        name: 'My App',
-        short_name: 'MyApp',
-        description: 'My Application',
-        theme_color: '#ffffff',
+        name: 'Daily Notes — дневник и план дня',
+        short_name: 'Daily Notes',
+        description: 'Ежедневные заметки, задачи и настроение',
+        theme_color: '#2d6a4f',
         icons: [
           {
             src: 'pwa-192x192.png',
