@@ -1,11 +1,22 @@
-```
+```gitignore
 # Dependencies
 node_modules/
 
-# Build artifacts
+# Build outputs
 dist/
+build/
+target/
 
-# Environment
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py.class
+.Python
+env/
+venv/
+.venv/
 .env
 .env.local
 .env.*
@@ -13,25 +24,23 @@ dist/
 # Logs
 *.log
 
-# Editor
+# Coverage
+.coverage
+coverage/
+htmlcov/
+
+# IDE
 .vscode/
 .idea/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Temp files
-*.tmp
 *.swp
+*.swo
+*.tmp
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Compression
+# Compressed
 *.zip
 *.gz
 *.tar
@@ -54,5 +63,4 @@ Thumbs.db
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-
 ```

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { Lang, TKey } from "../i18n";
 import type { BgId, WritingFontId } from "../store";
@@ -111,6 +111,19 @@ export default function SettingsView(props: SettingsViewProps) {
   const { user, signOut } = useAuth();
   const localMode = isLocalMode();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  
+  // Scroll to top when auth modal opens
+  useEffect(() => {
+    if (showAuthModal) {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showAuthModal]);
   
   const {
     theme,
