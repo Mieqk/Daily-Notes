@@ -23,7 +23,6 @@ import LockScreen from "./components/LockScreen";
 import SleepView from "./components/SleepView";
 import InstallPrompt from "./components/InstallPrompt";
 import AuthScreen from "./components/AuthScreen";
-import { Analytics } from "@vercel/analytics/react";
 import { useAuth } from "./contexts/AuthContext";
 import { isLocalMode, setLocalMode, performInitialSync, subscribeToSyncStatus, getSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, type SyncStatus } from "./lib/sync";
 
