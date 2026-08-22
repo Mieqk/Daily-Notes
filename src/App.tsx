@@ -98,6 +98,15 @@ export default function App() {
     }
   }, [theme, lang, fontScale, writingFont, bg, moodEmoji, user]);
 
+  // Handler for theme changes that also syncs to account
+  const handleThemeChange = (newTheme: ThemeId) => {
+    setTheme(newTheme);
+    // Sync immediately for better UX
+    if (user && !isLocalMode()) {
+      syncSettings(user.id, { theme: newTheme, lang, font: fontScale, writingFont, bg, moodEmoji });
+    }
+  };
+
   /* ---------- effects ---------- */
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -287,7 +296,7 @@ export default function App() {
         tab={tab}
         onTab={setTab}
         theme={theme}
-        onTheme={setTheme}
+        onTheme={handleThemeChange}
         lang={lang}
         onLang={setLang}
         t={t}
@@ -387,7 +396,7 @@ export default function App() {
           {tab === "settings" && (
             <SettingsView
               theme={theme}
-              onTheme={setTheme}
+              onTheme={handleThemeChange}
               lang={lang}
               onLang={setLang}
               writingFont={writingFont}
