@@ -195,7 +195,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
             {!isResetMode && (
               <div>
                 <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
-                  <Lock className="h-4 w-4" />
+                  <LockIcon className="h-4 w-4" />
                   Пароль
                 </label>
                 <div className="relative">
@@ -208,7 +208,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
                     className="w-full rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-4 py-3.5 pl-11 pr-11 text-sm outline-none transition-all focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                     autoComplete={isLogin ? 'current-password' : 'new-password'}
                   />
-                  <Lock className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--ink-faint)]" />
+                  <LockIcon className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--ink-faint)]" />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
