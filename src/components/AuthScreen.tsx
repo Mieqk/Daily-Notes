@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import { Eye, EyeOff, Mail, LockIcon, UserPlus, LogIn, Key, ArrowLeftIcon, Wifi, WifiOff } from '../icons';
 import type { ThemeId } from '../themes';
 import { THEMES } from '../themes';
@@ -22,10 +23,26 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
   const [isResetMode, setIsResetMode] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
-  // Sync theme to document
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  const handleGoogleSignIn = async () => {
+    if (!supabase) {
+      setError('Синхронизация не настроена');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,8 +108,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] p-4">
       <div className="w-full max-w-md animate-rise overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--panel)] shadow-2xl">
-        {/* Header with gradient accent */}
-        <div 
+        <div
           className="relative flex flex-col items-center justify-center py-8"
           style={{ background: `linear-gradient(135deg, var(--accent) 0%, var(--accent-deep, var(--accent)) 100%)` }}
         >
@@ -100,8 +116,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
             <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-white blur-3xl"></div>
             <div className="absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-white blur-3xl"></div>
           </div>
-          
-          {/* Logo / Title */}
+
           <div className="relative z-10 text-center">
             <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
               {isResetMode ? (
@@ -116,17 +131,16 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
               Daily Notes
             </h1>
             <p className="mt-1 text-sm text-white/80">
-              {isResetMode 
-                ? 'Восстановление доступа' 
-                : isLogin 
-                  ? 'С возвращением!' 
+              {isResetMode
+                ? 'Восстановление доступа'
+                : isLogin
+                  ? 'С возвращением!'
                   : 'Создайте аккаунт'}
             </p>
           </div>
         </div>
 
         <div className="p-8">
-          {/* Theme Selector */}
           <div className="mb-6">
             <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
               Тема оформления
@@ -155,7 +169,6 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
             </div>
           </div>
 
-          {/* Error Message */}
           {error && (
             <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 animate-rise">
               <span className="flex-shrink-0">⚠️</span>
@@ -163,7 +176,6 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
             </div>
           )}
 
-          {/* Success Message */}
           {successMessage && (
             <div className="mb-6 flex items-start gap-3 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400 animate-rise">
               <span className="flex-shrink-0">✅</span>
@@ -171,7 +183,6 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
             </div>
           )}
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
@@ -283,7 +294,21 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
             </button>
           </form>
 
-          {/* Toggle Login/Signup or Back from Reset */}
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="mt-5 flex w-full items-center justify-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] py-4 text-sm font-semibold text-[var(--ink)] transition-all hover:border-[var(--accent)] hover:bg-[var(--hover)] active:scale-[0.98] disabled:opacity-50"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"/>
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/>
+            </svg>
+            Войти через Google
+          </button>
+
           <div className="mt-6 text-center">
             {isResetMode ? (
               <button
@@ -308,7 +333,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
                     setSuccessMessage(null);
                   }}
                   disabled={loading}
-                  className="ml-2 font-semibold underline decoration-[var(--accent)] underline-offset-4 transition-colors hover:text-[var(--accent)] disabled:opacity-50"
+                  className="ml-2 font-semibold underline decoration-[var(--accent)] underline-offset-4 transition-colors hover:text-[var(--accent)]"
                 >
                   {isLogin ? 'Создать' : 'Войти'}
                 </button>
@@ -316,14 +341,12 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
             )}
           </div>
 
-          {/* Divider */}
           <div className="my-8 flex items-center gap-3">
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--line)] to-transparent" />
             <span className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-faint)]">или</span>
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--line)] to-transparent" />
           </div>
 
-          {/* Continue Locally Button */}
           <button
             onClick={onContinueLocally}
             className="group flex w-full items-center justify-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] py-4 text-sm font-semibold text-[var(--ink-soft)] transition-all hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 hover:text-[var(--accent-deep)] active:scale-[0.98]"
