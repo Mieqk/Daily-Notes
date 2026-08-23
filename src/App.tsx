@@ -24,6 +24,7 @@ import SleepView from "./components/SleepView";
 import InstallPrompt from "./components/InstallPrompt";
 import AuthScreen from "./components/AuthScreen";
 import { useAuth } from "./contexts/AuthContext";
+import { supabase } from "./lib/supabase"; // <-- ЭТОТ ИМПОРТ ТЕПЕРЬ ТОЧНО ЕСТЬ
 import { 
   isLocalMode, 
   setLocalMode, 
@@ -41,7 +42,7 @@ const FONT_SCALES = ["93.75%", "100%", "109%"];
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
-  const hasMounted = useRef(false); // <-- ГАРАНТИЯ: блокирует первый ложный вызов синхрона
+  const hasMounted = useRef(false); 
   
   const [tab, setTab] = useStored<Tab>("dn.tab", "daily");
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
@@ -81,7 +82,7 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-  // Handle auth state and initial sync
+  // 1. Initial sync on login
   useEffect(() => {
     if (!authLoading) {
       const localMode = isLocalMode();
@@ -106,7 +107,7 @@ export default function App() {
     }
   }, [user, authLoading]);
 
-     // Realtime subscription: слушаем изменения из базы
+  // 2. Realtime subscription (АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ)
   useEffect(() => {
     if (!user || isLocalMode() || !supabase) return;
 
@@ -125,7 +126,7 @@ export default function App() {
         const date = payload.new?.date || payload.old?.date;
         if (date) {
           const { data } = await supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', date);
-          if (data) setTasks((prev) => ({ ...prev, [date]: data.map((t) => ({ id: t.id, text: t.title, done: t.completed })) }));
+          if (data) setTasks((prev) => ({ ...prev, [date]: data.map((task) => ({ id: task.id, text: task.title, done: task.completed })) }));
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sleep_logs', filter: `user_id=eq.${user.id}` }, (payload) => {
@@ -141,7 +142,7 @@ export default function App() {
     };
   }, [user]);
 
-  // Push local changes to cloud (SKIPS FIRST RENDER TO PREVENT RACE CONDITION)
+  // 3. Push local changes to cloud (SKIPS FIRST RENDER)
   useEffect(() => {
     if (!hasMounted.current) {
       hasMounted.current = true;
@@ -181,17 +182,11 @@ export default function App() {
     }
   };
 
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
-
-  useEffect(() => {
-    document.documentElement.style.fontSize = FONT_SCALES[fontScale] ?? "100%";
-  }, [fontScale]);
-
+  useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
+  useEffect(() => { document.documentElement.style.fontSize = FONT_SCALES[fontScale] ?? "100%"; }, [fontScale]);
   useEffect(() => {
     document.documentElement.setAttribute("lang", lang);
-    document.title = lang === "ru" ? "Дейли Ноутс — ежедневные заметки" : "Daily Notes — everyday journal";
+    document.title = lang === "ru" ? "Дейли Ноутс" : "Daily Notes";
   }, [lang]);
 
   const firedRef = useRef<string>("");
@@ -221,29 +216,17 @@ export default function App() {
 
   const today = todayISO();
   let streak = 0;
-  for (let iso = today; (notes[iso] ?? "").trim().length > 0; iso = shiftISO(iso, -1)) {
-    streak += 1;
-  }
+  for (let iso = today; (notes[iso] ?? "").trim().length > 0; iso = shiftISO(iso, -1)) streak += 1;
+  
   const weekMarks = Array.from({ length: 7 }, (_, i) => Boolean((notes[shiftISO(today, i - 6)] ?? "").trim()));
   const notesCount = Object.keys(notes).filter((k) => (notes[k] ?? "").trim()).length;
   const tasksCount = Object.values(tasks).reduce((sum, list) => sum + (list?.length ?? 0), 0);
   const hasEntry = (iso: string) => Boolean((notes[iso] ?? "").trim());
 
-  const clearAll = () => {
-    setNotes({});
-    setTasks({});
-    setMoods({});
-    setTags({});
-    setPhotos({});
-    setDate(todayISO());
-  };
-
+  const clearAll = () => { setNotes({}); setTasks({}); setMoods({}); setTags({}); setPhotos({}); setDate(todayISO()); };
   const exportMd = () => downloadText("daily-notes.md", buildMarkdown(notes, tasks, moods, tags, lang), "text/markdown;charset=utf-8");
   const exportJson = () => downloadText("daily-notes.json", JSON.stringify({ notes, tasks, moods, tags, reminder, moodEmoji, writingFont, theme, lang, bg, sleep }, null, 2), "application/json;charset=utf-8");
-  const openDate = (iso: string) => {
-    setDate(iso);
-    setTab("daily");
-  };
+  const openDate = (iso: string) => { setDate(iso); setTab("daily"); };
 
   const pinLen = pinHash ? Math.max(4, parseInt(pinHash.slice(-1), 36) || 4) : 4;
 
@@ -262,31 +245,14 @@ export default function App() {
   const clock = now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const dateChip = new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" }).format(now);
 
-  if (authLoading) {
-    return <div className="flex min-h-screen items-center justify-center bg-[var(--bg)]"><div className="animate-pulse text-[var(--ink-faint)]">Загрузка...</div></div>;
-  }
-
-  if (showAuth) {
-    return <AuthScreen onContinueLocally={() => { setLocalMode(true); setShowAuth(false); }} theme={theme} onTheme={handleThemeChange} />;
-  }
+  if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-[var(--bg)]"><div className="animate-pulse text-[var(--ink-faint)]">Загрузка...</div></div>;
+  if (showAuth) return <AuthScreen onContinueLocally={() => { setLocalMode(true); setShowAuth(false); }} theme={theme} onTheme={handleThemeChange} />;
 
   const syncBadge = user ? (
-    syncStatus === 'syncing' ? (
-      <span className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />Синхронизация...
-      </span>
-    ) : syncStatus === 'error' ? (
-      <span className="flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-semibold text-red-400">Ошибка синхр.</span>
-    ) : (
-      <span className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]">
-        <span className="h-1.5 w-1.5 rounded-full bg-green-500" />Синхронизировано
-      </span>
-    )
-  ) : (
-    <span className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]">
-      <span className="h-1.5 w-1.5 rounded-full bg-[var(--ink-faint)]" />Локальный режим
-    </span>
-  );
+    syncStatus === 'syncing' ? <span className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />Синхронизация...</span> :
+    syncStatus === 'error' ? <span className="flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-semibold text-red-400">Ошибка</span> :
+    <span className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]"><span className="h-1.5 w-1.5 rounded-full bg-green-500" />Синхронизировано</span>
+  ) : <span className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]"><span className="h-1.5 w-1.5 rounded-full bg-[var(--ink-faint)]" />Локально</span>;
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-[var(--bg)] text-[var(--ink)] md:flex-row">
@@ -305,61 +271,26 @@ export default function App() {
 
       <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col">
         <header className="flex h-[74px] shrink-0 items-center gap-4 border-b border-[var(--line)] px-4 sm:px-8">
-  <div className="min-w-0">
-    <h1 className="font-display truncate text-xl font-bold leading-tight tracking-tight sm:text-2xl">{tabMeta[tab].title}</h1>
-    <p className="hidden truncate text-xs text-[var(--ink-faint)] sm:block">{tabMeta[tab].sub}</p>
-  </div>
-  <div className="ml-auto flex shrink-0 items-center gap-3">
-    {syncBadge}
-    {/* КНОПКА ОБНОВЛЕНИЯ */}
-    {user && (
-      <button
-        onClick={async () => {
-          const remote = await performInitialSync();
-          if (remote) {
-            setNotes(remote.notes || {});
-            setTasks(remote.tasks || {});
-            setMoods(remote.moods || {});
-            setTags(remote.tags || {});
-            setPhotos(remote.photos || {});
-            setSleep(remote.sleep || {});
-            showToast('Данные обновлены');
-          }
-        }}
-        className="grid h-9 w-9 place-items-center rounded-lg border border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)] active:scale-90"
-        title="Обновить данные из облака"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-      </button>
-    )}
-    <span className="flex items-center gap-2.5">
-      <span className="animate-livedot h-2 w-2 rounded-full bg-[var(--accent)]" />
-      <span className="font-display text-lg font-semibold tabular-nums tracking-tight">{clock}</span>
-    </span>
-    <span className="hidden h-9 items-center rounded-full border border-[var(--line)] bg-[var(--panel)] px-3.5 text-xs font-medium text-[var(--ink-soft)] sm:flex">{dateChip}</span>
-  </div>
-</header>
-        
+          <div className="min-w-0">
+            <h1 className="font-display truncate text-xl font-bold leading-tight tracking-tight sm:text-2xl">{tabMeta[tab].title}</h1>
+            <p className="hidden truncate text-xs text-[var(--ink-faint)] sm:block">{tabMeta[tab].sub}</p>
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-3">
+            {syncBadge}
+            <span className="flex items-center gap-2.5">
+              <span className="animate-livedot h-2 w-2 rounded-full bg-[var(--accent)]" />
+              <span className="font-display text-lg font-semibold tabular-nums tracking-tight">{clock}</span>
+            </span>
+            <span className="hidden h-9 items-center rounded-full border border-[var(--line)] bg-[var(--panel)] px-3.5 text-xs font-medium text-[var(--ink-soft)] sm:flex">{dateChip}</span>
+          </div>
+        </header>
+
         <main key={tab + date} className="animate-rise min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
-          {tab === "daily" && (
-            <DailyView date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} lang={lang} t={t} showToast={showToast} />
-          )}
-          {tab === "stats" && (
-            <Suspense fallback={<div className="grid h-64 place-items-center text-sm text-[var(--ink-faint)]"><span className="animate-livedot h-2.5 w-2.5 rounded-full bg-[var(--accent)]" /></div>}>
-              <StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} />
-            </Suspense>
-          )}
-          {tab === "sleep" && (
-            <SleepView sleep={sleep} lang={lang} t={t} setSleep={(iso, data) => setSleep({ ...sleep, [iso]: data })} />
-          )}
-          {tab === "notes" && (
-            <NotesView notes={notes} tasks={tasks} moods={moods} tags={tags} photos={photos} moodEmoji={moodEmoji} writingFont={writingFont} onOpen={openDate} lang={lang} t={t} />
-          )}
-          {tab === "settings" && (
-            <SettingsView theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={setPinHash} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} showToast={showToast} />
-          )}
+          {tab === "daily" && <DailyView date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} lang={lang} t={t} showToast={showToast} />}
+          {tab === "stats" && <Suspense fallback={<div className="grid h-64 place-items-center text-sm text-[var(--ink-faint)]"><span className="animate-livedot h-2.5 w-2.5 rounded-full bg-[var(--accent)]" /></div>}><StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} /></Suspense>}
+          {tab === "sleep" && <SleepView sleep={sleep} lang={lang} t={t} setSleep={(iso, data) => setSleep({ ...sleep, [iso]: data })} />}
+          {tab === "notes" && <NotesView notes={notes} tasks={tasks} moods={moods} tags={tags} photos={photos} moodEmoji={moodEmoji} writingFont={writingFont} onOpen={openDate} lang={lang} t={t} />}
+          {tab === "settings" && <SettingsView theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={setPinHash} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} showToast={showToast} />}
         </main>
       </div>
 
