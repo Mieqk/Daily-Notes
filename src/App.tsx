@@ -72,26 +72,36 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-    // Handle auth state and initial sync
+  // Handle auth state and initial sync
   useEffect(() => {
     if (!authLoading) {
+      console.log('[APP] 🟢 authLoading finished. user:', user?.id, 'localMode:', isLocalMode());
       const localMode = isLocalMode();
+      
       if (user) {
+        console.log('[APP] User logged in, forcing localMode = false');
         setLocalMode(false);
+        
         performInitialSync().then((remote) => {
+          console.log('[APP] 📥 performInitialSync result:', remote ? 'SUCCESS' : 'NULL/FAILED');
           if (remote) {
-            setNotes(remote.notes);
-            setTasks(remote.tasks);
-            setMoods(remote.moods);
-            setTags(remote.tags);
-            setPhotos(remote.photos);
-            setSleep(remote.sleep);
+            console.log('[APP] 📝 Applying remote data. Notes keys:', Object.keys(remote.notes || {}));
+            console.log('[APP] 📝 Note for today (2026-08-24):', (remote.notes || {})['2026-08-24']);
+            
+            setNotes(remote.notes || {});
+            setTasks(remote.tasks || {});
+            setMoods(remote.moods || {});
+            setTags(remote.tags || {});
+            setPhotos(remote.photos || {});
+            setSleep(remote.sleep || {});
           }
         });
         setShowAuth(false);
       } else if (localMode) {
+        console.log('[APP] No user, but localMode is true. Showing app.');
         setShowAuth(false);
       } else {
+        console.log('[APP] No user and not localMode. Showing AuthScreen.');
         setShowAuth(true);
       }
     }
