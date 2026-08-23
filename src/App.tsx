@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import type { Lang, TKey } from "./i18n";
 import { STRINGS, localeOf } from "./i18n";
 import type { ThemeId } from "./themes";
@@ -22,23 +22,22 @@ const FONT_SCALES = ["93.75%", "100%", "109%"];
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
-  const hasMounted = useRef(false);
   
   const [tab, setTab] = useStored<Tab>("dn.tab", "daily");
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
   const [lang, setLang] = useStored<Lang>("dn.lang", "ru");
   const [fontScale, setFontScale] = useStored<number>("dn.font", 1);
-  const [notes, setNotes] = useStored<Record<string, string>>("dn.notes", {});
-  const [tasks, setTasks] = useStored<Record<string, Task[]>>("dn.tasks", {});
-  const [moods, setMoods] = useStored<Record<string, number>>("dn.moods", {});
-  const [tags, setTags] = useStored<Record<string, string[]>>("dn.tags", {});
-  const [photos, setPhotos] = useStored<Record<string, string[]>>("dn.photos", {});
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [tasks, setTasks] = useState<Record<string, Task[]>>({});
+  const [moods, setMoods] = useState<Record<string, number>>({});
+  const [tags, setTags] = useState<Record<string, string[]>>({});
+  const [photos, setPhotos] = useState<Record<string, string[]>>({});
   const [reminder, setReminder] = useStored<Reminder>("dn.reminder", { time: "20:00", enabled: false });
   const [moodEmoji, setMoodEmoji] = useStored<string[]>("dn.emoji", ["", "", "", "", ""]);
   const [writingFont, setWritingFont] = useStored<WritingFontId>("dn.wfont", "body");
   const [bg, setBg] = useStored<BgId>("dn.bg", "dots");
   const [pinHash, setPinHash] = useStored<string | null>("dn.pin", null);
-  const [sleep, setSleep] = useStored<Record<string, SleepData>>("dn.sleep", {});
+  const [sleep, setSleep] = useState<Record<string, SleepData>>({});
 
   const [date, setDate] = useState<string>(todayISO());
   const [locked, setLocked] = useState<boolean>(() => Boolean(pinHash));
@@ -58,14 +57,14 @@ export default function App() {
   useEffect(() => {
     if (!authLoading && user) {
       setLocalMode(false);
-      performInitialSync().then((remote) => {
+      performInitialSync(user.id).then((remote) => {
         if (remote) {
-          setNotes(remote.notes || {});
-          setTasks(remote.tasks || {});
-          setMoods(remote.moods || {});
-          setTags(remote.tags || {});
-          setPhotos(remote.photos || {});
-          setSleep(remote.sleep || {});
+          setNotes(remote.notes);
+          setTasks(remote.tasks);
+          setMoods(remote.moods);
+          setTags(remote.tags);
+          setPhotos(remote.photos);
+          setSleep(remote.sleep);
         }
       });
       setShowAuth(false);
@@ -76,26 +75,22 @@ export default function App() {
     }
   }, [user, authLoading]);
 
-  // Отправка изменений в базу (ТОЛЬКО ПОСЛЕ ПЕРВОГО РЕНДЕРА)
+  // Отправка изменений в базу
   useEffect(() => {
-    if (!hasMounted.current) { hasMounted.current = true; return; }
     if (user && !isLocalMode()) {
       syncEntry(user.id, date, notes[date] ?? "", moods[date] ?? null, tags[date] ?? [], photos[date] ?? []);
     }
   }, [notes, moods, tags, photos, date, user]);
 
   useEffect(() => {
-    if (!hasMounted.current) return;
     if (user && !isLocalMode()) syncTasks(user.id, date, tasks[date] ?? []);
   }, [tasks, date, user]);
 
   useEffect(() => {
-    if (!hasMounted.current) return;
     if (user && !isLocalMode()) { const s = sleep[date]; if (s) syncSleep(user.id, date, s); }
   }, [sleep, date, user]);
 
   useEffect(() => {
-    if (!hasMounted.current) return;
     if (user && !isLocalMode()) syncSettings(user.id, { theme, lang, font: fontScale, writingFont, bg, moodEmoji });
   }, [theme, lang, fontScale, writingFont, bg, moodEmoji, user]);
 
@@ -110,30 +105,6 @@ export default function App() {
     document.documentElement.setAttribute("lang", lang);
     document.title = lang === "ru" ? "Дейли Ноутс" : "Daily Notes";
   }, [lang]);
-
-  const firedRef = useRef<string>("");
-  useEffect(() => {
-    if (!reminder.enabled || !reminder.time) return;
-    const check = () => {
-      const [h, m] = reminder.time.split(":").map(Number);
-      const target = new Date(); target.setHours(h, m, 0, 0);
-      const stamp = `${todayISO()}|${reminder.time}`;
-      if (Date.now() >= target.getTime() && firedRef.current !== stamp) {
-        firedRef.current = stamp;
-        showToast(t("toastReminder"));
-        try {
-          if ("Notification" in window) {
-            const fire = () => new Notification(t("name"), { body: t("toastReminder"), silent: false });
-            if (Notification.permission === "granted") fire();
-            else if (Notification.permission === "default") Notification.requestPermission().then((p) => p === "granted" && fire());
-          }
-        } catch {}
-      }
-    };
-    check();
-    const id = window.setInterval(check, 15000);
-    return () => window.clearInterval(id);
-  }, [reminder.enabled, reminder.time, lang, t]);
 
   const today = todayISO();
   let streak = 0;
