@@ -41,8 +41,8 @@ const FONT_SCALES = ["93.75%", "100%", "109%"];
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
+  const hasMounted = useRef(false); // <-- ГАРАНТИЯ: блокирует первый ложный вызов синхрона
   
-  /* ---------- persisted state ---------- */
   const [tab, setTab] = useStored<Tab>("dn.tab", "daily");
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
   const [lang, setLang] = useStored<Lang>("dn.lang", "ru");
@@ -59,13 +59,11 @@ export default function App() {
   const [pinHash, setPinHash] = useStored<string | null>("dn.pin", null);
   const [sleep, setSleep] = useStored<Record<string, SleepData>>("dn.sleep", {});
 
-  /* ---------- session state ---------- */
   const [date, setDate] = useState<string>(todayISO());
   const [locked, setLocked] = useState<boolean>(() => Boolean(pinHash));
   const [toast, setToast] = useState<{ id: number; msg: string } | null>(null);
   const [showAuth, setShowAuth] = useState<boolean>(true);
   const [syncStatus, setSyncStatusState] = useState<SyncStatus>('idle');
-  const [isInitialSyncDone, setIsInitialSyncDone] = useState<boolean>(false); // <-- НОВОЕ
 
   const now = useNow(1000);
   const locale = localeOf(lang);
@@ -98,51 +96,52 @@ export default function App() {
             setPhotos(remote.photos || {});
             setSleep(remote.sleep || {});
           }
-          setIsInitialSyncDone(true); // <-- РАЗРЕШАЕМ СИНХРОНИЗАЦИЮ ТОЛЬКО ПОСЛЕ ЗАГРУЗКИ
-        }).catch(() => {
-          setIsInitialSyncDone(true);
         });
         setShowAuth(false);
       } else if (localMode) {
         setShowAuth(false);
-        setIsInitialSyncDone(true);
       } else {
         setShowAuth(true);
-        setIsInitialSyncDone(true);
       }
     }
   }, [user, authLoading]);
 
-  // Sync settings when they change
+  // Push local changes to cloud (SKIPS FIRST RENDER TO PREVENT RACE CONDITION)
   useEffect(() => {
-    if (user && !isLocalMode() && isInitialSyncDone) {
-      syncSettings(user.id, { theme, lang, font: fontScale, writingFont, bg, moodEmoji });
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return; 
     }
-  }, [theme, lang, fontScale, writingFont, bg, moodEmoji, user, isInitialSyncDone]);
-
-  // Push local changes to cloud (ONLY AFTER INITIAL SYNC IS DONE)
-  useEffect(() => {
-    if (user && !isLocalMode() && isInitialSyncDone) {
+    if (user && !isLocalMode()) {
       syncEntry(user.id, date, notes[date] ?? "", moods[date] ?? null, tags[date] ?? [], photos[date] ?? []);
     }
-  }, [notes, moods, tags, photos, date, user, isInitialSyncDone]);
+  }, [notes, moods, tags, photos, date, user]);
 
   useEffect(() => {
-    if (user && !isLocalMode() && isInitialSyncDone) {
+    if (!hasMounted.current) return;
+    if (user && !isLocalMode()) {
       syncTasks(user.id, date, tasks[date] ?? []);
     }
-  }, [tasks, date, user, isInitialSyncDone]);
+  }, [tasks, date, user]);
 
   useEffect(() => {
-    if (user && !isLocalMode() && isInitialSyncDone) {
+    if (!hasMounted.current) return;
+    if (user && !isLocalMode()) {
       const s = sleep[date];
       if (s) syncSleep(user.id, date, s);
     }
-  }, [sleep, date, user, isInitialSyncDone]);
+  }, [sleep, date, user]);
+
+  useEffect(() => {
+    if (!hasMounted.current) return;
+    if (user && !isLocalMode()) {
+      syncSettings(user.id, { theme, lang, font: fontScale, writingFont, bg, moodEmoji });
+    }
+  }, [theme, lang, fontScale, writingFont, bg, moodEmoji, user]);
 
   const handleThemeChange = (newTheme: ThemeId) => {
     setTheme(newTheme);
-    if (user && !isLocalMode() && isInitialSyncDone) {
+    if (user && !isLocalMode()) {
       syncSettings(user.id, { theme: newTheme, lang, font: fontScale, writingFont, bg, moodEmoji });
     }
   };
@@ -233,7 +232,7 @@ export default function App() {
   }
 
   if (showAuth) {
-    return <AuthScreen onContinueLocally={() => { setLocalMode(true); setShowAuth(false); setIsInitialSyncDone(true); }} theme={theme} onTheme={handleThemeChange} />;
+    return <AuthScreen onContinueLocally={() => { setLocalMode(true); setShowAuth(false); }} theme={theme} onTheme={handleThemeChange} />;
   }
 
   const syncBadge = user ? (
