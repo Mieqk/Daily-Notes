@@ -73,6 +73,7 @@ export interface SyncedData {
   tags: Record<string, string[]>;
   photos: Record<string, string[]>;
   sleep: Record<string, SleepData>;
+  settings: Record<string, unknown> | null;
 }
 
 export async function performInitialSync(): Promise<SyncedData | null> {
@@ -85,16 +86,18 @@ export async function performInitialSync(): Promise<SyncedData | null> {
   setSyncStatus('syncing');
 
   try {
-    const [entriesRes, tasksRes, sleepRes] = await Promise.all([
+    const [entriesRes, tasksRes, sleepRes, profileRes] = await Promise.all([
       supabase.from('entries').select('*').eq('user_id', userId),
       supabase.from('tasks').select('*').eq('user_id', userId),
       supabase.from('sleep_logs').select('*').eq('user_id', userId),
+      supabase.from('profiles').select('settings').eq('id', userId).maybeSingle(),
     ]);
 
     if (entriesRes.error) throw entriesRes.error;
     if (tasksRes.error) throw tasksRes.error;
     if (sleepRes.error) throw sleepRes.error;
 
+    const remoteSettings = (profileRes.data as { settings?: Record<string, unknown> } | null)?.settings ?? null;
     const remoteEntries = entriesRes.data || [];
     const remoteTasks = tasksRes.data || [];
     const remoteSleep = sleepRes.data || [];
@@ -145,7 +148,7 @@ export async function performInitialSync(): Promise<SyncedData | null> {
       localStorage.setItem(KEYS.lastSync, new Date().toISOString());
 
       setSyncStatus('synced');
-      return { notes: localNotes, tasks: localTasks, moods: localMoods, tags: localTags, photos: localPhotos, sleep: localSleep };
+      return { notes: localNotes, tasks: localTasks, moods: localMoods, tags: localTags, photos: localPhotos, sleep: localSleep, settings: remoteSettings };
     }
 
     const now = new Date().toISOString();
@@ -188,7 +191,9 @@ export async function performInitialSync(): Promise<SyncedData | null> {
 
     localStorage.setItem(KEYS.lastSync, now);
     setSyncStatus('synced');
-    return null;
+    return remoteSettings
+      ? { notes: localNotes, tasks: localTasks, moods: localMoods, tags: localTags, photos: localPhotos, sleep: localSleep, settings: remoteSettings }
+      : null;
   } catch (error) {
     console.error('Sync error:', error);
     setSyncStatus('error');
@@ -253,7 +258,7 @@ const debouncedUpsertSettings = debounce(async (
   settings: Record<string, unknown>
 ) => {
   if (!supabase || isLocalMode()) return;
-  const { error } = await supabase.from('profiles').update({ settings }).eq('id', userId);
+  const { error } = await supabase.from('profiles').upsert({ id: userId, settings }, { onConflict: 'id' });
   if (error) console.error('Failed to sync settings:', error);
 }, 2000);
 
