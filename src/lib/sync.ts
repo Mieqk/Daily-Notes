@@ -1,13 +1,6 @@
 import { supabase } from './supabase';
 import type { SleepData, Task } from '../store';
 
-const KEYS = {
-  notes: 'dn.notes', tasks: 'dn.tasks', moods: 'dn.moods', tags: 'dn.tags',
-  photos: 'dn.photos', sleep: 'dn.sleep', theme: 'dn.theme', lang: 'dn.lang',
-  font: 'dn.font', writingFont: 'dn.wfont', bg: 'dn.bg', moodEmoji: 'dn.emoji',
-  localMode: 'dn.localMode', lastSync: 'dn.lastSync',
-};
-
 function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number) {
   let timeoutId: ReturnType<typeof setTimeout>;
   return (...args: Parameters<T>) => {
@@ -16,16 +9,8 @@ function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number) 
   };
 }
 
-function getLocal<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw !== null) return JSON.parse(raw) as T;
-  } catch { /* ignore */ }
-  return fallback;
-}
-
-export function isLocalMode(): boolean { return localStorage.getItem(KEYS.localMode) === 'true'; }
-export function setLocalMode(value: boolean) { localStorage.setItem(KEYS.localMode, value.toString()); }
+export function isLocalMode(): boolean { return localStorage.getItem('dn.localMode') === 'true'; }
+export function setLocalMode(value: boolean) { localStorage.setItem('dn.localMode', value.toString()); }
 
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 let currentSyncStatus: SyncStatus = 'idle';
@@ -44,7 +29,6 @@ function setSyncStatus(status: SyncStatus) {
 
 export async function performInitialSync() {
   if (!supabase) return null;
-
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
@@ -66,69 +50,53 @@ export async function performInitialSync() {
     const remoteTasks = tasksRes.data || [];
     const remoteSleep = sleepRes.data || [];
     const remoteSettings = profileRes.data?.settings || {};
-    const hasRemoteData = remoteEntries.length > 0 || remoteTasks.length > 0 || remoteSleep.length > 0;
+    
+    // Создаем чистое состояние ТОЛЬКО из данных базы, игнорируя старый локальный мусор
+    const finalNotes: Record<string, string> = {};
+    const finalTasks: Record<string, Task[]> = {};
+    const finalMoods: Record<string, number> = {};
+    const finalTags: Record<string, string[]> = {};
+    const finalPhotos: Record<string, string[]> = {};
+    const finalSleep: Record<string, SleepData> = {};
 
-    if (hasRemoteData) {
-      const localNotes = getLocal<Record<string, string>>(KEYS.notes, {});
-      const localTasks = getLocal<Record<string, Task[]>>(KEYS.tasks, {});
-      const localMoods = getLocal<Record<string, number>>(KEYS.moods, {});
-      const localTags = getLocal<Record<string, string[]>>(KEYS.tags, {});
-      const localPhotos = getLocal<Record<string, string[]>>(KEYS.photos, {});
-      const localSleep = getLocal<Record<string, SleepData>>(KEYS.sleep, {});
+    for (const entry of remoteEntries) {
+      finalNotes[entry.date] = entry.content || '';
+      if (entry.mood !== null && entry.mood !== undefined) finalMoods[entry.date] = entry.mood;
+      if (entry.tags && entry.tags.length > 0) finalTags[entry.date] = entry.tags;
+      if (entry.photos && Array.isArray(entry.photos)) finalPhotos[entry.date] = entry.photos;
+    }
 
-      for (const entry of remoteEntries) {
-        const iso = entry.date;
-        localNotes[iso] = entry.content || '';
-        if (entry.mood !== null && entry.mood !== undefined) localMoods[iso] = entry.mood;
-        if (entry.tags && entry.tags.length > 0) localTags[iso] = entry.tags;
-        if (entry.photos && Array.isArray(entry.photos)) localPhotos[iso] = entry.photos;
-      }
+    for (const task of remoteTasks) {
+      if (!finalTasks[task.date]) finalTasks[task.date] = [];
+      finalTasks[task.date].push({ id: task.id, text: task.title, done: task.completed });
+    }
 
-      for (const task of remoteTasks) {
-        const iso = task.date;
-        if (!localTasks[iso]) localTasks[iso] = [];
-        if (!localTasks[iso].find(t => t.id === task.id)) {
-          localTasks[iso].push({ id: task.id, text: task.title, done: task.completed });
-        }
-      }
-
-      for (const sleep of remoteSleep) {
-        const iso = sleep.date;
-        if (!localSleep[iso]) {
-          localSleep[iso] = {
-            hours: sleep.sleep_start ? parseFloat(sleep.sleep_start) : 0,
-            quality: sleep.quality || 0,
-            bedtime: sleep.sleep_start || '',
-            waketime: sleep.sleep_end || '',
-          };
-        }
-      }
-
-      localStorage.setItem(KEYS.notes, JSON.stringify(localNotes));
-      localStorage.setItem(KEYS.tasks, JSON.stringify(localTasks));
-      localStorage.setItem(KEYS.moods, JSON.stringify(localMoods));
-      localStorage.setItem(KEYS.tags, JSON.stringify(localTags));
-      localStorage.setItem(KEYS.photos, JSON.stringify(localPhotos));
-      localStorage.setItem(KEYS.sleep, JSON.stringify(localSleep));
-
-      if (remoteSettings.theme) localStorage.setItem(KEYS.theme, remoteSettings.theme);
-      if (remoteSettings.lang) localStorage.setItem(KEYS.lang, remoteSettings.lang);
-      if (remoteSettings.font !== undefined) localStorage.setItem(KEYS.font, String(remoteSettings.font));
-      if (remoteSettings.writingFont) localStorage.setItem(KEYS.writingFont, remoteSettings.writingFont);
-      if (remoteSettings.bg) localStorage.setItem(KEYS.bg, remoteSettings.bg);
-      if (remoteSettings.moodEmoji) localStorage.setItem(KEYS.moodEmoji, JSON.stringify(remoteSettings.moodEmoji));
-
-      localStorage.setItem(KEYS.lastSync, new Date().toISOString());
-      setSyncStatus('synced');
-      
-      return { notes: localNotes, tasks: localTasks, moods: localMoods, tags: localTags, photos: localPhotos, sleep: localSleep, settings: remoteSettings };
-    } else {
-      setSyncStatus('synced');
-      return { 
-        notes: getLocal(KEYS.notes, {}), tasks: getLocal(KEYS.tasks, {}), moods: getLocal(KEYS.moods, {}), 
-        tags: getLocal(KEYS.tags, {}), photos: getLocal(KEYS.photos, {}), sleep: getLocal(KEYS.sleep, {}), settings: remoteSettings 
+    for (const sleep of remoteSleep) {
+      finalSleep[sleep.date] = {
+        hours: sleep.sleep_start ? parseFloat(sleep.sleep_start) : 0,
+        quality: sleep.quality || 0,
+        bedtime: sleep.sleep_start || '',
+        waketime: sleep.sleep_end || '',
       };
     }
+
+    // Перезаписываем localStorage чистыми данными с сервера
+    localStorage.setItem('dn.notes', JSON.stringify(finalNotes));
+    localStorage.setItem('dn.tasks', JSON.stringify(finalTasks));
+    localStorage.setItem('dn.moods', JSON.stringify(finalMoods));
+    localStorage.setItem('dn.tags', JSON.stringify(finalTags));
+    localStorage.setItem('dn.photos', JSON.stringify(finalPhotos));
+    localStorage.setItem('dn.sleep', JSON.stringify(finalSleep));
+
+    if (remoteSettings.theme) localStorage.setItem('dn.theme', remoteSettings.theme);
+    if (remoteSettings.lang) localStorage.setItem('dn.lang', remoteSettings.lang);
+    if (remoteSettings.font !== undefined) localStorage.setItem('dn.font', String(remoteSettings.font));
+    if (remoteSettings.writingFont) localStorage.setItem('dn.writingFont', remoteSettings.writingFont);
+    if (remoteSettings.bg) localStorage.setItem('dn.bg', remoteSettings.bg);
+    if (remoteSettings.moodEmoji) localStorage.setItem('dn.emoji', JSON.stringify(remoteSettings.moodEmoji));
+
+    setSyncStatus('synced');
+    return { notes: finalNotes, tasks: finalTasks, moods: finalMoods, tags: finalTags, photos: finalPhotos, sleep: finalSleep, settings: remoteSettings };
   } catch (error) {
     console.error('[SYNC] Initial sync failed:', error);
     setSyncStatus('error');
