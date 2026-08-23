@@ -68,10 +68,14 @@ export async function performInitialSync() {
     const remoteSleep = sleepRes.data || [];
     const remoteSettings = profileRes.data?.settings || {};
 
-    // 🔥 КРИТИЧЕСКИ ВАЖНЫЙ ЛОГ 🔥
+    // 🔥 ДЕТЕКТОР ЛЖИ: показываем точные даты и содержимое 🔥
     console.log('[SYNC] 📦 RAW data from Supabase:', {
       entriesCount: remoteEntries.length,
-      entries: remoteEntries, // Покажет, видит ли база твои заметки
+      entries: remoteEntries.map(e => ({ 
+        date: e.date, 
+        content_preview: e.content ? e.content.substring(0, 30) + (e.content.length > 30 ? '...' : '') : '[ПУСТО]',
+        updated_at: e.updated_at 
+      })),
       tasksCount: remoteTasks.length,
       sleepCount: remoteSleep.length
     });
@@ -89,10 +93,16 @@ export async function performInitialSync() {
 
       for (const entry of remoteEntries) {
         const iso = entry.date;
-        localNotes[iso] = entry.content || '';
-        if (entry.mood !== null && entry.mood !== undefined) localMoods[iso] = entry.mood;
-        if (entry.tags && entry.tags.length > 0) localTags[iso] = entry.tags;
-        if (entry.photos && Array.isArray(entry.photos)) localPhotos[iso] = entry.photos;
+        // Если удалённая запись новее или локальной нет, берём удалённую
+        const remoteUpdated = entry.updated_at ? new Date(entry.updated_at).getTime() : 0;
+        const localExists = localNotes[iso] !== undefined;
+        
+        if (!localExists || remoteUpdated >= 0) { 
+          localNotes[iso] = entry.content || '';
+          if (entry.mood !== null && entry.mood !== undefined) localMoods[iso] = entry.mood;
+          if (entry.tags && entry.tags.length > 0) localTags[iso] = entry.tags;
+          if (entry.photos && Array.isArray(entry.photos)) localPhotos[iso] = entry.photos;
+        }
       }
 
       for (const task of remoteTasks) {
@@ -148,11 +158,12 @@ export async function performInitialSync() {
   }
 }
 
-// ... (остальные debounced функции остаются без изменений, как в прошлом сообщении)
 const debouncedUpsertEntry = debounce(async (userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) => {
+  console.log('[SYNC] 📤 debouncedUpsertEntry called. date:', date, 'content_len:', content.length);
   if (isLocalMode() || !supabase) return;
   const { error } = await supabase.from('entries').upsert({ user_id: userId, date, content, mood, tags, photos, updated_at: new Date().toISOString() }, { onConflict: 'user_id,date' });
   if (error) console.error('[SYNC] ❌ Failed to sync entry:', error);
+  else console.log('[SYNC] ✅ Successfully synced entry for date:', date);
 }, 2000);
 
 const debouncedUpsertTasks = debounce(async (userId: string, date: string, tasks: Task[]) => {
