@@ -16,14 +16,13 @@ import SleepView from "./components/SleepView";
 import InstallPrompt from "./components/InstallPrompt";
 import AuthScreen from "./components/AuthScreen";
 import { useAuth } from "./contexts/AuthContext";
-import { supabase } from "./lib/supabase";
-import { isLocalMode, setLocalMode, performInitialSync, subscribeToSyncStatus, getSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, type SyncStatus } from "./lib/sync";
+import { isLocalMode, setLocalMode, performInitialSync, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, type SyncStatus } from "./lib/sync";
 
 const FONT_SCALES = ["93.75%", "100%", "109%"];
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
-  const hasMounted = useRef(false); // БЛОКИРОВЩИК ПЕРВОГО ЗАПУСКА
+  const hasMounted = useRef(false);
   
   const [tab, setTab] = useStored<Tab>("dn.tab", "daily");
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
@@ -55,62 +54,31 @@ export default function App() {
   useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(id); }, [toast]);
   useEffect(() => { const unsubscribe = subscribeToSyncStatus(setSyncStatusState); return unsubscribe; }, []);
 
+  // Загрузка данных при входе
   useEffect(() => {
-    if (!authLoading) {
-      if (user) {
-        setLocalMode(false);
-        performInitialSync().then((remote) => {
-          if (remote) {
-            setNotes(remote.notes || {});
-            setTasks(remote.tasks || {});
-            setMoods(remote.moods || {});
-            setTags(remote.tags || {});
-            setPhotos(remote.photos || {});
-            setSleep(remote.sleep || {});
-          }
-        });
-        setShowAuth(false);
-      } else if (isLocalMode()) {
-        setShowAuth(false);
-      } else {
-        setShowAuth(true);
-      }
+    if (!authLoading && user) {
+      setLocalMode(false);
+      performInitialSync().then((remote) => {
+        if (remote) {
+          setNotes(remote.notes || {});
+          setTasks(remote.tasks || {});
+          setMoods(remote.moods || {});
+          setTags(remote.tags || {});
+          setPhotos(remote.photos || {});
+          setSleep(remote.sleep || {});
+        }
+      });
+      setShowAuth(false);
+    } else if (!authLoading && !user && isLocalMode()) {
+      setShowAuth(false);
+    } else if (!authLoading && !user) {
+      setShowAuth(true);
     }
   }, [user, authLoading]);
 
+  // Отправка изменений в базу (ТОЛЬКО ПОСЛЕ ПЕРВОГО РЕНДЕРА)
   useEffect(() => {
-    if (!user || isLocalMode() || !supabase) return;
-    const channel = supabase.channel('db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'entries', filter: `user_id=eq.${user.id}` }, (payload) => {
-        const entry = payload.new;
-        if (entry) {
-          setNotes((prev) => ({ ...prev, [entry.date]: entry.content || '' }));
-          if (entry.mood !== null && entry.mood !== undefined) setMoods((prev) => ({ ...prev, [entry.date]: entry.mood }));
-          if (entry.tags && entry.tags.length > 0) setTags((prev) => ({ ...prev, [entry.date]: entry.tags }));
-          if (entry.photos && Array.isArray(entry.photos)) setPhotos((prev) => ({ ...prev, [entry.date]: entry.photos }));
-        }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` }, async (payload) => {
-        const d = payload.new?.date || payload.old?.date;
-        if (d) {
-          const { data } = await supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', d);
-          if (data) setTasks((prev) => ({ ...prev, [d]: data.map((task) => ({ id: task.id, text: task.title, done: task.completed })) }));
-        }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sleep_logs', filter: `user_id=eq.${user.id}` }, (payload) => {
-        const sleep = payload.new;
-        if (sleep) setSleep((prev) => ({ ...prev, [sleep.date]: { hours: sleep.sleep_start ? parseFloat(sleep.sleep_start) : 0, quality: sleep.quality || 0, bedtime: sleep.sleep_start || '', waketime: sleep.sleep_end || '' } }));
-      })
-      .subscribe();
-    return () => { if (supabase) supabase.removeChannel(channel); };
-  }, [user]);
-
-  // ОТПРАВКА ДАННЫХ В БАЗУ: БЛОКИРУЕТСЯ ПРИ ПЕРВОМ РЕНДЕРЕ
-  useEffect(() => {
-    if (!hasMounted.current) {
-      hasMounted.current = true;
-      return; // Первый запуск игнорируется, чтобы не отправить пустоту
-    }
+    if (!hasMounted.current) { hasMounted.current = true; return; }
     if (user && !isLocalMode()) {
       syncEntry(user.id, date, notes[date] ?? "", moods[date] ?? null, tags[date] ?? [], photos[date] ?? []);
     }
@@ -159,7 +127,7 @@ export default function App() {
             if (Notification.permission === "granted") fire();
             else if (Notification.permission === "default") Notification.requestPermission().then((p) => p === "granted" && fire());
           }
-        } catch { /* ignore */ }
+        } catch {}
       }
     };
     check();
