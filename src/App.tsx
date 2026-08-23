@@ -106,6 +106,85 @@ export default function App() {
     }
   }, [user, authLoading]);
 
+    // Realtime subscription: слушаем изменения из базы
+  useEffect(() => {
+    if (!user || isLocalMode() || !supabase) return;
+
+    console.log('[REALTIME] Подписываемся на изменения...');
+
+    const channel = supabase
+      .channel('db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'entries', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          console.log('[REALTIME] Изменение в entries:', payload);
+          const entry = payload.new;
+          if (entry) {
+            setNotes((prev) => ({ ...prev, [entry.date]: entry.content || '' }));
+            if (entry.mood !== null && entry.mood !== undefined) {
+              setMoods((prev) => ({ ...prev, [entry.date]: entry.mood }));
+            }
+            if (entry.tags && entry.tags.length > 0) {
+              setTags((prev) => ({ ...prev, [entry.date]: entry.tags }));
+            }
+            if (entry.photos && Array.isArray(entry.photos)) {
+              setPhotos((prev) => ({ ...prev, [entry.date]: entry.photos }));
+            }
+          } else if (payload.old) {
+            setNotes((prev) => {
+              const copy = { ...prev };
+              delete copy[payload.old.date];
+              return copy;
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` },
+        async (payload) => {
+          console.log('[REALTIME] Изменение в tasks:', payload);
+          // Перезагружаем задачи для этой даты
+          const date = payload.new?.date || payload.old?.date;
+          if (date) {
+            const { data } = await supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', date);
+            if (data) {
+              setTasks((prev) => ({
+                ...prev,
+                [date]: data.map((t) => ({ id: t.id, text: t.title, done: t.completed })),
+              }));
+            }
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sleep_logs', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          console.log('[REALTIME] Изменение в sleep_logs:', payload);
+          const sleep = payload.new;
+          if (sleep) {
+            setSleep((prev) => ({
+              ...prev,
+              [sleep.date]: {
+                hours: sleep.sleep_start ? parseFloat(sleep.sleep_start) : 0,
+                quality: sleep.quality || 0,
+                bedtime: sleep.sleep_start || '',
+                waketime: sleep.sleep_end || '',
+              },
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('[REALTIME] Отписываемся...');
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   // Push local changes to cloud (SKIPS FIRST RENDER TO PREVENT RACE CONDITION)
   useEffect(() => {
     if (!hasMounted.current) {
