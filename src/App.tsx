@@ -103,6 +103,26 @@ export default function App() {
     }
   }, [theme, lang, fontScale, writingFont, bg, moodEmoji, user]);
 
+  // Push local changes to cloud (debounced in sync.ts)
+  useEffect(() => {
+    if (user && !isLocalMode()) {
+      syncEntry(user.id, date, notes[date] ?? "", moods[date] ?? null, tags[date] ?? [], photos[date] ?? []);
+    }
+  }, [notes, moods, tags, photos, date, user]);
+
+  useEffect(() => {
+    if (user && !isLocalMode()) {
+      syncTasks(user.id, date, tasks[date] ?? []);
+    }
+  }, [tasks, date, user]);
+
+  useEffect(() => {
+    if (user && !isLocalMode()) {
+      const s = sleep[date];
+      if (s) syncSleep(user.id, date, s);
+    }
+  }, [sleep, date, user]);
+
   // Handler for theme changes that also syncs to account
   const handleThemeChange = (newTheme: ThemeId) => {
     setTheme(newTheme);
