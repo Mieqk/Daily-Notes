@@ -72,19 +72,25 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-  // Handle auth state and initial sync
+    // Handle auth state and initial sync
   useEffect(() => {
     if (!authLoading) {
       const localMode = isLocalMode();
       if (user) {
-        // User is logged in - perform initial sync
-        performInitialSync();
+        performInitialSync().then((remote) => {
+          if (remote) {
+            setNotes(remote.notes);
+            setTasks(remote.tasks);
+            setMoods(remote.moods);
+            setTags(remote.tags);
+            setPhotos(remote.photos);
+            setSleep(remote.sleep);
+          }
+        });
         setShowAuth(false);
       } else if (localMode) {
-        // Local mode - skip auth
         setShowAuth(false);
       } else {
-        // No user and not local mode - show auth screen
         setShowAuth(true);
       }
     }
