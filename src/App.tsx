@@ -3,15 +3,7 @@ import type { Lang, TKey } from "./i18n";
 import { STRINGS, localeOf } from "./i18n";
 import type { ThemeId } from "./themes";
 import type { BgId, Tab, Task, SleepData, WritingFontId } from "./store";
-import {
-  buildMarkdown,
-  downloadText,
-  hashPin,
-  shiftISO,
-  todayISO,
-  useNow,
-  useStored,
-} from "./store";
+import { buildMarkdown, downloadText, hashPin, shiftISO, todayISO, useNow, useStored } from "./store";
 import { BG_IMAGES } from "./bg";
 import Sidebar from "./components/Sidebar";
 import DailyView from "./components/DailyView";
@@ -24,25 +16,14 @@ import SleepView from "./components/SleepView";
 import InstallPrompt from "./components/InstallPrompt";
 import AuthScreen from "./components/AuthScreen";
 import { useAuth } from "./contexts/AuthContext";
-import { supabase } from "./lib/supabase"; // <-- ЭТОТ ИМПОРТ ТЕПЕРЬ ТОЧНО ЕСТЬ
-import { 
-  isLocalMode, 
-  setLocalMode, 
-  performInitialSync, 
-  subscribeToSyncStatus, 
-  getSyncStatus, 
-  syncEntry, 
-  syncTasks, 
-  syncSleep, 
-  syncSettings, 
-  type SyncStatus 
-} from "./lib/sync";
+import { supabase } from "./lib/supabase";
+import { isLocalMode, setLocalMode, performInitialSync, subscribeToSyncStatus, getSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, type SyncStatus } from "./lib/sync";
 
 const FONT_SCALES = ["93.75%", "100%", "109%"];
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
-  const hasMounted = useRef(false); 
+  const hasMounted = useRef(false); // БЛОКИРОВЩИК ПЕРВОГО ЗАПУСКА
   
   const [tab, setTab] = useStored<Tab>("dn.tab", "daily");
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
@@ -71,21 +52,11 @@ export default function App() {
   const t = (k: TKey) => STRINGS[lang][k] ?? STRINGS.ru[k];
 
   const showToast = (msg: string) => setToast({ id: Date.now(), msg });
-  useEffect(() => {
-    if (!toast) return;
-    const id = window.setTimeout(() => setToast(null), 2600);
-    return () => window.clearTimeout(id);
-  }, [toast]);
+  useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(id); }, [toast]);
+  useEffect(() => { const unsubscribe = subscribeToSyncStatus(setSyncStatusState); return unsubscribe; }, []);
 
-  useEffect(() => {
-    const unsubscribe = subscribeToSyncStatus(setSyncStatusState);
-    return unsubscribe;
-  }, []);
-
-  // 1. Initial sync on login
   useEffect(() => {
     if (!authLoading) {
-      const localMode = isLocalMode();
       if (user) {
         setLocalMode(false);
         performInitialSync().then((remote) => {
@@ -99,7 +70,7 @@ export default function App() {
           }
         });
         setShowAuth(false);
-      } else if (localMode) {
+      } else if (isLocalMode()) {
         setShowAuth(false);
       } else {
         setShowAuth(true);
@@ -107,12 +78,9 @@ export default function App() {
     }
   }, [user, authLoading]);
 
-  // 2. Realtime subscription (АВТОМАТИЧЕСКАЯ СИНХРОНИЗАЦИЯ)
   useEffect(() => {
     if (!user || isLocalMode() || !supabase) return;
-
-    const channel = supabase
-      .channel('db-changes')
+    const channel = supabase.channel('db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'entries', filter: `user_id=eq.${user.id}` }, (payload) => {
         const entry = payload.new;
         if (entry) {
@@ -123,30 +91,25 @@ export default function App() {
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` }, async (payload) => {
-        const date = payload.new?.date || payload.old?.date;
-        if (date) {
-          const { data } = await supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', date);
-          if (data) setTasks((prev) => ({ ...prev, [date]: data.map((task) => ({ id: task.id, text: task.title, done: task.completed })) }));
+        const d = payload.new?.date || payload.old?.date;
+        if (d) {
+          const { data } = await supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', d);
+          if (data) setTasks((prev) => ({ ...prev, [d]: data.map((task) => ({ id: task.id, text: task.title, done: task.completed })) }));
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sleep_logs', filter: `user_id=eq.${user.id}` }, (payload) => {
         const sleep = payload.new;
-        if (sleep) {
-          setSleep((prev) => ({ ...prev, [sleep.date]: { hours: sleep.sleep_start ? parseFloat(sleep.sleep_start) : 0, quality: sleep.quality || 0, bedtime: sleep.sleep_start || '', waketime: sleep.sleep_end || '' } }));
-        }
+        if (sleep) setSleep((prev) => ({ ...prev, [sleep.date]: { hours: sleep.sleep_start ? parseFloat(sleep.sleep_start) : 0, quality: sleep.quality || 0, bedtime: sleep.sleep_start || '', waketime: sleep.sleep_end || '' } }));
       })
       .subscribe();
-
-    return () => { 
-      if (supabase) supabase.removeChannel(channel); 
-    };
+    return () => { if (supabase) supabase.removeChannel(channel); };
   }, [user]);
 
-  // 3. Push local changes to cloud (SKIPS FIRST RENDER)
+  // ОТПРАВКА ДАННЫХ В БАЗУ: БЛОКИРУЕТСЯ ПРИ ПЕРВОМ РЕНДЕРЕ
   useEffect(() => {
     if (!hasMounted.current) {
       hasMounted.current = true;
-      return; 
+      return; // Первый запуск игнорируется, чтобы не отправить пустоту
     }
     if (user && !isLocalMode()) {
       syncEntry(user.id, date, notes[date] ?? "", moods[date] ?? null, tags[date] ?? [], photos[date] ?? []);
@@ -155,31 +118,22 @@ export default function App() {
 
   useEffect(() => {
     if (!hasMounted.current) return;
-    if (user && !isLocalMode()) {
-      syncTasks(user.id, date, tasks[date] ?? []);
-    }
+    if (user && !isLocalMode()) syncTasks(user.id, date, tasks[date] ?? []);
   }, [tasks, date, user]);
 
   useEffect(() => {
     if (!hasMounted.current) return;
-    if (user && !isLocalMode()) {
-      const s = sleep[date];
-      if (s) syncSleep(user.id, date, s);
-    }
+    if (user && !isLocalMode()) { const s = sleep[date]; if (s) syncSleep(user.id, date, s); }
   }, [sleep, date, user]);
 
   useEffect(() => {
     if (!hasMounted.current) return;
-    if (user && !isLocalMode()) {
-      syncSettings(user.id, { theme, lang, font: fontScale, writingFont, bg, moodEmoji });
-    }
+    if (user && !isLocalMode()) syncSettings(user.id, { theme, lang, font: fontScale, writingFont, bg, moodEmoji });
   }, [theme, lang, fontScale, writingFont, bg, moodEmoji, user]);
 
   const handleThemeChange = (newTheme: ThemeId) => {
     setTheme(newTheme);
-    if (user && !isLocalMode()) {
-      syncSettings(user.id, { theme: newTheme, lang, font: fontScale, writingFont, bg, moodEmoji });
-    }
+    if (user && !isLocalMode()) syncSettings(user.id, { theme: newTheme, lang, font: fontScale, writingFont, bg, moodEmoji });
   };
 
   useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
@@ -194,8 +148,7 @@ export default function App() {
     if (!reminder.enabled || !reminder.time) return;
     const check = () => {
       const [h, m] = reminder.time.split(":").map(Number);
-      const target = new Date();
-      target.setHours(h, m, 0, 0);
+      const target = new Date(); target.setHours(h, m, 0, 0);
       const stamp = `${todayISO()}|${reminder.time}`;
       if (Date.now() >= target.getTime() && firedRef.current !== stamp) {
         firedRef.current = stamp;
@@ -217,7 +170,6 @@ export default function App() {
   const today = todayISO();
   let streak = 0;
   for (let iso = today; (notes[iso] ?? "").trim().length > 0; iso = shiftISO(iso, -1)) streak += 1;
-  
   const weekMarks = Array.from({ length: 7 }, (_, i) => Boolean((notes[shiftISO(today, i - 6)] ?? "").trim()));
   const notesCount = Object.keys(notes).filter((k) => (notes[k] ?? "").trim()).length;
   const tasksCount = Object.values(tasks).reduce((sum, list) => sum + (list?.length ?? 0), 0);
@@ -227,19 +179,13 @@ export default function App() {
   const exportMd = () => downloadText("daily-notes.md", buildMarkdown(notes, tasks, moods, tags, lang), "text/markdown;charset=utf-8");
   const exportJson = () => downloadText("daily-notes.json", JSON.stringify({ notes, tasks, moods, tags, reminder, moodEmoji, writingFont, theme, lang, bg, sleep }, null, 2), "application/json;charset=utf-8");
   const openDate = (iso: string) => { setDate(iso); setTab("daily"); };
-
   const pinLen = pinHash ? Math.max(4, parseInt(pinHash.slice(-1), 36) || 4) : 4;
 
-  if (locked && pinHash) {
-    return <LockScreen pinLength={pinLen} onTry={(pin) => { if (hashPin(pin) === pinHash) { setLocked(false); return true; } return false; }} t={t} />;
-  }
+  if (locked && pinHash) return <LockScreen pinLength={pinLen} onTry={(pin) => { if (hashPin(pin) === pinHash) { setLocked(false); return true; } return false; }} t={t} />;
 
   const tabMeta: Record<Tab, { title: string; sub: string }> = {
-    daily: { title: t("dailyTitle"), sub: t("dailySub") },
-    stats: { title: t("statsTitle"), sub: t("statsSub") },
-    notes: { title: t("notesTitle"), sub: t("notesSub") },
-    sleep: { title: t("sleepTitle"), sub: t("sleepSub") },
-    settings: { title: t("settingsTitle"), sub: t("settingsSub") },
+    daily: { title: t("dailyTitle"), sub: t("dailySub") }, stats: { title: t("statsTitle"), sub: t("statsSub") },
+    notes: { title: t("notesTitle"), sub: t("notesSub") }, sleep: { title: t("sleepTitle"), sub: t("sleepSub") }, settings: { title: t("settingsTitle"), sub: t("settingsSub") },
   };
 
   const clock = now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -259,9 +205,7 @@ export default function App() {
       <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
         {bg === "dots" && <div className="bg-dots absolute inset-0 opacity-70" />}
         {bg === "grid" && <div className="bg-grid absolute inset-0 opacity-70" />}
-        {(bg === "paper" || bg === "space" || bg === "lines" || bg === "hex" || bg === "waves") && (
-          <img src={BG_IMAGES[bg]} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ opacity: bg === "paper" ? 0.5 : bg === "space" ? 0.32 : 0.15 }} />
-        )}
+        {(bg === "paper" || bg === "space" || bg === "lines" || bg === "hex" || bg === "waves") && <img src={BG_IMAGES[bg]} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ opacity: bg === "paper" ? 0.5 : bg === "space" ? 0.32 : 0.15 }} />}
         <div className="animate-drift1 absolute -left-32 -top-32 h-[480px] w-[480px] rounded-full blur-3xl" style={{ background: "var(--glow1)" }} />
         <div className="animate-drift2 absolute -bottom-40 -right-24 h-[520px] w-[520px] rounded-full blur-3xl" style={{ background: "var(--glow2)" }} />
         <div className="noise absolute inset-0 opacity-[0.05]" />
