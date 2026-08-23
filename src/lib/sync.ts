@@ -43,12 +43,11 @@ function setSyncStatus(status: SyncStatus) {
 }
 
 export async function performInitialSync() {
-  if (!supabase) { console.error('[SYNC] Supabase client is null'); return null; }
+  if (!supabase) return null;
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) { console.warn('[SYNC] No user found'); return null; }
+  if (!user) return null;
 
-  console.log('[SYNC] 🔄 Starting initial sync for user:', user.id);
   setSyncStatus('syncing');
 
   try {
@@ -67,23 +66,9 @@ export async function performInitialSync() {
     const remoteTasks = tasksRes.data || [];
     const remoteSleep = sleepRes.data || [];
     const remoteSettings = profileRes.data?.settings || {};
-
-    // 🔥 ДЕТЕКТОР ЛЖИ: показываем точные даты и содержимое 🔥
-    console.log('[SYNC] 📦 RAW data from Supabase:', {
-      entriesCount: remoteEntries.length,
-      entries: remoteEntries.map(e => ({ 
-        date: e.date, 
-        content_preview: e.content ? e.content.substring(0, 30) + (e.content.length > 30 ? '...' : '') : '[ПУСТО]',
-        updated_at: e.updated_at 
-      })),
-      tasksCount: remoteTasks.length,
-      sleepCount: remoteSleep.length
-    });
-
     const hasRemoteData = remoteEntries.length > 0 || remoteTasks.length > 0 || remoteSleep.length > 0;
 
     if (hasRemoteData) {
-      console.log('[SYNC] Remote data found, merging...');
       const localNotes = getLocal<Record<string, string>>(KEYS.notes, {});
       const localTasks = getLocal<Record<string, Task[]>>(KEYS.tasks, {});
       const localMoods = getLocal<Record<string, number>>(KEYS.moods, {});
@@ -93,16 +78,10 @@ export async function performInitialSync() {
 
       for (const entry of remoteEntries) {
         const iso = entry.date;
-        // Если удалённая запись новее или локальной нет, берём удалённую
-        const remoteUpdated = entry.updated_at ? new Date(entry.updated_at).getTime() : 0;
-        const localExists = localNotes[iso] !== undefined;
-        
-        if (!localExists || remoteUpdated >= 0) { 
-          localNotes[iso] = entry.content || '';
-          if (entry.mood !== null && entry.mood !== undefined) localMoods[iso] = entry.mood;
-          if (entry.tags && entry.tags.length > 0) localTags[iso] = entry.tags;
-          if (entry.photos && Array.isArray(entry.photos)) localPhotos[iso] = entry.photos;
-        }
+        localNotes[iso] = entry.content || '';
+        if (entry.mood !== null && entry.mood !== undefined) localMoods[iso] = entry.mood;
+        if (entry.tags && entry.tags.length > 0) localTags[iso] = entry.tags;
+        if (entry.photos && Array.isArray(entry.photos)) localPhotos[iso] = entry.photos;
       }
 
       for (const task of remoteTasks) {
@@ -144,7 +123,6 @@ export async function performInitialSync() {
       
       return { notes: localNotes, tasks: localTasks, moods: localMoods, tags: localTags, photos: localPhotos, sleep: localSleep, settings: remoteSettings };
     } else {
-      console.log('[SYNC] Remote is empty. Keeping local data as is.');
       setSyncStatus('synced');
       return { 
         notes: getLocal(KEYS.notes, {}), tasks: getLocal(KEYS.tasks, {}), moods: getLocal(KEYS.moods, {}), 
@@ -152,18 +130,16 @@ export async function performInitialSync() {
       };
     }
   } catch (error) {
-    console.error('[SYNC] ❌ Initial sync failed:', error);
+    console.error('[SYNC] Initial sync failed:', error);
     setSyncStatus('error');
     return null;
   }
 }
 
 const debouncedUpsertEntry = debounce(async (userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) => {
-  console.log('[SYNC] 📤 debouncedUpsertEntry called. date:', date, 'content_len:', content.length);
   if (isLocalMode() || !supabase) return;
   const { error } = await supabase.from('entries').upsert({ user_id: userId, date, content, mood, tags, photos, updated_at: new Date().toISOString() }, { onConflict: 'user_id,date' });
-  if (error) console.error('[SYNC] ❌ Failed to sync entry:', error);
-  else console.log('[SYNC] ✅ Successfully synced entry for date:', date);
+  if (error) console.error('[SYNC] Failed to sync entry:', error);
 }, 2000);
 
 const debouncedUpsertTasks = debounce(async (userId: string, date: string, tasks: Task[]) => {
@@ -174,19 +150,19 @@ const debouncedUpsertTasks = debounce(async (userId: string, date: string, tasks
   const toDelete = existingIds.filter(id => !tasks.find(t => t.id === id));
   if (toDelete.length > 0) await supabase.from('tasks').delete().in('id', toDelete);
   const { error } = await supabase.from('tasks').upsert(tasksToUpsert);
-  if (error) console.error('[SYNC] ❌ Failed to sync tasks:', error);
+  if (error) console.error('[SYNC] Failed to sync tasks:', error);
 }, 2000);
 
 const debouncedUpsertSleep = debounce(async (userId: string, date: string, sleepData: SleepData) => {
   if (isLocalMode() || !supabase) return;
   const { error } = await supabase.from('sleep_logs').upsert({ user_id: userId, date, sleep_start: sleepData.bedtime || String(sleepData.hours), sleep_end: sleepData.waketime || '', quality: sleepData.quality }, { onConflict: 'user_id,date' });
-  if (error) console.error('[SYNC] ❌ Failed to sync sleep:', error);
+  if (error) console.error('[SYNC] Failed to sync sleep:', error);
 }, 2000);
 
 const debouncedUpsertSettings = debounce(async (userId: string, settings: Record<string, unknown>) => {
   if (isLocalMode() || !supabase) return;
   const { error } = await supabase.from('profiles').update({ settings }).eq('id', userId);
-  if (error) console.error('[SYNC] ❌ Failed to sync settings:', error);
+  if (error) console.error('[SYNC] Failed to sync settings:', error);
 }, 2000);
 
 export function syncEntry(userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) { debouncedUpsertEntry(userId, date, content, mood, tags, photos); }
