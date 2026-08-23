@@ -270,20 +270,43 @@ export default function App() {
 
       <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col">
         <header className="flex h-[74px] shrink-0 items-center gap-4 border-b border-[var(--line)] px-4 sm:px-8">
-          <div className="min-w-0">
-            <h1 className="font-display truncate text-xl font-bold leading-tight tracking-tight sm:text-2xl">{tabMeta[tab].title}</h1>
-            <p className="hidden truncate text-xs text-[var(--ink-faint)] sm:block">{tabMeta[tab].sub}</p>
-          </div>
-          <div className="ml-auto flex shrink-0 items-center gap-3">
-            {syncBadge}
-            <span className="flex items-center gap-2.5">
-              <span className="animate-livedot h-2 w-2 rounded-full bg-[var(--accent)]" />
-              <span className="font-display text-lg font-semibold tabular-nums tracking-tight">{clock}</span>
-            </span>
-            <span className="hidden h-9 items-center rounded-full border border-[var(--line)] bg-[var(--panel)] px-3.5 text-xs font-medium text-[var(--ink-soft)] sm:flex">{dateChip}</span>
-          </div>
-        </header>
-
+  <div className="min-w-0">
+    <h1 className="font-display truncate text-xl font-bold leading-tight tracking-tight sm:text-2xl">{tabMeta[tab].title}</h1>
+    <p className="hidden truncate text-xs text-[var(--ink-faint)] sm:block">{tabMeta[tab].sub}</p>
+  </div>
+  <div className="ml-auto flex shrink-0 items-center gap-3">
+    {syncBadge}
+    {/* КНОПКА ОБНОВЛЕНИЯ */}
+    {user && (
+      <button
+        onClick={async () => {
+          const remote = await performInitialSync();
+          if (remote) {
+            setNotes(remote.notes || {});
+            setTasks(remote.tasks || {});
+            setMoods(remote.moods || {});
+            setTags(remote.tags || {});
+            setPhotos(remote.photos || {});
+            setSleep(remote.sleep || {});
+            showToast('Данные обновлены');
+          }
+        }}
+        className="grid h-9 w-9 place-items-center rounded-lg border border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)] active:scale-90"
+        title="Обновить данные из облака"
+      >
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
+    )}
+    <span className="flex items-center gap-2.5">
+      <span className="animate-livedot h-2 w-2 rounded-full bg-[var(--accent)]" />
+      <span className="font-display text-lg font-semibold tabular-nums tracking-tight">{clock}</span>
+    </span>
+    <span className="hidden h-9 items-center rounded-full border border-[var(--line)] bg-[var(--panel)] px-3.5 text-xs font-medium text-[var(--ink-soft)] sm:flex">{dateChip}</span>
+  </div>
+</header>
+        
         <main key={tab + date} className="animate-rise min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
           {tab === "daily" && (
             <DailyView date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} lang={lang} t={t} showToast={showToast} />
