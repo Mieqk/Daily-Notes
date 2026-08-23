@@ -15,7 +15,7 @@ import type { Lang, TKey } from "../i18n";
 import { MOODS, localeOf } from "../i18n";
 import type { Task, SleepData } from "../store";
 import { countWords, fromISO, shiftISO, todayISO } from "../store";
-import { FlameIcon, MoodFace, MoodVisual, StatsIcon } from "../icons";
+import { FlameIcon, MoodVisual, StatsIcon } from "../icons";
 
 interface StatsViewProps {
   notes: Record<string, string>;
@@ -43,6 +43,14 @@ const pearson = (xs: number[], ys: number[]) => {
   const den = Math.sqrt(dx * dy);
   return den === 0 ? 0 : num / den;
 };
+
+const MOUTHS = [
+  "M8.2 16.3 Q12 12.7 15.8 16.3",
+  "M8.2 15.5 Q12 13.5 15.8 15.5",
+  "M8.4 14.9 L15.6 14.9",
+  "M8.2 14 Q12 16.9 15.8 14",
+  "M7.8 13.4 Q12 18.4 16.2 13.4",
+];
 
 export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: StatsViewProps) {
   const [range, setRange] = useState<7 | 30>(7);
@@ -135,12 +143,12 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
     return weeks;
   }, [notes, tasks, today]);
 
+  /* ---------- Y-axis tick: emoji or fixed-size face ---------- */
   const moodTick = (props: { x?: number; y?: number; value?: number }) => {
     const { x = 0, y = 0, value = 0 } = props;
     const safeValue = Math.max(0, Math.min(4, value));
     const emoji = moodEmoji[safeValue];
     if (emoji) {
-      /* используем первый графемный кластер, чтобы составные emoji не ломались */
       const label = Array.from(emoji).slice(0, 1).join("");
       return (
         <text
@@ -156,9 +164,24 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
       );
     }
     return (
-      <g transform={`translate(${x - 36}, ${y - 8})`} style={{ color: "var(--ink-faint)" }}>
-        <MoodFace level={safeValue} className="h-3.5 w-3.5" />
-      </g>
+      <svg
+        x={x - 7}
+        y={y - 7}
+        width={14}
+        height={14}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ color: "var(--ink-faint)" }}
+      >
+        <circle cx="12" cy="12" r="8.6" />
+        <circle cx="9" cy="9.8" r="1" fill="currentColor" stroke="none" />
+        <circle cx="15" cy="9.8" r="1" fill="currentColor" stroke="none" />
+        <path d={MOUTHS[safeValue]} />
+      </svg>
     );
   };
 
@@ -222,10 +245,6 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
     {
       label: t("statProductivity"),
       value: productivity !== null ? `${productivity}%` : "—",
-      hint:
-        productivity !== null
-          ? undefined
-          : undefined,
     },
     { label: t("statTotalWords"), value: allTime.words.toLocaleString(locale) },
     {
