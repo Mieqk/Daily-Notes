@@ -74,10 +74,10 @@ export default function App() {
 
     // Handle auth state and initial sync
   useEffect(() => {
-          if (user) {
-        setLocalMode(false);
-        performInitialSync().then((remote) => {
+    if (!authLoading) {
+      const localMode = isLocalMode();
       if (user) {
+        setLocalMode(false);
         performInitialSync().then((remote) => {
           if (remote) {
             setNotes(remote.notes);
