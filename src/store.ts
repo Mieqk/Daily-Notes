@@ -141,6 +141,8 @@ export interface SleepData {
   quality: number;
   bedtime: string;
   waketime: string;
+  awakenings: number;
+  note: string;
 }
 
 export type WritingFontId = "body" | "serif" | "mono";
