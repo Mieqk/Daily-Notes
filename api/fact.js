@@ -1,4 +1,16 @@
-const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest"];
+async function listFlashModels(key, version) {
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/${version}/models?pageSize=200&key=${key}`);
+    if (!r.ok) return [];
+    const d = await r.json();
+    return (d.models || [])
+      .filter((m) => (m.name || "").includes("flash"))
+      .filter((m) => !m.supportedGenerationMethods || m.supportedGenerationMethods.includes("generateContent"))
+      .map((m) => m.name.replace("models/", ""));
+  } catch {
+    return [];
+  }
+}
 
 export default async function handler(req, res) {
   const lang = String(req.query.lang || "ru");
@@ -13,12 +25,21 @@ export default async function handler(req, res) {
       ? "Придумай один короткий интересный научный, исторический или природный факт. Ответь только самим фактом, одним-двумя предложениями, без вступлений и подписей."
       : "Come up with one short interesting science, history or nature fact. Reply with only the fact itself, one or two sentences, no intro or labels.";
 
-  let lastError = "";
+  const errors = [];
 
-  for (const model of MODELS) {
+  // Спрашиваем у Google, какие flash-модели сейчас доступны
+  let version = "v1beta";
+  let models = await listFlashModels(key, version);
+  if (!models.length) {
+    version = "v1";
+    models = await listFlashModels(key, version);
+  }
+  if (!models.length) models = ["gemini-2.5-flash", "gemini-2.0-flash"];
+
+  for (const model of models.slice(0, 3)) {
     try {
       const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${key}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -28,22 +49,22 @@ export default async function handler(req, res) {
       const data = await r.json();
 
       if (!r.ok) {
-        lastError = `${model}: HTTP ${r.status} — ${data?.error?.message || "unknown"}`;
+        errors.push(`${model}: HTTP ${r.status} — ${data?.error?.message || "unknown"}`);
         continue;
       }
 
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       if (!text) {
-        lastError = `${model}: empty response`;
+        errors.push(`${model}: empty response`);
         continue;
       }
 
       res.setHeader("Cache-Control", "s-maxage=3600");
       return res.json({ fact: text, model });
     } catch (e) {
-      lastError = `${model}: ${e.message}`;
+      errors.push(`${model}: ${e.message}`);
     }
   }
 
-  return res.status(500).json({ error: "ai failed", details: lastError });
+  return res.status(500).json({ error: "ai failed", errors });
 }
