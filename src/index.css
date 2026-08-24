@@ -327,4 +327,30 @@
     background: #ffffff !important;
     color: #17201b !important;
   }
+  /* ============ Safe area для iPhone с вырезами ============ */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
 }
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* ============ Touch-оптимизация ============ */
+@media (hover: none) {
+  button, a, input, textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  button {
+    touch-action: manipulation;
+  }
+}
+
+/* ============ Улучшенный мобильный layout ============ */
+@media (max-width: 767px) {
+  main {
+    padding-bottom: 80px !important; /* Место для bottom nav */
+  }
+}
+
