@@ -199,19 +199,18 @@ export default function Sidebar({
     label: string,
     value: string,
     panel: ReactNode,
-    direction: "up" | "down",
-    mobile = false
+    direction: "up" | "down"
   ) => {
     const open = menu === id;
     return (
       <div className="relative">
         <button
           onClick={() => toggle(id)}
-          className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-all duration-150 ${
+          className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-all duration-150 ${
             open
               ? "bg-[var(--hover)] text-[var(--ink)]"
               : "text-[var(--ink-faint)] hover:bg-[var(--hover)] hover:text-[var(--ink)]"
-          } ${mobile ? "" : "w-full justify-between"}`}
+          }`}
         >
           <span className="flex items-center gap-2">
             {icon}
@@ -220,9 +219,7 @@ export default function Sidebar({
           <span className="flex items-center gap-1.5">
             <span className="max-w-[100px] truncate">{value}</span>
             <ChevronIcon
-              className={`h-3.5 w-3.5 transition-transform ${
-                direction === "up" ? (open ? "rotate-180" : "") : open ? "rotate-180" : ""
-              }`}
+              className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
             />
           </span>
         </button>
@@ -318,139 +315,136 @@ export default function Sidebar({
   );
 
   return (
-    
-      {/* ================= Desktop sidebar ================= */}
-      <aside className="relative z-30 hidden w-[300px] shrink-0 flex-col gap-5 overflow-visible border-r border-[var(--line)] bg-[var(--panel)] px-5 pb-5 pt-6 md:flex">
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-1">
-          <span
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[var(--accent)] text-[var(--accent-ink)]"
-            style={{ boxShadow: "var(--shadow-sm)" }}
-          >
-            <PenIcon className="h-5 w-5" />
-          </span>
-          <span>
-            <span className="font-display block text-[15px] font-bold leading-tight tracking-tight">
-              {t("name")}
-            </span>
-            <span className="hidden text-xs text-[var(--ink-faint)] lg:block">{t("tagline")}</span>
-          </span>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex flex-col gap-1">
-          <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-faint)]">
-            {t("sections")}
-          </div>
-          {TABS.map(({ id, icon: Icon, key }) => {
-            const active = tab === id;
-            return (
-              <button
-                key={id}
-                onClick={() => onTab(id)}
-                className={`group flex h-10.5 w-full items-center gap-3 rounded-xl px-3.5 text-[14.5px] font-medium transition-all duration-200 ${
-                  active
-                    ? "bg-[var(--accent)] text-[var(--accent-ink)]"
-                    : "text-[var(--ink-soft)] hover:translate-x-0.5 hover:bg-[var(--hover)] hover:text-[var(--ink)]"
-                }`}
-                style={active ? { boxShadow: "var(--shadow-sm)" } : undefined}
-              >
-                <Icon className="h-5 w-5 shrink-0" />
-                <span className="flex-1 text-left">{t(key)}</span>
-                {id === "notes" && notesCount > 0 && (
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                      active
-                        ? "bg-[var(--accent-ink)]/20 text-[var(--accent-ink)]"
-                        : "bg-[var(--hover)] text-[var(--ink-faint)]"
-                    }`}
-                  >
-                    {notesCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Calendar + streak card */}
-        <div
-          className="mt-auto rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-4"
+    <aside className="relative z-30 hidden w-[300px] shrink-0 flex-col gap-5 overflow-visible border-r border-[var(--line)] bg-[var(--panel)] px-5 pb-5 pt-6 md:flex">
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-1">
+        <span
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[var(--accent)] text-[var(--accent-ink)]"
           style={{ boxShadow: "var(--shadow-sm)" }}
         >
-          <MiniCalendar
-            selected={selectedDate}
-            onPick={onPickDate}
-            hasEntry={hasEntry}
-            lang={lang}
-          />
-          <div className="mt-3 flex items-center gap-2.5 border-t border-[var(--line)] pt-3">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
-              <FlameIcon className="h-4.5 w-4.5" />
-            </span>
-            {streak > 0 ? (
-              <span className="flex items-baseline gap-1.5">
-                <span className="font-display text-2xl font-bold leading-none text-[var(--accent)]">
-                  {streak}
-                </span>
-                <span className="text-[11px] text-[var(--ink-faint)]">{t("streakDays")}</span>
-              </span>
-            ) : (
-              <span className="text-[11px] leading-snug text-[var(--ink-faint)]">{t("streakZero")}</span>
-            )}
-          </div>
-          <div className="mt-2.5 flex items-center gap-1.5">
-            {weekMarks.map((marked, i) => (
-              <span
-                key={i}
-                className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                  marked
-                    ? "bg-[var(--accent)]"
-                    : i === weekMarks.length - 1
-                      ? "border border-dashed border-[var(--ink-faint)]"
-                      : "bg-[var(--hover)]"
-                }`}
-              />
-            ))}
-          </div>
-          <div className="mt-1.5 hidden text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)] lg:block">
-            {t("weekLabel")}
-          </div>
-        </div>
+          <PenIcon className="h-5 w-5" />
+        </span>
+        <span>
+          <span className="font-display block text-[15px] font-bold leading-tight tracking-tight">
+            {t("name")}
+          </span>
+          <span className="hidden text-xs text-[var(--ink-faint)] lg:block">{t("tagline")}</span>
+        </span>
+      </div>
 
-        {/* Footer: theme & language buttons with dropdowns */}
-        <div className="flex flex-col gap-2.5">
-          <div className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-faint)]">
-            {t("personalize")}
-          </div>
-          {menuButton(
-            "theme",
-            <PaletteIcon className="h-4 w-4" />,
-            t("theme"),
-            themeMeta(theme).name[lang],
-            themePanel,
-            "up"
-          )}
-          {menuButton(
-            "lang",
-            <GlobeIcon className="h-4 w-4" />,
-            t("language"),
-            LANGS.find(l => l.id === lang)?.native ?? "English",
-            langPanel,
-            "up"
-          )}
-          {hasPin && (
-            <button
-              onClick={onLock}
-              className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-[var(--ink-faint)] transition-all duration-150 hover:bg-[var(--hover)] hover:text-[var(--ink)] active:scale-[0.98]"
-            >
-              <LockIcon className="h-3.5 w-3.5" />
-              {t("lockBtn")}
-            </button>
-          )}
-          <p className="px-1 text-[11px] leading-relaxed text-[var(--ink-faint)]">{t("storageHint")}</p>
+      {/* Nav */}
+      <nav className="flex flex-col gap-1">
+        <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-faint)]">
+          {t("sections")}
         </div>
-      </aside>
-    </>
+        {TABS.map(({ id, icon: Icon, key }) => {
+          const active = tab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => onTab(id)}
+              className={`group flex h-10.5 w-full items-center gap-3 rounded-xl px-3.5 text-[14.5px] font-medium transition-all duration-200 ${
+                active
+                  ? "bg-[var(--accent)] text-[var(--accent-ink)]"
+                  : "text-[var(--ink-soft)] hover:translate-x-0.5 hover:bg-[var(--hover)] hover:text-[var(--ink)]"
+              }`}
+              style={active ? { boxShadow: "var(--shadow-sm)" } : undefined}
+            >
+              <Icon className="h-5 w-5 shrink-0" />
+              <span className="flex-1 text-left">{t(key)}</span>
+              {id === "notes" && notesCount > 0 && (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                    active
+                      ? "bg-[var(--accent-ink)]/20 text-[var(--accent-ink)]"
+                      : "bg-[var(--hover)] text-[var(--ink-faint)]"
+                  }`}
+                >
+                  {notesCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Calendar + streak card */}
+      <div
+        className="mt-auto rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-4"
+        style={{ boxShadow: "var(--shadow-sm)" }}
+      >
+        <MiniCalendar
+          selected={selectedDate}
+          onPick={onPickDate}
+          hasEntry={hasEntry}
+          lang={lang}
+        />
+        <div className="mt-3 flex items-center gap-2.5 border-t border-[var(--line)] pt-3">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
+            <FlameIcon className="h-4.5 w-4.5" />
+          </span>
+          {streak > 0 ? (
+            <span className="flex items-baseline gap-1.5">
+              <span className="font-display text-2xl font-bold leading-none text-[var(--accent)]">
+                {streak}
+              </span>
+              <span className="text-[11px] text-[var(--ink-faint)]">{t("streakDays")}</span>
+            </span>
+          ) : (
+            <span className="text-[11px] leading-snug text-[var(--ink-faint)]">{t("streakZero")}</span>
+          )}
+        </div>
+        <div className="mt-2.5 flex items-center gap-1.5">
+          {weekMarks.map((marked, i) => (
+            <span
+              key={i}
+              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                marked
+                  ? "bg-[var(--accent)]"
+                  : i === weekMarks.length - 1
+                    ? "border border-dashed border-[var(--ink-faint)]"
+                    : "bg-[var(--hover)]"
+              }`}
+            />
+          ))}
+        </div>
+        <div className="mt-1.5 hidden text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)] lg:block">
+          {t("weekLabel")}
+        </div>
+      </div>
+
+      {/* Footer: theme & language buttons with dropdowns */}
+      <div className="flex flex-col gap-2.5">
+        <div className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-faint)]">
+          {t("personalize")}
+        </div>
+        {menuButton(
+          "theme",
+          <PaletteIcon className="h-4 w-4" />,
+          t("theme"),
+          themeMeta(theme).name[lang],
+          themePanel,
+          "up"
+        )}
+        {menuButton(
+          "lang",
+          <GlobeIcon className="h-4 w-4" />,
+          t("language"),
+          LANGS.find(l => l.id === lang)?.native ?? "English",
+          langPanel,
+          "up"
+        )}
+        {hasPin && (
+          <button
+            onClick={onLock}
+            className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-[var(--ink-faint)] transition-all duration-150 hover:bg-[var(--hover)] hover:text-[var(--ink)] active:scale-[0.98]"
+          >
+            <LockIcon className="h-3.5 w-3.5" />
+            {t("lockBtn")}
+          </button>
+        )}
+        <p className="px-1 text-[11px] leading-relaxed text-[var(--ink-faint)]">{t("storageHint")}</p>
+      </div>
+    </aside>
   );
 }
