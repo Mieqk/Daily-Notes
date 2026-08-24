@@ -1,3 +1,4 @@
+import { useSwipe } from "../hooks/useSwipe";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type { Lang, TKey } from "../i18n";
