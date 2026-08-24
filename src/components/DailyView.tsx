@@ -30,6 +30,7 @@ import {
   TagIcon,
   TrashIcon,
 } from "../icons";
+import FactOfDay from "./FactOfDay";;
 
 // Генератор настоящих UUID для совместимости с Supabase
 function generateUUID() {
