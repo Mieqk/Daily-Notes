@@ -1,3 +1,4 @@
+import MobileBottomNav from "./components/MobileBottomNav";
 import { Suspense, lazy, useEffect, useRef, useState } from "react"; // <-- useRef ДОБАВЛЕН
 import type { Lang, TKey } from "./i18n";
 import { STRINGS, localeOf } from "./i18n";
@@ -250,6 +251,7 @@ export default function App() {
         </div>
       )}
       <InstallPrompt />
+      <MobileBottomNav tab={tab} onTab={setTab} />
     </div>
   );
 }
