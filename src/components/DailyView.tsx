@@ -317,7 +317,6 @@ useSwipe({
             </div>
           </div>
 
-          <FactOfDay lang={lang} />
         </div>
         
         <div className="flex min-w-0 flex-col gap-5">
