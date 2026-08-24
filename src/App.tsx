@@ -47,9 +47,19 @@ export default function App() {
   const [showAuth, setShowAuth] = useState<boolean>(true);
   const [syncStatus, setSyncStatusState] = useState<SyncStatus>('idle');
 
-  // Защита от гонок: время последнего локального изменения для каждой даты
+  // ===== ЗАЩИТА ОТ ГОНОК =====
+  // "Снимок" данных, загруженных с сервера. Пока пользователь не изменит
+  // данные относительно снимка — ничего не отправляется в базу.
+  const remoteSnapshot = useRef<{
+    notes: Record<string, string>;
+    tasks: Record<string, Task[]>;
+    moods: Record<string, number>;
+    tags: Record<string, string[]>;
+    photos: Record<string, string[]>;
+    sleep: Record<string, SleepData>;
+  } | null>(null);
+  const initialLoadDone = useRef(false);
   const lastUpdateTime = useRef<{ [key: string]: number }>({});
-  // Защита настроек от откатов
   const lastLocalSettingsRef = useRef({ theme, lang, fontScale, writingFont, bg, moodEmoji });
 
   const now = useNow(1000);
@@ -64,7 +74,7 @@ export default function App() {
     lastLocalSettingsRef.current = { theme, lang, fontScale, writingFont, bg, moodEmoji };
   }, [theme, lang, fontScale, writingFont, bg, moodEmoji]);
 
-  // 1. Загрузка данных при входе
+  // 1. Загрузка данных при входе + создание снимка
   useEffect(() => {
     if (!authLoading && user) {
       setLocalMode(false);
@@ -76,7 +86,18 @@ export default function App() {
           setTags(remote.tags);
           setPhotos(remote.photos);
           setSleep(remote.sleep);
+          remoteSnapshot.current = {
+            notes: remote.notes,
+            tasks: remote.tasks,
+            moods: remote.moods,
+            tags: remote.tags,
+            photos: remote.photos,
+            sleep: remote.sleep,
+          };
+        } else {
+          remoteSnapshot.current = { notes: {}, tasks: {}, moods: {}, tags: {}, photos: {}, sleep: {} };
         }
+        initialLoadDone.current = true;
       });
       setShowAuth(false);
     } else if (!authLoading && !user && isLocalMode()) {
@@ -86,7 +107,7 @@ export default function App() {
     }
   }, [user, authLoading]);
 
-  // 2. Realtime: заметки, задачи, сон (с защитой от гонок — игнорируем события 3 сек после локального изменения)
+  // 2. Realtime: заметки, задачи, сон (игнорируем 3 сек после локального изменения)
   useEffect(() => {
     if (!user || isLocalMode() || !supabase) return;
 
@@ -96,8 +117,7 @@ export default function App() {
         const entry = payload.new;
         if (entry) {
           const nowMs = Date.now();
-          const lastUpdate = lastUpdateTime.current[entry.date] || 0;
-          if (nowMs - lastUpdate < 3000) return; // слишком рано после локального изменения
+          if (nowMs - (lastUpdateTime.current[entry.date] || 0) < 3000) return;
           setNotes((prev) => ({ ...prev, [entry.date]: entry.content || '' }));
           if (entry.mood !== null && entry.mood !== undefined) setMoods((prev) => ({ ...prev, [entry.date]: entry.mood }));
           if (entry.tags && entry.tags.length > 0) setTags((prev) => ({ ...prev, [entry.date]: entry.tags }));
@@ -108,19 +128,17 @@ export default function App() {
         const d = payload.new?.date || payload.old?.date;
         if (d) {
           const nowMs = Date.now();
-          const lastUpdate = lastUpdateTime.current[`tasks-${d}`] || 0;
-          if (nowMs - lastUpdate < 3000) return;
+          if (nowMs - (lastUpdateTime.current[`tasks-${d}`] || 0) < 3000) return;
           const { data } = await supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', d);
           if (data) setTasks((prev) => ({ ...prev, [d]: data.map((task) => ({ id: task.id, text: task.title, done: task.completed })) }));
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sleep_logs', filter: `user_id=eq.${user.id}` }, (payload) => {
-        const sleep = payload.new;
-        if (sleep) {
+        const s = payload.new;
+        if (s) {
           const nowMs = Date.now();
-          const lastUpdate = lastUpdateTime.current[`sleep-${sleep.date}`] || 0;
-          if (nowMs - lastUpdate < 3000) return;
-          setSleep((prev) => ({ ...prev, [sleep.date]: { hours: sleep.sleep_start ? parseFloat(sleep.sleep_start) : 0, quality: sleep.quality || 0, bedtime: sleep.sleep_start || '', waketime: sleep.sleep_end || '' } }));
+          if (nowMs - (lastUpdateTime.current[`sleep-${s.date}`] || 0) < 3000) return;
+          setSleep((prev) => ({ ...prev, [s.date]: { hours: s.sleep_start ? parseFloat(s.sleep_start) : 0, quality: s.quality || 0, bedtime: s.sleep_start || '', waketime: s.sleep_end || '' } }));
         }
       })
       .subscribe();
@@ -155,28 +173,38 @@ export default function App() {
     return () => { if (supabase) supabase.removeChannel(profileChannel); };
   }, [user]);
 
-  // 4. Отправка изменений в базу (с отметкой времени локального изменения)
+  // 4. Отправка изменений в базу.
+  // ГЛАВНАЯ ЗАЩИТА: отправляем ТОЛЬКО если данные реально изменены пользователем
+  // относительно снимка с сервера. Загрузка пустых данных больше не стирает базу.
   useEffect(() => {
-    if (user && !isLocalMode()) {
-      lastUpdateTime.current[date] = Date.now();
-      syncEntry(user.id, date, notes[date] ?? "", moods[date] ?? null, tags[date] ?? [], photos[date] ?? []);
-    }
+    if (!user || isLocalMode() || !initialLoadDone.current) return;
+    const snap = remoteSnapshot.current;
+    const unchanged = snap &&
+      JSON.stringify(snap.notes) === JSON.stringify(notes) &&
+      JSON.stringify(snap.moods) === JSON.stringify(moods) &&
+      JSON.stringify(snap.tags) === JSON.stringify(tags) &&
+      JSON.stringify(snap.photos) === JSON.stringify(photos);
+    if (unchanged) return;
+    lastUpdateTime.current[date] = Date.now();
+    syncEntry(user.id, date, notes[date] ?? "", moods[date] ?? null, tags[date] ?? [], photos[date] ?? []);
   }, [notes, moods, tags, photos, date, user]);
 
   useEffect(() => {
-    if (user && !isLocalMode()) {
-      lastUpdateTime.current[`tasks-${date}`] = Date.now();
-      syncTasks(user.id, date, tasks[date] ?? []);
-    }
+    if (!user || isLocalMode() || !initialLoadDone.current) return;
+    const snap = remoteSnapshot.current;
+    if (snap && JSON.stringify(snap.tasks) === JSON.stringify(tasks)) return;
+    lastUpdateTime.current[`tasks-${date}`] = Date.now();
+    syncTasks(user.id, date, tasks[date] ?? []);
   }, [tasks, date, user]);
 
   useEffect(() => {
-    if (user && !isLocalMode()) { 
-      const s = sleep[date]; 
-      if (s) {
-        lastUpdateTime.current[`sleep-${date}`] = Date.now();
-        syncSleep(user.id, date, s);
-      }
+    if (!user || isLocalMode() || !initialLoadDone.current) return;
+    const snap = remoteSnapshot.current;
+    if (snap && JSON.stringify(snap.sleep) === JSON.stringify(sleep)) return;
+    const s = sleep[date];
+    if (s) {
+      lastUpdateTime.current[`sleep-${date}`] = Date.now();
+      syncSleep(user.id, date, s);
     }
   }, [sleep, date, user]);
 
