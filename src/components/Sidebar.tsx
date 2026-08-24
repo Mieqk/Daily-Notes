@@ -318,35 +318,7 @@ export default function Sidebar({
   );
 
   return (
-    <>
-      {/* ================= Mobile top bar ================= */}
-      <div className="relative z-30 flex items-center gap-1.5 border-b border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 md:hidden">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--accent)] text-[var(--accent-ink)]">
-          <PenIcon className="h-4 w-4" />
-        </span>
-        <nav className="flex flex-1 justify-center gap-0.5">
-          {TABS.map(({ id, icon: Icon, key }) => {
-            const active = tab === id;
-            return (
-              <button
-                key={id}
-                onClick={() => onTab(id)}
-                className={`flex h-9 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-semibold transition-all duration-200 ${
-                  active
-                    ? "bg-[var(--accent)] text-[var(--accent-ink)]"
-                    : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="hidden min-[600px]:inline">{t(key)}</span>
-              </button>
-            );
-          })}
-        </nav>
-        {menuButton("theme", <PaletteIcon className="h-4.5 w-4.5" />, t("theme"), themeMeta(theme).name[lang], themePanel, "down", true)}
-        {menuButton("lang", <GlobeIcon className="h-4.5 w-4.5" />, t("language"), LANGS.find(l => l.id === lang)?.native ?? "English", langPanel, "down", true)}
-      </div>
-
+    
       {/* ================= Desktop sidebar ================= */}
       <aside className="relative z-30 hidden w-[300px] shrink-0 flex-col gap-5 overflow-visible border-r border-[var(--line)] bg-[var(--panel)] px-5 pb-5 pt-6 md:flex">
         {/* Logo */}
