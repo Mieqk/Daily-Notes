@@ -173,7 +173,7 @@ export default function App() {
         if (!s) return;
         const nowMs = Date.now();
         if (nowMs - (lastUpdateTime.current[`sleep-${s.date}`] || 0) < 3000) return;
-        const val = { hours: s.sleep_start ? parseFloat(s.sleep_start) : 0, quality: s.quality || 0, bedtime: s.sleep_start || '', waketime: s.sleep_end || '' };
+                  const val = { hours: Number(s.hours) || 0, quality: s.quality || 0, bedtime: s.sleep_start || '', waketime: s.sleep_end || '', awakenings: Number(s.awakenings) || 0, note: s.note || '' };
         setSleep((prev) => ({ ...prev, [s.date]: val }));
         if (remoteSnapshot.current) remoteSnapshot.current.sleep[s.date] = clone(val);
       })
