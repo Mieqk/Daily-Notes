@@ -115,7 +115,7 @@ const debouncedUpsertTasks = debounce(async (userId: string, date: string, tasks
 
 const debouncedUpsertSleep = debounce(async (userId: string, date: string, sleepData: SleepData) => {
   if (isLocalMode() || !supabase) return;
-  const { error } = await supabase.from('sleep_logs').upsert({ user_id: userId, date, sleep_start: sleepData.bedtime || String(sleepData.hours), sleep_end: sleepData.waketime || '', quality: sleepData.quality }, { onConflict: 'user_id,date' });
+  const { error } = await supabase.from('sleep_logs').upsert({ user_id: userId, date, sleep_start: sleepData.bedtime || '', sleep_end: sleepData.waketime || '', hours: sleepData.hours || 0, quality: sleepData.quality || 0, awakenings: sleepData.awakenings || 0, note: sleepData.note || '' }, { onConflict: 'user_id,date' });
   if (error) console.error('[SYNC] Failed to sync sleep:', error);
 }, 2000);
 
