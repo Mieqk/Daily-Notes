@@ -75,7 +75,7 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
     .filter((x) => x.d && (x.d.hours > 0 || Boolean(x.d.bedtime)));
   const avgHours = week.length ? week.reduce((s, x) => s + (x.d!.hours || 0), 0) / week.length : null;
   const avgQuality = week.length ? week.reduce((s, x) => s + (x.d!.quality || 0), 0) / week.length : null;
-    const avgAwake = week.length ? week.reduce((s, x) => s + (x.d!.awakenings || 0), 0) / week.length : null;
+  const avgAwake = week.length ? week.reduce((s, x) => s + (x.d!.awakenings || 0), 0) / week.length : null;
 
   const history = Array.from({ length: 14 }, (_, i) => shiftISO(today, -i))
     .map((iso) => ({ iso, d: sleep[iso] }))
@@ -162,69 +162,65 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
         </div>
       </div>
 
-      {/* Графики */}
       {week.length === 0 ? (
         <div className={`${card} animate-rise flex flex-col items-center gap-3 py-16 text-center`}>
           <SleepIcon className="h-10 w-10 text-[var(--ink-faint)]" />
           <p className="text-sm text-[var(--ink-faint)]">{t("sleepNoData")}</p>
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className={`${card} animate-rise`} style={{ boxShadow: "var(--shadow-sm)" }}>
-            <h3 className="mb-3 text-[15px] font-bold">{t("sleepHours")}</h3>
-            <div className="space-y-2">
-              {week.map((x) => (
-                <div key={x.iso} className="flex items-center gap-3">
-                  <span className="w-16 text-xs text-[var(--ink-faint)]">{new Intl.DateTimeFormat(locale, { weekday: "short" }).format(fromISO(x.iso))}</span>
-                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--hover)]">
-                    <div className="h-full rounded-full bg-[var(--accent)] transition-all duration-300" style={{ width: `${Math.min(100, ((x.d!.hours || 0) / 12) * 100)}%` }} />
+        <>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className={`${card} animate-rise`} style={{ boxShadow: "var(--shadow-sm)" }}>
+              <h3 className="mb-3 text-[15px] font-bold">{t("sleepHours")}</h3>
+              <div className="space-y-2">
+                {week.map((x) => (
+                  <div key={x.iso} className="flex items-center gap-3">
+                    <span className="w-16 text-xs text-[var(--ink-faint)]">{new Intl.DateTimeFormat(locale, { weekday: "short" }).format(fromISO(x.iso))}</span>
+                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--hover)]">
+                      <div className="h-full rounded-full bg-[var(--accent)] transition-all duration-300" style={{ width: `${Math.min(100, ((x.d!.hours || 0) / 12) * 100)}%` }} />
+                    </div>
+                    <span className="w-12 text-right text-sm font-semibold">{(x.d!.hours || 0).toFixed(1)}</span>
                   </div>
-                  <span className="w-12 text-right text-sm font-semibold">{(x.d!.hours || 0).toFixed(1)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className={`${card} animate-rise`} style={{ boxShadow: "var(--shadow-sm)" }}>
-            <h3 className="mb-3 text-[15px] font-bold">{t("sleepQuality")}</h3>
-            <div className="space-y-2">
-              {week.filter((x) => x.d!.quality > 0).map((x) => (
-                <div key={x.iso} className="flex items-center gap-3">
-                  <span className="w-16 text-xs text-[var(--ink-faint)]">{new Intl.DateTimeFormat(locale, { weekday: "short" }).format(fromISO(x.iso))}</span>
-                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--hover)]">
-                    <div className="h-full rounded-full bg-[var(--accent-deep)] transition-all duration-300" style={{ width: `${Math.min(100, (x.d!.quality / 5) * 100)}%` }} />
-                  </div>
-                  <span className="w-20 text-right text-sm font-semibold">{qualityLabel(x.d!.quality)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-              
-
-        <div className={`${card} animate-rise mt-4`} style={{ boxShadow: "var(--shadow-sm)" }}>
-          <h3 className="mb-3 text-[15px] font-bold">{L.history}</h3>
-          <div className="space-y-2">
-            {history.length === 0 && <p className="text-sm text-[var(--ink-faint)]">—</p>}
-            {history.map(({ iso, d }) => (
-              <div key={iso} className="flex items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
-                <span className="w-28 shrink-0 text-[12px] font-semibold capitalize text-[var(--ink-soft)]">
-                  {new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" }).format(fromISO(iso))}
-                </span>
-                <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--hover)]">
-                  <div className="h-full rounded-full bg-[var(--accent)] transition-all duration-300" style={{ width: `${Math.min(100, ((d!.hours || 0) / 12) * 100)}%` }} />
-                </div>
-                <span className="w-16 shrink-0 text-right text-[13px] font-bold">{(d!.hours || 0).toFixed(1)} {L.unit}</span>
-                <span className="hidden w-24 shrink-0 text-right text-[11px] text-[var(--ink-faint)] sm:block">
-                  {d!.quality > 0 ? qualityLabel(d!.quality) : "—"}
-                </span>
+                ))}
               </div>
-            ))}
+            </div>
+            <div className={`${card} animate-rise`} style={{ boxShadow: "var(--shadow-sm)" }}>
+              <h3 className="mb-3 text-[15px] font-bold">{t("sleepQuality")}</h3>
+              <div className="space-y-2">
+                {week.filter((x) => x.d!.quality > 0).map((x) => (
+                  <div key={x.iso} className="flex items-center gap-3">
+                    <span className="w-16 text-xs text-[var(--ink-faint)]">{new Intl.DateTimeFormat(locale, { weekday: "short" }).format(fromISO(x.iso))}</span>
+                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--hover)]">
+                      <div className="h-full rounded-full bg-[var(--accent-deep)] transition-all duration-300" style={{ width: `${Math.min(100, (x.d!.quality / 5) * 100)}%` }} />
+                    </div>
+                    <span className="w-20 text-right text-sm font-semibold">{qualityLabel(x.d!.quality)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
+
+          <div className={`${card} animate-rise mt-4`} style={{ boxShadow: "var(--shadow-sm)" }}>
+            <h3 className="mb-3 text-[15px] font-bold">{L.history}</h3>
+            <div className="space-y-2">
+              {history.length === 0 && <p className="text-sm text-[var(--ink-faint)]">—</p>}
+              {history.map(({ iso, d }) => (
+                <div key={iso} className="flex items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
+                  <span className="w-28 shrink-0 text-[12px] font-semibold capitalize text-[var(--ink-soft)]">
+                    {new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" }).format(fromISO(iso))}
+                  </span>
+                  <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--hover)]">
+                    <div className="h-full rounded-full bg-[var(--accent)] transition-all duration-300" style={{ width: `${Math.min(100, ((d!.hours || 0) / 12) * 100)}%` }} />
+                  </div>
+                  <span className="w-16 shrink-0 text-right text-[13px] font-bold">{(d!.hours || 0).toFixed(1)} {L.unit}</span>
+                  <span className="hidden w-24 shrink-0 text-right text-[11px] text-[var(--ink-faint)] sm:block">
+                    {d!.quality > 0 ? qualityLabel(d!.quality) : "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
