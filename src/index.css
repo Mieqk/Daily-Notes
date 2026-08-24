@@ -353,4 +353,13 @@
   main {
     padding-bottom: 80px !important;
   }
+/* ============ Защита от pull-to-refresh на мобильных ============ */
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
+main {
+  overscroll-behavior-y: contain;
+ }
 }
