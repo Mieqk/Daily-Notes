@@ -35,6 +35,7 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
+  const userId = user?.id ?? null;
 
   const [tab, setTab] = useStored<Tab>("dn.tab", "daily");
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
@@ -79,15 +80,15 @@ export default function App() {
     remoteSnapshot.current = { notes: clone(n), tasks: clone(tk), moods: clone(md), tags: clone(tg), photos: clone(ph), sleep: clone(sl) };
   };
 
-  // 1. Загрузка данных при входе + ПОВТОРНЫЕ ПОПЫТКИ + применение настроек
+  // 1. Загрузка данных: привязана к userId (не к объекту user), 5 попыток, применение настроек
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && userId) {
       setLocalMode(false);
       setShowAuth(false);
       let cancelled = false;
 
       const load = async (attempt: number) => {
-        const remote = await performInitialSync(user.id);
+        const remote = await performInitialSync(userId);
         if (cancelled) return;
 
         if (remote) {
@@ -98,7 +99,6 @@ export default function App() {
           setPhotos(remote.photos);
           setSleep(remote.sleep);
 
-          // Применяем настройки с сервера
           const s = remote.settings as Record<string, any>;
           if (s) {
             if (s.theme) setTheme(s.theme);
@@ -114,31 +114,31 @@ export default function App() {
             tags: clone(remote.tags), photos: clone(remote.photos), sleep: clone(remote.sleep),
           };
           initialLoadDone.current = true;
-        } else if (attempt < 3) {
-          // Сессия могла не успеть восстановиться — пробуем ещё раз
-          window.setTimeout(() => { if (!cancelled) load(attempt + 1); }, 1500);
+        } else if (attempt < 5) {
+          window.setTimeout(() => { if (!cancelled) load(attempt + 1); }, 2000);
         } else {
           remoteSnapshot.current = { notes: {}, tasks: {}, moods: {}, tags: {}, photos: {}, sleep: {} };
           initialLoadDone.current = true;
+          showToast('Не удалось загрузить данные с сервера');
         }
       };
 
       load(0);
       return () => { cancelled = true; };
-    } else if (!authLoading && !user && isLocalMode()) {
+    } else if (!authLoading && !userId && isLocalMode()) {
       setShowAuth(false);
-    } else if (!authLoading && !user) {
+    } else if (!authLoading && !userId) {
       setShowAuth(true);
     }
-  }, [user, authLoading]);
+  }, [userId, authLoading]);
 
   // 2. Realtime: чужие изменения + обновление снимка
   useEffect(() => {
-    if (!user || isLocalMode() || !supabase) return;
+    if (!userId || isLocalMode() || !supabase) return;
 
     const channel = supabase
       .channel('db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'entries', filter: `user_id=eq.${user.id}` }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entries', filter: `user_id=eq.${userId}` }, (payload) => {
         const entry = payload.new;
         if (!entry) return;
         const nowMs = Date.now();
@@ -156,19 +156,19 @@ export default function App() {
           if (entry.photos && Array.isArray(entry.photos)) remoteSnapshot.current.photos[entry.date] = entry.photos;
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` }, async (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` }, async (payload) => {
         const d = payload.new?.date || payload.old?.date;
         if (!d) return;
         const nowMs = Date.now();
         if (nowMs - (lastUpdateTime.current[`tasks-${d}`] || 0) < 3000) return;
-        const { data } = await supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', d);
+        const { data } = await supabase.from('tasks').select('*').eq('user_id', userId).eq('date', d);
         if (data) {
           const mapped = data.map((task) => ({ id: task.id, text: task.title, done: task.completed }));
           setTasks((prev) => ({ ...prev, [d]: mapped }));
           if (remoteSnapshot.current) remoteSnapshot.current.tasks[d] = clone(mapped);
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sleep_logs', filter: `user_id=eq.${user.id}` }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sleep_logs', filter: `user_id=eq.${userId}` }, (payload) => {
         const s = payload.new;
         if (!s) return;
         const nowMs = Date.now();
@@ -180,17 +180,17 @@ export default function App() {
       .subscribe();
 
     return () => { if (supabase) supabase.removeChannel(channel); };
-  }, [user]);
+  }, [userId]);
 
   // 3. Realtime: настройки
   useEffect(() => {
-    if (!user || isLocalMode() || !supabase) return;
+    if (!userId || isLocalMode() || !supabase) return;
 
     const profileChannel = supabase
       .channel('profile-changes')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
         (payload) => {
           const settings = payload.new.settings as Record<string, any>;
           if (settings) {
@@ -207,11 +207,11 @@ export default function App() {
       .subscribe();
 
     return () => { if (supabase) supabase.removeChannel(profileChannel); };
-  }, [user]);
+  }, [userId]);
 
   // 4. Отправка только пользовательских изменений
   useEffect(() => {
-    if (!user || isLocalMode() || !initialLoadDone.current) return;
+    if (!userId || isLocalMode() || !initialLoadDone.current) return;
     const snap = remoteSnapshot.current;
     const unchanged = snap &&
       JSON.stringify(snap.notes) === JSON.stringify(notes) &&
@@ -220,38 +220,38 @@ export default function App() {
       JSON.stringify(snap.photos) === JSON.stringify(photos);
     if (unchanged) return;
     lastUpdateTime.current[date] = Date.now();
-    syncEntry(user.id, date, notes[date] ?? "", moods[date] ?? null, tags[date] ?? [], photos[date] ?? []);
+    syncEntry(userId, date, notes[date] ?? "", moods[date] ?? null, tags[date] ?? [], photos[date] ?? []);
     markSnapshotAsSent(notes, tasks, moods, tags, photos, sleep);
-  }, [notes, moods, tags, photos, date, user]);
+  }, [notes, moods, tags, photos, date, userId]);
 
   useEffect(() => {
-    if (!user || isLocalMode() || !initialLoadDone.current) return;
+    if (!userId || isLocalMode() || !initialLoadDone.current) return;
     const snap = remoteSnapshot.current;
     if (snap && JSON.stringify(snap.tasks) === JSON.stringify(tasks)) return;
     lastUpdateTime.current[`tasks-${date}`] = Date.now();
-    syncTasks(user.id, date, tasks[date] ?? []);
+    syncTasks(userId, date, tasks[date] ?? []);
     markSnapshotAsSent(notes, tasks, moods, tags, photos, sleep);
-  }, [tasks, date, user]);
+  }, [tasks, date, userId]);
 
   useEffect(() => {
-    if (!user || isLocalMode() || !initialLoadDone.current) return;
+    if (!userId || isLocalMode() || !initialLoadDone.current) return;
     const snap = remoteSnapshot.current;
     if (snap && JSON.stringify(snap.sleep) === JSON.stringify(sleep)) return;
     const s = sleep[date];
     if (s) {
       lastUpdateTime.current[`sleep-${date}`] = Date.now();
-      syncSleep(user.id, date, s);
+      syncSleep(userId, date, s);
       markSnapshotAsSent(notes, tasks, moods, tags, photos, sleep);
     }
-  }, [sleep, date, user]);
+  }, [sleep, date, userId]);
 
   useEffect(() => {
-    if (user && !isLocalMode()) syncSettings(user.id, { theme, lang, font: fontScale, writingFont, bg, moodEmoji });
-  }, [theme, lang, fontScale, writingFont, bg, moodEmoji, user]);
+    if (userId && !isLocalMode()) syncSettings(userId, { theme, lang, font: fontScale, writingFont, bg, moodEmoji });
+  }, [theme, lang, fontScale, writingFont, bg, moodEmoji, userId]);
 
   const handleThemeChange = (newTheme: ThemeId) => {
     setTheme(newTheme);
-    if (user && !isLocalMode()) syncSettings(user.id, { theme: newTheme, lang, font: fontScale, writingFont, bg, moodEmoji });
+    if (userId && !isLocalMode()) syncSettings(userId, { theme: newTheme, lang, font: fontScale, writingFont, bg, moodEmoji });
   };
 
   useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
@@ -288,7 +288,7 @@ export default function App() {
   if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-[var(--bg)]"><div className="animate-pulse text-[var(--ink-faint)]">Загрузка...</div></div>;
   if (showAuth) return <AuthScreen onContinueLocally={() => { setLocalMode(true); setShowAuth(false); }} theme={theme} onTheme={handleThemeChange} />;
 
-  const syncBadge = user ? (
+  const syncBadge = userId ? (
     syncStatus === 'syncing' ? <span className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />Синхронизация...</span> :
     syncStatus === 'error' ? <span className="flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-semibold text-red-400">Ошибка</span> :
     <span className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]"><span className="h-1.5 w-1.5 rounded-full bg-green-500" />Синхронизировано</span>
