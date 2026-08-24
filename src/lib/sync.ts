@@ -70,10 +70,12 @@ export async function performInitialSync(userId: string) {
 
     for (const s of remoteSleep) {
       sleep[s.date] = {
-        hours: s.sleep_start ? parseFloat(s.sleep_start) : 0,
+        hours: Number(s.hours) || 0,
         quality: s.quality || 0,
         bedtime: s.sleep_start || '',
         waketime: s.sleep_end || '',
+        awakenings: Number(s.awakenings) || 0,
+        note: s.note || '',
       };
     }
 
