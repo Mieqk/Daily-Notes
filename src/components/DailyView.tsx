@@ -211,9 +211,13 @@ useSwipe({
       });
       return { ...m, [date]: merged };
     });
-    if (!(notes[date] ?? "").trim()) {
-      setNotes((m) => ({ ...m, [date]: tpl.prompt[lang] }));
-    }
+    setNotes((m) => {
+      const curTxt = m[date] ?? "";
+      const prompt = tpl.prompt[lang];
+      if (!curTxt.trim()) return { ...m, [date]: prompt };
+      if (curTxt.includes(prompt.slice(0, 24))) return m;
+      return { ...m, [date]: curTxt + "\n\n" + prompt };
+    });
     setAppliedTpl(tpl.id);
     window.setTimeout(() => setAppliedTpl(null), 1400);
     showToast(t("toastTpl"));
