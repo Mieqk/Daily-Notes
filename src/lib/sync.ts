@@ -14,16 +14,12 @@ export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 let currentSyncStatus: SyncStatus = 'idle';
 let syncStatusListeners: ((status: SyncStatus) => void)[] = [];
 
-export function getSyncStatus(): SyncStatus {
-  return currentSyncStatus;
-}
+export function getSyncStatus(): SyncStatus { return currentSyncStatus; }
 
 export function subscribeToSyncStatus(listener: (status: SyncStatus) => void) {
   syncStatusListeners.push(listener);
   listener(currentSyncStatus);
-  return () => {
-    syncStatusListeners = syncStatusListeners.filter(l => l !== listener);
-  };
+  return () => { syncStatusListeners = syncStatusListeners.filter(l => l !== listener); };
 }
 
 function setSyncStatus(status: SyncStatus) {
@@ -32,7 +28,7 @@ function setSyncStatus(status: SyncStatus) {
 }
 
 export async function performInitialSync(userId: string) {
-  if (!supabase || isLocalMode()) return null;
+  if (!supabase) return null;
 
   setSyncStatus('syncing');
 
@@ -84,7 +80,7 @@ export async function performInitialSync(userId: string) {
     setSyncStatus('synced');
     return { notes, tasks, moods, tags, photos, sleep, settings: remoteSettings };
   } catch (error) {
-    console.error('Initial sync failed:', error);
+    console.error('[SYNC] Initial sync failed:', error);
     setSyncStatus('error');
     return null;
   }
@@ -101,7 +97,7 @@ function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number) 
 const debouncedUpsertEntry = debounce(async (userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) => {
   if (isLocalMode() || !supabase) return;
   const { error } = await supabase.from('entries').upsert({ user_id: userId, date, content, mood, tags, photos, updated_at: new Date().toISOString() }, { onConflict: 'user_id,date' });
-  if (error) console.error('Failed to sync entry:', error);
+  if (error) console.error('[SYNC] Failed to sync entry:', error);
 }, 2000);
 
 const debouncedUpsertTasks = debounce(async (userId: string, date: string, tasks: Task[]) => {
@@ -112,33 +108,22 @@ const debouncedUpsertTasks = debounce(async (userId: string, date: string, tasks
   const toDelete = existingIds.filter(id => !tasks.find(t => t.id === id));
   if (toDelete.length > 0) await supabase.from('tasks').delete().in('id', toDelete);
   const { error } = await supabase.from('tasks').upsert(tasksToUpsert);
-  if (error) console.error('Failed to sync tasks:', error);
+  if (error) console.error('[SYNC] Failed to sync tasks:', error);
 }, 2000);
 
 const debouncedUpsertSleep = debounce(async (userId: string, date: string, sleepData: SleepData) => {
   if (isLocalMode() || !supabase) return;
   const { error } = await supabase.from('sleep_logs').upsert({ user_id: userId, date, sleep_start: sleepData.bedtime || String(sleepData.hours), sleep_end: sleepData.waketime || '', quality: sleepData.quality }, { onConflict: 'user_id,date' });
-  if (error) console.error('Failed to sync sleep:', error);
+  if (error) console.error('[SYNC] Failed to sync sleep:', error);
 }, 2000);
 
 const debouncedUpsertSettings = debounce(async (userId: string, settings: Record<string, unknown>) => {
   if (isLocalMode() || !supabase) return;
   const { error } = await supabase.from('profiles').update({ settings }).eq('id', userId);
-  if (error) console.error('Failed to sync settings:', error);
+  if (error) console.error('[SYNC] Failed to sync settings:', error);
 }, 2000);
 
-export function syncEntry(userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) {
-  debouncedUpsertEntry(userId, date, content, mood, tags, photos);
-}
-
-export function syncTasks(userId: string, date: string, tasks: Task[]) {
-  debouncedUpsertTasks(userId, date, tasks);
-}
-
-export function syncSleep(userId: string, date: string, sleepData: SleepData) {
-  debouncedUpsertSleep(userId, date, sleepData);
-}
-
-export function syncSettings(userId: string, settings: { theme?: string; lang?: string; font?: number; writingFont?: string; bg?: string; moodEmoji?: string[] }) {
-  debouncedUpsertSettings(userId, settings);
-}
+export function syncEntry(userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) { debouncedUpsertEntry(userId, date, content, mood, tags, photos); }
+export function syncTasks(userId: string, date: string, tasks: Task[]) { debouncedUpsertTasks(userId, date, tasks); }
+export function syncSleep(userId: string, date: string, sleepData: SleepData) { debouncedUpsertSleep(userId, date, sleepData); }
+export function syncSettings(userId: string, settings: { theme?: string; lang?: string; font?: number; writingFont?: string; bg?: string; moodEmoji?: string[] }) { debouncedUpsertSettings(userId, settings); }
