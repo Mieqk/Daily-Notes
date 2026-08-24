@@ -199,7 +199,7 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
             </div>
           </div>
         </div>
-              </div>
+              
 
         <div className={`${card} animate-rise mt-4`} style={{ boxShadow: "var(--shadow-sm)" }}>
           <h3 className="mb-3 text-[15px] font-bold">{L.history}</h3>
