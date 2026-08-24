@@ -151,7 +151,7 @@ Daily Note распространяется как **PWA (Progressive Web App)**
 > ✅ — готово | 🔨 — в работе | 📋 — запланировано | 💡 — идея
 
 ###  Ближайшие планы
-- [🔨] Мобильная адаптация UI (responsive, bottom navigation, touch-жесты)
+- [✅] Мобильная адаптация UI (responsive, bottom navigation, touch-жесты)
 - [✅] PWA версия с установкой на домашний экран
 - [✅] Деплой на GitHub Pages (бесплатный хостинг)
 - [✅] Подключение Supabase (Auth + Database)
