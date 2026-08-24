@@ -5,6 +5,7 @@ async function listFlashModels(key, version) {
     const d = await r.json();
     return (d.models || [])
       .filter((m) => (m.name || "").includes("flash"))
+      .filter((m) => !/tts|preview|image|audio|t2s/.test(m.name))
       .filter((m) => !m.supportedGenerationMethods || m.supportedGenerationMethods.includes("generateContent"))
       .map((m) => m.name.replace("models/", ""));
   } catch {
@@ -27,16 +28,17 @@ export default async function handler(req, res) {
 
   const errors = [];
 
-  // Спрашиваем у Google, какие flash-модели сейчас доступны
+  // Сначала — модели, которые Google рекомендует в 2026-м, затем живой список
+  const PREFERRED = ["gemini-3.6-flash", "gemini-flash-latest"];
   let version = "v1beta";
-  let models = await listFlashModels(key, version);
-  if (!models.length) {
+  let dynamic = await listFlashModels(key, version);
+  if (!dynamic.length) {
     version = "v1";
-    models = await listFlashModels(key, version);
+    dynamic = await listFlashModels(key, version);
   }
-  if (!models.length) models = ["gemini-2.5-flash", "gemini-2.0-flash"];
+  const models = [...PREFERRED, ...dynamic.filter((m) => !PREFERRED.includes(m))].slice(0, 4);
 
-  for (const model of models.slice(0, 3)) {
+  for (const model of models) {
     try {
       const r = await fetch(
         `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${key}`,
