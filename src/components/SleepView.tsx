@@ -199,6 +199,32 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
             </div>
           </div>
         </div>
+              </div>
+
+        <div className={`${card} animate-rise mt-4`} style={{ boxShadow: "var(--shadow-sm)" }}>
+          <h3 className="mb-3 text-[15px] font-bold">{L.history}</h3>
+          <div className="space-y-2">
+            {history.length === 0 && <p className="text-sm text-[var(--ink-faint)]">—</p>}
+            {history.map(({ iso, d }) => (
+              <div key={iso} className="flex items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
+                <span className="w-28 shrink-0 text-[12px] font-semibold capitalize text-[var(--ink-soft)]">
+                  {new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" }).format(fromISO(iso))}
+                </span>
+                <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--hover)]">
+                  <div className="h-full rounded-full bg-[var(--accent)] transition-all duration-300" style={{ width: `${Math.min(100, ((d!.hours || 0) / 12) * 100)}%` }} />
+                </div>
+                <span className="w-16 shrink-0 text-right text-[13px] font-bold">{(d!.hours || 0).toFixed(1)} {L.unit}</span>
+                <span className="hidden w-24 shrink-0 text-right text-[11px] text-[var(--ink-faint)] sm:block">
+                  {d!.quality > 0 ? qualityLabel(d!.quality) : "—"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
       )}
     </div>
   );
