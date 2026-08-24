@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react"; // <-- useRef ДОБАВЛЕН
 import type { Lang, TKey } from "./i18n";
 import { STRINGS, localeOf } from "./i18n";
 import type { ThemeId } from "./themes";
@@ -16,7 +16,7 @@ import SleepView from "./components/SleepView";
 import InstallPrompt from "./components/InstallPrompt";
 import AuthScreen from "./components/AuthScreen";
 import { useAuth } from "./contexts/AuthContext";
-import { supabase } from "./lib/supabase"; // <-- ВАЖНО: импорт supabase
+import { supabase } from "./lib/supabase";
 import { isLocalMode, setLocalMode, performInitialSync, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, type SyncStatus } from "./lib/sync";
 
 const FONT_SCALES = ["93.75%", "100%", "109%"];
@@ -107,41 +107,39 @@ export default function App() {
     return () => { if (supabase) supabase.removeChannel(channel); };
   }, [user]);
 
-// 3. Realtime: Слушаем изменения настроек (с защитой от собственных изменений)
-const lastLocalSettingsRef = useRef({ theme, lang, fontScale, writingFont, bg, moodEmoji });
+  // 3. Realtime: Слушаем изменения настроек (с защитой от откатов через useRef)
+  const lastLocalSettingsRef = useRef({ theme, lang, fontScale, writingFont, bg, moodEmoji });
 
-useEffect(() => {
-  lastLocalSettingsRef.current = { theme, lang, fontScale, writingFont, bg, moodEmoji };
-}, [theme, lang, fontScale, writingFont, bg, moodEmoji]);
+  useEffect(() => {
+    lastLocalSettingsRef.current = { theme, lang, fontScale, writingFont, bg, moodEmoji };
+  }, [theme, lang, fontScale, writingFont, bg, moodEmoji]);
 
-useEffect(() => {
-  if (!user || isLocalMode() || !supabase) return;
+  useEffect(() => {
+    if (!user || isLocalMode() || !supabase) return;
 
-  const profileChannel = supabase
-    .channel('profile-changes')
-    .on(
-      'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
-      (payload) => {
-        const settings = payload.new.settings;
-        if (settings) {
-          const last = lastLocalSettingsRef.current;
-          
-          // Применяем ТОЛЬКО если значение действительно изменилось извне
-          if (settings.theme && settings.theme !== last.theme) setTheme(settings.theme);
-          if (settings.lang && settings.lang !== last.lang) setLang(settings.lang);
-          if (settings.font !== undefined && settings.font !== last.fontScale) setFontScale(settings.font);
-          if (settings.writingFont && settings.writingFont !== last.writingFont) setWritingFont(settings.writingFont);
-          if (settings.bg && settings.bg !== last.bg) setBg(settings.bg);
-          if (settings.moodEmoji && JSON.stringify(settings.moodEmoji) !== JSON.stringify(last.moodEmoji)) setMoodEmoji(settings.moodEmoji);
+    const profileChannel = supabase
+      .channel('profile-changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+        (payload) => {
+          const settings = payload.new.settings;
+          if (settings) {
+            const last = lastLocalSettingsRef.current;
+            if (settings.theme && settings.theme !== last.theme) setTheme(settings.theme);
+            if (settings.lang && settings.lang !== last.lang) setLang(settings.lang);
+            if (settings.font !== undefined && settings.font !== last.fontScale) setFontScale(settings.font);
+            if (settings.writingFont && settings.writingFont !== last.writingFont) setWritingFont(settings.writingFont);
+            if (settings.bg && settings.bg !== last.bg) setBg(settings.bg);
+            if (settings.moodEmoji && JSON.stringify(settings.moodEmoji) !== JSON.stringify(last.moodEmoji)) setMoodEmoji(settings.moodEmoji);
+          }
         }
-      }
-    )
-    .subscribe();
+      )
+      .subscribe();
 
-  return () => { if (supabase) supabase.removeChannel(profileChannel); };
-}, [user]);
-  
+    return () => { if (supabase) supabase.removeChannel(profileChannel); };
+  }, [user]);
+
   // 4. Отправка изменений в базу
   useEffect(() => {
     if (user && !isLocalMode()) {
