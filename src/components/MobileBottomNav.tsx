@@ -1,4 +1,4 @@
-import { DailyIcon, StatsIcon, NotesIcon, SleepIcon, SettingsIcon } from "../icons";
+import { CalendarIcon, StatsIcon, NotebookIcon, SleepIcon, GearIcon } from "../icons";
 import type { Tab } from "../store";
 
 interface MobileBottomNavProps {
@@ -7,11 +7,11 @@ interface MobileBottomNavProps {
 }
 
 const TABS = [
-  { id: "daily" as Tab, icon: DailyIcon, label: "daily" },
-  { id: "stats" as Tab, icon: StatsIcon, label: "stats" },
-  { id: "notes" as Tab, icon: NotesIcon, label: "notes" },
-  { id: "sleep" as Tab, icon: SleepIcon, label: "sleep" },
-  { id: "settings" as Tab, icon: SettingsIcon, label: "settings" },
+  { id: "daily" as Tab, icon: CalendarIcon, label: "Ежедневно" },
+  { id: "stats" as Tab, icon: StatsIcon, label: "Стата" },
+  { id: "notes" as Tab, icon: NotebookIcon, label: "Заметки" },
+  { id: "sleep" as Tab, icon: SleepIcon, label: "Сон" },
+  { id: "settings" as Tab, icon: GearIcon, label: "Настройки" },
 ];
 
 export default function MobileBottomNav({ tab, onTab }: MobileBottomNavProps) {
@@ -32,7 +32,7 @@ export default function MobileBottomNav({ tab, onTab }: MobileBottomNavProps) {
               style={active ? { boxShadow: "var(--shadow-sm)" } : undefined}
             >
               <Icon className="h-5 w-5" />
-              <span className="text-[11px] font-medium capitalize">{label}</span>
+              <span className="text-[11px] font-medium">{label}</span>
             </button>
           );
         })}
