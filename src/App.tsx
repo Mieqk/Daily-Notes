@@ -107,7 +107,13 @@ export default function App() {
     return () => { if (supabase) supabase.removeChannel(channel); };
   }, [user]);
 
- // 3. Realtime: Слушаем изменения настроек (с защитой от откатов)
+// 3. Realtime: Слушаем изменения настроек (с защитой от собственных изменений)
+const lastLocalSettingsRef = useRef({ theme, lang, fontScale, writingFont, bg, moodEmoji });
+
+useEffect(() => {
+  lastLocalSettingsRef.current = { theme, lang, fontScale, writingFont, bg, moodEmoji };
+}, [theme, lang, fontScale, writingFont, bg, moodEmoji]);
+
 useEffect(() => {
   if (!user || isLocalMode() || !supabase) return;
 
@@ -119,20 +125,22 @@ useEffect(() => {
       (payload) => {
         const settings = payload.new.settings;
         if (settings) {
-          // Применяем ТОЛЬКО если значение действительно отличается от текущего
-          if (settings.theme && settings.theme !== theme) setTheme(settings.theme);
-          if (settings.lang && settings.lang !== lang) setLang(settings.lang);
-          if (settings.font !== undefined && settings.font !== fontScale) setFontScale(settings.font);
-          if (settings.writingFont && settings.writingFont !== writingFont) setWritingFont(settings.writingFont);
-          if (settings.bg && settings.bg !== bg) setBg(settings.bg);
-          if (settings.moodEmoji && JSON.stringify(settings.moodEmoji) !== JSON.stringify(moodEmoji)) setMoodEmoji(settings.moodEmoji);
+          const last = lastLocalSettingsRef.current;
+          
+          // Применяем ТОЛЬКО если значение действительно изменилось извне
+          if (settings.theme && settings.theme !== last.theme) setTheme(settings.theme);
+          if (settings.lang && settings.lang !== last.lang) setLang(settings.lang);
+          if (settings.font !== undefined && settings.font !== last.fontScale) setFontScale(settings.font);
+          if (settings.writingFont && settings.writingFont !== last.writingFont) setWritingFont(settings.writingFont);
+          if (settings.bg && settings.bg !== last.bg) setBg(settings.bg);
+          if (settings.moodEmoji && JSON.stringify(settings.moodEmoji) !== JSON.stringify(last.moodEmoji)) setMoodEmoji(settings.moodEmoji);
         }
       }
     )
     .subscribe();
 
   return () => { if (supabase) supabase.removeChannel(profileChannel); };
-}, [user, theme, lang, fontScale, writingFont, bg, moodEmoji]); // Добавили зависимости для сравнения
+}, [user]);
   
   // 4. Отправка изменений в базу
   useEffect(() => {
