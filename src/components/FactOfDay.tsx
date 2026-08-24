@@ -2,17 +2,16 @@ import { useEffect, useState } from "react";
 import type { Lang } from "../i18n";
 import { todayISO } from "../store";
 
-const L: Record<string, { title: string; btn: string; loading: string; ai: string; book: string }> = {
-  ru: { title: "Факт дня", btn: "Ещё факт", loading: "Нейросеть думает…", ai: "сгенерировано ИИ", book: "из коллекции" },
-  en: { title: "Fact of the day", btn: "Another fact", loading: "AI is thinking…", ai: "AI-generated", book: "from collection" },
-  be: { title: "Факт дня", btn: "Яшчэ факт", loading: "Нейрасетка думае…", ai: "згенеравана ШІ", book: "з калекцыі" },
-  uk: { title: "Факт дня", btn: "Ще факт", loading: "Нейромережа думає…", ai: "згенеровано ШІ", book: "з колекції" },
-  de: { title: "Fakt des Tages", btn: "Noch ein Fakt", loading: "KI denkt nach…", ai: "KI-generiert", book: "aus der Sammlung" },
-  fr: { title: "Fait du jour", btn: "Un autre fait", loading: "L'IA réfléchit…", ai: "généré par IA", book: "de la collection" },
-  es: { title: "Dato del día", btn: "Otro dato", loading: "La IA está pensando…", ai: "generado por IA", book: "de la colección" },
+const L: Record<string, { title: string; sub: string; btn: string; loading: string; ai: string; book: string }> = {
+  ru: { title: "Факт дня", sub: "нейросеть подбирает интересное каждый день", btn: "Ещё факт", loading: "Нейросеть думает…", ai: "сгенерировано ИИ", book: "из коллекции" },
+  en: { title: "Fact of the day", sub: "the AI picks something new every day", btn: "Another fact", loading: "AI is thinking…", ai: "AI-generated", book: "from collection" },
+  be: { title: "Факт дня", sub: "нейрасетка штодзень падбірае цікавае", btn: "Яшчэ факт", loading: "Нейрасетка думае…", ai: "згенеравана ШІ", book: "з калекцыі" },
+  uk: { title: "Факт дня", sub: "нейромережа щодня добирає цікаве", btn: "Ще факт", loading: "Нейромережа думає…", ai: "згенеровано ШІ", book: "з колекції" },
+  de: { title: "Fakt des Tages", sub: "die KI wählt jeden Tag etwas Neues", btn: "Noch ein Fakt", loading: "KI denkt nach…", ai: "KI-generiert", book: "aus der Sammlung" },
+  fr: { title: "Fait du jour", sub: "l'IA choisit chaque jour une nouveauté", btn: "Un autre fait", loading: "L'IA réfléchit…", ai: "généré par IA", book: "de la collection" },
+  es: { title: "Dato del día", sub: "la IA elige algo nuevo cada día", btn: "Otro dato", loading: "La IA está pensando…", ai: "generado por IA", book: "de la colección" },
 };
 
-// Фолбэк, если нейросеть недоступна
 const FALLBACK: { ru: string; en: string }[] = [
   { ru: "Мёд не портится тысячи лет: археологи находили съедобный мёд в гробницах возрастом более 3000 лет.", en: "Honey never spoils: archaeologists have found 3,000-year-old honey that was still edible." },
   { ru: "У осьминогов три сердца и голубая кровь.", en: "Octopuses have three hearts and blue blood." },
@@ -82,25 +81,32 @@ export default function FactOfDay({ lang }: { lang: Lang }) {
   };
 
   return (
-    <div className="mt-5 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)]">
-          <span className="text-[16px]">💡</span>
-          {labels.title}
-          <span className="normal-case tracking-normal text-[10px] opacity-70">{fromAi ? `🤖 ${labels.ai}` : `📚 ${labels.book}`}</span>
-        </span>
+    <div className="mb-5 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
+      <div className="flex items-center gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--accent-soft)] text-[18px]">💡</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[13.5px] font-bold">{labels.title}</span>
+            <span className="rounded-full bg-[var(--hover)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-faint)]">
+              {fromAi ? `🤖 ${labels.ai}` : `📚 ${labels.book}`}
+            </span>
+          </div>
+          <p className="truncate text-[11px] text-[var(--ink-faint)]">{labels.sub}</p>
+        </div>
         <button
           onClick={shuffle}
-          className="flex h-8 items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[12px] font-semibold text-[var(--ink-soft)] transition-all duration-150 hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95"
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[12px] font-semibold text-[var(--ink-soft)] transition-all duration-150 hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95"
         >
-          🎲 {labels.btn}
+          🎲 <span className="hidden sm:inline">{labels.btn}</span>
         </button>
       </div>
-      {loading ? (
-        <p className="animate-pulse text-[14px] text-[var(--ink-faint)]">{labels.loading}</p>
-      ) : (
-        <p className="text-[14px] leading-relaxed text-[var(--ink)]">{text}</p>
-      )}
+      <div className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-4 py-3">
+        {loading ? (
+          <p className="animate-pulse text-[13.5px] text-[var(--ink-faint)]">{labels.loading}</p>
+        ) : (
+          <p className="text-[13.5px] leading-relaxed text-[var(--ink)]">{text}</p>
+        )}
+      </div>
     </div>
   );
 }
