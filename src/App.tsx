@@ -1,5 +1,4 @@
-import MobileBottomNav from "./components/MobileBottomNav";
-import { Suspense, lazy, useEffect, useRef, useState } from "react"; // <-- useRef ДОБАВЛЕН
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import type { Lang, TKey } from "./i18n";
 import { STRINGS, localeOf } from "./i18n";
 import type { ThemeId } from "./themes";
@@ -16,6 +15,7 @@ import LockScreen from "./components/LockScreen";
 import SleepView from "./components/SleepView";
 import InstallPrompt from "./components/InstallPrompt";
 import AuthScreen from "./components/AuthScreen";
+import MobileBottomNav from "./components/MobileBottomNav";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
 import { isLocalMode, setLocalMode, performInitialSync, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, type SyncStatus } from "./lib/sync";
@@ -47,6 +47,11 @@ export default function App() {
   const [showAuth, setShowAuth] = useState<boolean>(true);
   const [syncStatus, setSyncStatusState] = useState<SyncStatus>('idle');
 
+  // Защита от гонок: время последнего локального изменения для каждой даты
+  const lastUpdateTime = useRef<{ [key: string]: number }>({});
+  // Защита настроек от откатов
+  const lastLocalSettingsRef = useRef({ theme, lang, fontScale, writingFont, bg, moodEmoji });
+
   const now = useNow(1000);
   const locale = localeOf(lang);
   const t = (k: TKey) => STRINGS[lang][k] ?? STRINGS.ru[k];
@@ -54,6 +59,10 @@ export default function App() {
   const showToast = (msg: string) => setToast({ id: Date.now(), msg });
   useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(id); }, [toast]);
   useEffect(() => { const unsubscribe = subscribeToSyncStatus(setSyncStatusState); return unsubscribe; }, []);
+
+  useEffect(() => {
+    lastLocalSettingsRef.current = { theme, lang, fontScale, writingFont, bg, moodEmoji };
+  }, [theme, lang, fontScale, writingFont, bg, moodEmoji]);
 
   // 1. Загрузка данных при входе
   useEffect(() => {
@@ -77,7 +86,7 @@ export default function App() {
     }
   }, [user, authLoading]);
 
-  // 2. Realtime: Слушаем изменения заметок, задач и сна
+  // 2. Realtime: заметки, задачи, сон (с защитой от гонок — игнорируем события 3 сек после локального изменения)
   useEffect(() => {
     if (!user || isLocalMode() || !supabase) return;
 
@@ -86,6 +95,9 @@ export default function App() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'entries', filter: `user_id=eq.${user.id}` }, (payload) => {
         const entry = payload.new;
         if (entry) {
+          const nowMs = Date.now();
+          const lastUpdate = lastUpdateTime.current[entry.date] || 0;
+          if (nowMs - lastUpdate < 3000) return; // слишком рано после локального изменения
           setNotes((prev) => ({ ...prev, [entry.date]: entry.content || '' }));
           if (entry.mood !== null && entry.mood !== undefined) setMoods((prev) => ({ ...prev, [entry.date]: entry.mood }));
           if (entry.tags && entry.tags.length > 0) setTags((prev) => ({ ...prev, [entry.date]: entry.tags }));
@@ -95,26 +107,28 @@ export default function App() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` }, async (payload) => {
         const d = payload.new?.date || payload.old?.date;
         if (d) {
+          const nowMs = Date.now();
+          const lastUpdate = lastUpdateTime.current[`tasks-${d}`] || 0;
+          if (nowMs - lastUpdate < 3000) return;
           const { data } = await supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', d);
           if (data) setTasks((prev) => ({ ...prev, [d]: data.map((task) => ({ id: task.id, text: task.title, done: task.completed })) }));
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sleep_logs', filter: `user_id=eq.${user.id}` }, (payload) => {
         const sleep = payload.new;
-        if (sleep) setSleep((prev) => ({ ...prev, [sleep.date]: { hours: sleep.sleep_start ? parseFloat(sleep.sleep_start) : 0, quality: sleep.quality || 0, bedtime: sleep.sleep_start || '', waketime: sleep.sleep_end || '' } }));
+        if (sleep) {
+          const nowMs = Date.now();
+          const lastUpdate = lastUpdateTime.current[`sleep-${sleep.date}`] || 0;
+          if (nowMs - lastUpdate < 3000) return;
+          setSleep((prev) => ({ ...prev, [sleep.date]: { hours: sleep.sleep_start ? parseFloat(sleep.sleep_start) : 0, quality: sleep.quality || 0, bedtime: sleep.sleep_start || '', waketime: sleep.sleep_end || '' } }));
+        }
       })
       .subscribe();
 
     return () => { if (supabase) supabase.removeChannel(channel); };
   }, [user]);
 
-  // 3. Realtime: Слушаем изменения настроек (с защитой от откатов через useRef)
-  const lastLocalSettingsRef = useRef({ theme, lang, fontScale, writingFont, bg, moodEmoji });
-
-  useEffect(() => {
-    lastLocalSettingsRef.current = { theme, lang, fontScale, writingFont, bg, moodEmoji };
-  }, [theme, lang, fontScale, writingFont, bg, moodEmoji]);
-
+  // 3. Realtime: настройки (темы, языки) с защитой от откатов
   useEffect(() => {
     if (!user || isLocalMode() || !supabase) return;
 
@@ -141,19 +155,29 @@ export default function App() {
     return () => { if (supabase) supabase.removeChannel(profileChannel); };
   }, [user]);
 
-  // 4. Отправка изменений в базу
+  // 4. Отправка изменений в базу (с отметкой времени локального изменения)
   useEffect(() => {
     if (user && !isLocalMode()) {
+      lastUpdateTime.current[date] = Date.now();
       syncEntry(user.id, date, notes[date] ?? "", moods[date] ?? null, tags[date] ?? [], photos[date] ?? []);
     }
   }, [notes, moods, tags, photos, date, user]);
 
   useEffect(() => {
-    if (user && !isLocalMode()) syncTasks(user.id, date, tasks[date] ?? []);
+    if (user && !isLocalMode()) {
+      lastUpdateTime.current[`tasks-${date}`] = Date.now();
+      syncTasks(user.id, date, tasks[date] ?? []);
+    }
   }, [tasks, date, user]);
 
   useEffect(() => {
-    if (user && !isLocalMode()) { const s = sleep[date]; if (s) syncSleep(user.id, date, s); }
+    if (user && !isLocalMode()) { 
+      const s = sleep[date]; 
+      if (s) {
+        lastUpdateTime.current[`sleep-${date}`] = Date.now();
+        syncSleep(user.id, date, s);
+      }
+    }
   }, [sleep, date, user]);
 
   useEffect(() => {
@@ -250,8 +274,8 @@ export default function App() {
           </div>
         </div>
       )}
-      <InstallPrompt />
       <MobileBottomNav tab={tab} onTab={setTab} />
+      <InstallPrompt />
     </div>
   );
 }
