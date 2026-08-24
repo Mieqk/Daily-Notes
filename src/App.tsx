@@ -308,7 +308,7 @@ export default function App() {
   ) : <span className="flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]"><span className="h-1.5 w-1.5 rounded-full bg-[var(--ink-faint)]" />Локально</span>;
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-[var(--bg)] text-[var(--ink)] md:flex-row">
+    <div className="relative flex h-full flex-col overflow-hidden overscroll-none bg-[var(--bg)] text-[var(--ink)] md:flex-row">
       <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
         {bg === "dots" && <div className="bg-dots absolute inset-0 opacity-70" />}
         {bg === "grid" && <div className="bg-grid absolute inset-0 opacity-70" />}
