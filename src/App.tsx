@@ -75,6 +75,34 @@ export default function App() {
     }
   }, [user, authLoading]);
 
+  // Realtime подписка на изменения настроек
+useEffect(() => {
+  if (!user || isLocalMode() || !supabase) return;
+
+  const channel = supabase
+    .channel('profile-changes')
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+      (payload) => {
+        const settings = payload.new.settings;
+        if (settings) {
+          if (settings.theme) setTheme(settings.theme);
+          if (settings.lang) setLang(settings.lang);
+          if (settings.font !== undefined) setFontScale(settings.font);
+          if (settings.writingFont) setWritingFont(settings.writingFont);
+          if (settings.bg) setBg(settings.bg);
+          if (settings.moodEmoji) setMoodEmoji(settings.moodEmoji);
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    if (supabase) supabase.removeChannel(channel);
+  };
+}, [user]);
+
   // Отправка изменений в базу
   useEffect(() => {
     if (user && !isLocalMode()) {
