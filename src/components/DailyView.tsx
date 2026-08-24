@@ -271,6 +271,7 @@ useSwipe({
         })}
       </div>
 
+      <FactOfDay lang={lang} />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
         <div className="flex min-w-0 flex-col gap-5">
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)]" style={{ boxShadow: "var(--shadow-sm)" }}>
