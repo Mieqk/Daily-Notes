@@ -58,7 +58,6 @@ export default function App() {
   const [showAuth, setShowAuth] = useState<boolean>(true);
   const [syncStatus, setSyncStatusState] = useState<SyncStatus>('idle');
 
-  // ===== ЗАЩИТА ОТ ГОНОК =====
   const remoteSnapshot = useRef<Snapshot | null>(null);
   const initialLoadDone = useRef(false);
   const lastUpdateTime = useRef<{ [key: string]: number }>({});
@@ -76,16 +75,21 @@ export default function App() {
     lastLocalSettingsRef.current = { theme, lang, fontScale, writingFont, bg, moodEmoji };
   }, [theme, lang, fontScale, writingFont, bg, moodEmoji]);
 
-  // Помечаем снимок равным текущему локальному состоянию (после отправки)
   const markSnapshotAsSent = (n: typeof notes, tk: typeof tasks, md: typeof moods, tg: typeof tags, ph: typeof photos, sl: typeof sleep) => {
     remoteSnapshot.current = { notes: clone(n), tasks: clone(tk), moods: clone(md), tags: clone(tg), photos: clone(ph), sleep: clone(sl) };
   };
 
-  // 1. Загрузка данных при входе + создание снимка
+  // 1. Загрузка данных при входе + ПОВТОРНЫЕ ПОПЫТКИ + применение настроек
   useEffect(() => {
     if (!authLoading && user) {
       setLocalMode(false);
-      performInitialSync(user.id).then((remote) => {
+      setShowAuth(false);
+      let cancelled = false;
+
+      const load = async (attempt: number) => {
+        const remote = await performInitialSync(user.id);
+        if (cancelled) return;
+
         if (remote) {
           setNotes(remote.notes);
           setTasks(remote.tasks);
@@ -93,16 +97,34 @@ export default function App() {
           setTags(remote.tags);
           setPhotos(remote.photos);
           setSleep(remote.sleep);
+
+          // Применяем настройки с сервера
+          const s = remote.settings as Record<string, any>;
+          if (s) {
+            if (s.theme) setTheme(s.theme);
+            if (s.lang) setLang(s.lang);
+            if (s.font !== undefined) setFontScale(Number(s.font));
+            if (s.writingFont) setWritingFont(s.writingFont);
+            if (s.bg) setBg(s.bg);
+            if (s.moodEmoji) setMoodEmoji(s.moodEmoji);
+          }
+
           remoteSnapshot.current = {
             notes: clone(remote.notes), tasks: clone(remote.tasks), moods: clone(remote.moods),
             tags: clone(remote.tags), photos: clone(remote.photos), sleep: clone(remote.sleep),
           };
+          initialLoadDone.current = true;
+        } else if (attempt < 3) {
+          // Сессия могла не успеть восстановиться — пробуем ещё раз
+          window.setTimeout(() => { if (!cancelled) load(attempt + 1); }, 1500);
         } else {
           remoteSnapshot.current = { notes: {}, tasks: {}, moods: {}, tags: {}, photos: {}, sleep: {} };
+          initialLoadDone.current = true;
         }
-        initialLoadDone.current = true;
-      });
-      setShowAuth(false);
+      };
+
+      load(0);
+      return () => { cancelled = true; };
     } else if (!authLoading && !user && isLocalMode()) {
       setShowAuth(false);
     } else if (!authLoading && !user) {
@@ -110,7 +132,7 @@ export default function App() {
     }
   }, [user, authLoading]);
 
-  // 2. Realtime: применяем чужие изменения И обновляем снимок, чтобы не пересылать их обратно
+  // 2. Realtime: чужие изменения + обновление снимка
   useEffect(() => {
     if (!user || isLocalMode() || !supabase) return;
 
@@ -160,7 +182,7 @@ export default function App() {
     return () => { if (supabase) supabase.removeChannel(channel); };
   }, [user]);
 
-  // 3. Realtime: настройки (темы, языки) с защитой от откатов
+  // 3. Realtime: настройки
   useEffect(() => {
     if (!user || isLocalMode() || !supabase) return;
 
@@ -170,12 +192,12 @@ export default function App() {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
         (payload) => {
-          const settings = payload.new.settings;
+          const settings = payload.new.settings as Record<string, any>;
           if (settings) {
             const last = lastLocalSettingsRef.current;
             if (settings.theme && settings.theme !== last.theme) setTheme(settings.theme);
             if (settings.lang && settings.lang !== last.lang) setLang(settings.lang);
-            if (settings.font !== undefined && settings.font !== last.fontScale) setFontScale(settings.font);
+            if (settings.font !== undefined && settings.font !== last.fontScale) setFontScale(Number(settings.font));
             if (settings.writingFont && settings.writingFont !== last.writingFont) setWritingFont(settings.writingFont);
             if (settings.bg && settings.bg !== last.bg) setBg(settings.bg);
             if (settings.moodEmoji && JSON.stringify(settings.moodEmoji) !== JSON.stringify(last.moodEmoji)) setMoodEmoji(settings.moodEmoji);
@@ -187,7 +209,7 @@ export default function App() {
     return () => { if (supabase) supabase.removeChannel(profileChannel); };
   }, [user]);
 
-  // 4. Отправка ТОЛЬКО пользовательских изменений (сравнение со снимком)
+  // 4. Отправка только пользовательских изменений
   useEffect(() => {
     if (!user || isLocalMode() || !initialLoadDone.current) return;
     const snap = remoteSnapshot.current;
