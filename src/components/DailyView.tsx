@@ -316,8 +316,10 @@ useSwipe({
               <input value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(); } }} onBlur={addTag} placeholder={t("tagPlaceholder")} className="h-8 min-w-[130px] flex-1 rounded-full border border-dashed border-[var(--line)] bg-transparent px-3 text-[12.5px] outline-none placeholder:text-[var(--ink-faint)] focus:border-[var(--accent)]" />
             </div>
           </div>
-        </div>
 
+          <FactOfDay lang={lang} />
+        </div>
+        
         <div className="flex min-w-0 flex-col gap-5">
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
             <div className="mb-2 flex items-center justify-between">
