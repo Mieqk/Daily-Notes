@@ -87,7 +87,7 @@ export async function performInitialSync(userId: string) {
     }
 
     setSyncStatus('synced');
-    return { notes, tasks, moods, tags, photos, sleep, settings: remoteSettings };
+    return { notes, tasks, moods, tags, photos, sleep, settings: remoteSettings, writtenOn };
   } catch (error) {
     console.error('[SYNC] Initial sync failed:', error);
     setSyncStatus('error');
