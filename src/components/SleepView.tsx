@@ -75,7 +75,12 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
     .filter((x) => x.d && (x.d.hours > 0 || Boolean(x.d.bedtime)));
   const avgHours = week.length ? week.reduce((s, x) => s + (x.d!.hours || 0), 0) / week.length : null;
   const avgQuality = week.length ? week.reduce((s, x) => s + (x.d!.quality || 0), 0) / week.length : null;
-  const avgAwake = week.length ? week.reduce((s, x) => s + (x.d!.awakenings || 0), 0) / week.length : null;
+    const avgAwake = week.length ? week.reduce((s, x) => s + (x.d!.awakenings || 0), 0) / week.length : null;
+
+  const history = Array.from({ length: 14 }, (_, i) => shiftISO(today, -i))
+    .map((iso) => ({ iso, d: sleep[iso] }))
+    .filter((x) => x.d && (x.d.hours > 0 || Boolean(x.d.bedtime)))
+    .slice(0, 10);
 
   return (
     <div className="mx-auto max-w-6xl">
