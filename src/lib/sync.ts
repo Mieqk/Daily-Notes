@@ -56,11 +56,18 @@ export async function performInitialSync(userId: string) {
     const photos: Record<string, string[]> = {};
     const sleep: Record<string, SleepData> = {};
 
+    const writtenOn: Record<string, boolean> = {};
     for (const entry of remoteEntries) {
       notes[entry.date] = entry.content || '';
       if (entry.mood !== null && entry.mood !== undefined) moods[entry.date] = entry.mood;
       if (entry.tags && entry.tags.length > 0) tags[entry.date] = entry.tags;
       if (entry.photos && Array.isArray(entry.photos)) photos[entry.date] = entry.photos;
+      const ref = entry.created_at || entry.updated_at;
+      if (ref) {
+        const d = new Date(ref);
+        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        writtenOn[entry.date] = iso === entry.date;
+      }
     }
 
     for (const task of remoteTasks) {
