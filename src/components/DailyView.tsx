@@ -97,6 +97,13 @@ export default function DailyView(props: DailyViewProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<{ stop: () => void } | null>(null);
 
+  // Свайп для переключения дней
+useSwipe({
+  onSwipeLeft: () => onDate(shiftISO(date, 1)),  // Свайп влево = следующий день
+  onSwipeRight: () => onDate(shiftISO(date, -1)), // Свайп вправо = предыдущий день
+  threshold: 60,
+});
+
   useEffect(() => () => window.clearTimeout(statusTimer.current), []);
   useEffect(() => () => recRef.current?.stop(), []);
 
