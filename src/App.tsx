@@ -3,7 +3,7 @@ import type { Lang, TKey } from "./i18n";
 import { STRINGS, localeOf } from "./i18n";
 import type { ThemeId } from "./themes";
 import type { BgId, Tab, Task, SleepData, WritingFontId } from "./store";
-import { buildMarkdown, downloadText, hashPin, shiftISO, todayISO, useNow, useStored } from "./store";
+import { buildMarkdown, downloadText, hashPin, shiftISO, toISO, todayISO, useNow, useStored } from "./store";
 import { BG_IMAGES } from "./bg";
 import Sidebar from "./components/Sidebar";
 import DailyView from "./components/DailyView";
@@ -41,23 +41,25 @@ export default function App() {
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
   const [lang, setLang] = useStored<Lang>("dn.lang", "ru");
   const [fontScale, setFontScale] = useStored<number>("dn.font", 1);
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [tasks, setTasks] = useState<Record<string, Task[]>>({});
-  const [moods, setMoods] = useState<Record<string, number>>({});
-  const [tags, setTags] = useState<Record<string, string[]>>({});
-  const [photos, setPhotos] = useState<Record<string, string[]>>({});
+  // useStored = страховка: данные переживут случайную перезагрузку до синхрона
+  const [notes, setNotes] = useStored<Record<string, string>>("dn.notes", {});
+  const [tasks, setTasks] = useStored<Record<string, Task[]>>("dn.tasks", {});
+  const [moods, setMoods] = useStored<Record<string, number>>("dn.moods", {});
+  const [tags, setTags] = useStored<Record<string, string[]>>("dn.tags", {});
+  const [photos, setPhotos] = useStored<Record<string, string[]>>("dn.photos", {});
   const [reminder, setReminder] = useStored<Reminder>("dn.reminder", { time: "20:00", enabled: false });
   const [moodEmoji, setMoodEmoji] = useStored<string[]>("dn.emoji", ["", "", "", "", ""]);
   const [writingFont, setWritingFont] = useStored<WritingFontId>("dn.wfont", "body");
   const [bg, setBg] = useStored<BgId>("dn.bg", "dots");
   const [pinHash, setPinHash] = useStored<string | null>("dn.pin", null);
-  const [sleep, setSleep] = useState<Record<string, SleepData>>({});
+  const [sleep, setSleep] = useStored<Record<string, SleepData>>("dn.sleep", {});
 
   const [date, setDate] = useState<string>(todayISO());
   const [locked, setLocked] = useState<boolean>(() => Boolean(pinHash));
   const [toast, setToast] = useState<{ id: number; msg: string } | null>(null);
   const [showAuth, setShowAuth] = useState<boolean>(true);
   const [syncStatus, setSyncStatusState] = useState<SyncStatus>('idle');
+  const [writtenOn, setWrittenOn] = useState<Record<string, boolean>>({});
 
   const remoteSnapshot = useRef<Snapshot | null>(null);
   const initialLoadDone = useRef(false);
@@ -80,7 +82,7 @@ export default function App() {
     remoteSnapshot.current = { notes: clone(n), tasks: clone(tk), moods: clone(md), tags: clone(tg), photos: clone(ph), sleep: clone(sl) };
   };
 
-  // 1. Загрузка данных: привязана к userId (не к объекту user), 5 попыток, применение настроек
+  // 1. Загрузка данных
   useEffect(() => {
     if (!authLoading && userId) {
       setLocalMode(false);
@@ -98,6 +100,7 @@ export default function App() {
           setTags(remote.tags);
           setPhotos(remote.photos);
           setSleep(remote.sleep);
+          setWrittenOn(remote.writtenOn || {});
 
           const s = remote.settings as Record<string, any>;
           if (s) {
@@ -132,7 +135,7 @@ export default function App() {
     }
   }, [userId, authLoading]);
 
-  // 2. Realtime: чужие изменения + обновление снимка
+  // 2. Realtime
   useEffect(() => {
     if (!userId || isLocalMode() || !supabase) return;
 
@@ -148,6 +151,9 @@ export default function App() {
         if (entry.mood !== null && entry.mood !== undefined) setMoods((prev) => ({ ...prev, [entry.date]: entry.mood }));
         if (entry.tags && entry.tags.length > 0) setTags((prev) => ({ ...prev, [entry.date]: entry.tags }));
         if (entry.photos && Array.isArray(entry.photos)) setPhotos((prev) => ({ ...prev, [entry.date]: entry.photos }));
+        if (entry.created_at) {
+          setWrittenOn((prev) => ({ ...prev, [entry.date]: toISO(new Date(entry.created_at)) === entry.date }));
+        }
 
         if (remoteSnapshot.current) {
           remoteSnapshot.current.notes[entry.date] = entry.content || '';
@@ -173,7 +179,7 @@ export default function App() {
         if (!s) return;
         const nowMs = Date.now();
         if (nowMs - (lastUpdateTime.current[`sleep-${s.date}`] || 0) < 3000) return;
-                  const val = { hours: Number(s.hours) || 0, quality: s.quality || 0, bedtime: s.sleep_start || '', waketime: s.sleep_end || '', awakenings: Number(s.awakenings) || 0, note: s.note || '' };
+        const val = { hours: Number(s.hours) || 0, quality: s.quality || 0, bedtime: s.sleep_start || '', waketime: s.sleep_end || '', awakenings: Number(s.awakenings) || 0, note: s.note || '' };
         setSleep((prev) => ({ ...prev, [s.date]: val }));
         if (remoteSnapshot.current) remoteSnapshot.current.sleep[s.date] = clone(val);
       })
@@ -182,7 +188,7 @@ export default function App() {
     return () => { if (supabase) supabase.removeChannel(channel); };
   }, [userId]);
 
-  // 3. Realtime: настройки
+  // 3. Realtime настройки
   useEffect(() => {
     if (!userId || isLocalMode() || !supabase) return;
 
@@ -209,7 +215,7 @@ export default function App() {
     return () => { if (supabase) supabase.removeChannel(profileChannel); };
   }, [userId]);
 
-  // 4. Отправка только пользовательских изменений
+  // 4. Отправка изменений
   useEffect(() => {
     if (!userId || isLocalMode() || !initialLoadDone.current) return;
     const snap = remoteSnapshot.current;
@@ -219,6 +225,7 @@ export default function App() {
       JSON.stringify(snap.tags) === JSON.stringify(tags) &&
       JSON.stringify(snap.photos) === JSON.stringify(photos);
     if (unchanged) return;
+    setWrittenOn((prev) => (prev[date] !== undefined ? prev : { ...prev, [date]: date === todayISO() }));
     lastUpdateTime.current[date] = Date.now();
     syncEntry(userId, date, notes[date] ?? "", moods[date] ?? null, tags[date] ?? [], photos[date] ?? []);
     markSnapshotAsSent(notes, tasks, moods, tags, photos, sleep);
@@ -261,9 +268,15 @@ export default function App() {
     document.title = lang === "ru" ? "Дейли Ноутс" : "Daily Notes";
   }, [lang]);
 
+  // ===== ЧЕСТНАЯ СЕРИЯ =====
+  // День засчитывается, только если заметка создана в этот же день.
+  // Если сегодня ещё не писал — серия показывается по вчерашнюю (не сгорает днём).
   const today = todayISO();
   let streak = 0;
-  for (let iso = today; (notes[iso] ?? "").trim().length > 0; iso = shiftISO(iso, -1)) streak += 1;
+  {
+    let iso = writtenOn[today] && (notes[today] ?? "").trim() ? today : shiftISO(today, -1);
+    for (; (notes[iso] ?? "").trim() && writtenOn[iso]; iso = shiftISO(iso, -1)) streak += 1;
+  }
   const weekMarks = Array.from({ length: 7 }, (_, i) => Boolean((notes[shiftISO(today, i - 6)] ?? "").trim()));
   const notesCount = Object.keys(notes).filter((k) => (notes[k] ?? "").trim()).length;
   const tasksCount = Object.values(tasks).reduce((sum, list) => sum + (list?.length ?? 0), 0);
