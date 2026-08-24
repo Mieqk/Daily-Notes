@@ -107,32 +107,33 @@ export default function App() {
     return () => { if (supabase) supabase.removeChannel(channel); };
   }, [user]);
 
-  // 3. Realtime: Слушаем изменения настроек (темы, языки)
-  useEffect(() => {
-    if (!user || isLocalMode() || !supabase) return;
+ // 3. Realtime: Слушаем изменения настроек (с защитой от откатов)
+useEffect(() => {
+  if (!user || isLocalMode() || !supabase) return;
 
-    const profileChannel = supabase
-      .channel('profile-changes')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
-        (payload) => {
-          const settings = payload.new.settings;
-          if (settings) {
-            if (settings.theme) setTheme(settings.theme);
-            if (settings.lang) setLang(settings.lang);
-            if (settings.font !== undefined) setFontScale(settings.font);
-            if (settings.writingFont) setWritingFont(settings.writingFont);
-            if (settings.bg) setBg(settings.bg);
-            if (settings.moodEmoji) setMoodEmoji(settings.moodEmoji);
-          }
+  const profileChannel = supabase
+    .channel('profile-changes')
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+      (payload) => {
+        const settings = payload.new.settings;
+        if (settings) {
+          // Применяем ТОЛЬКО если значение действительно отличается от текущего
+          if (settings.theme && settings.theme !== theme) setTheme(settings.theme);
+          if (settings.lang && settings.lang !== lang) setLang(settings.lang);
+          if (settings.font !== undefined && settings.font !== fontScale) setFontScale(settings.font);
+          if (settings.writingFont && settings.writingFont !== writingFont) setWritingFont(settings.writingFont);
+          if (settings.bg && settings.bg !== bg) setBg(settings.bg);
+          if (settings.moodEmoji && JSON.stringify(settings.moodEmoji) !== JSON.stringify(moodEmoji)) setMoodEmoji(settings.moodEmoji);
         }
-      )
-      .subscribe();
+      }
+    )
+    .subscribe();
 
-    return () => { if (supabase) supabase.removeChannel(profileChannel); };
-  }, [user]);
-
+  return () => { if (supabase) supabase.removeChannel(profileChannel); };
+}, [user, theme, lang, fontScale, writingFont, bg, moodEmoji]); // Добавили зависимости для сравнения
+  
   // 4. Отправка изменений в базу
   useEffect(() => {
     if (user && !isLocalMode()) {
