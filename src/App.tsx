@@ -22,9 +22,20 @@ import { isLocalMode, setLocalMode, performInitialSync, subscribeToSyncStatus, s
 
 const FONT_SCALES = ["93.75%", "100%", "109%"];
 
+type Snapshot = {
+  notes: Record<string, string>;
+  tasks: Record<string, Task[]>;
+  moods: Record<string, number>;
+  tags: Record<string, string[]>;
+  photos: Record<string, string[]>;
+  sleep: Record<string, SleepData>;
+};
+
+const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
+
 export default function App() {
   const { user, loading: authLoading } = useAuth();
-  
+
   const [tab, setTab] = useStored<Tab>("dn.tab", "daily");
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
   const [lang, setLang] = useStored<Lang>("dn.lang", "ru");
@@ -48,16 +59,7 @@ export default function App() {
   const [syncStatus, setSyncStatusState] = useState<SyncStatus>('idle');
 
   // ===== ЗАЩИТА ОТ ГОНОК =====
-  // "Снимок" данных, загруженных с сервера. Пока пользователь не изменит
-  // данные относительно снимка — ничего не отправляется в базу.
-  const remoteSnapshot = useRef<{
-    notes: Record<string, string>;
-    tasks: Record<string, Task[]>;
-    moods: Record<string, number>;
-    tags: Record<string, string[]>;
-    photos: Record<string, string[]>;
-    sleep: Record<string, SleepData>;
-  } | null>(null);
+  const remoteSnapshot = useRef<Snapshot | null>(null);
   const initialLoadDone = useRef(false);
   const lastUpdateTime = useRef<{ [key: string]: number }>({});
   const lastLocalSettingsRef = useRef({ theme, lang, fontScale, writingFont, bg, moodEmoji });
@@ -74,6 +76,11 @@ export default function App() {
     lastLocalSettingsRef.current = { theme, lang, fontScale, writingFont, bg, moodEmoji };
   }, [theme, lang, fontScale, writingFont, bg, moodEmoji]);
 
+  // Помечаем снимок равным текущему локальному состоянию (после отправки)
+  const markSnapshotAsSent = (n: typeof notes, tk: typeof tasks, md: typeof moods, tg: typeof tags, ph: typeof photos, sl: typeof sleep) => {
+    remoteSnapshot.current = { notes: clone(n), tasks: clone(tk), moods: clone(md), tags: clone(tg), photos: clone(ph), sleep: clone(sl) };
+  };
+
   // 1. Загрузка данных при входе + создание снимка
   useEffect(() => {
     if (!authLoading && user) {
@@ -87,12 +94,8 @@ export default function App() {
           setPhotos(remote.photos);
           setSleep(remote.sleep);
           remoteSnapshot.current = {
-            notes: remote.notes,
-            tasks: remote.tasks,
-            moods: remote.moods,
-            tags: remote.tags,
-            photos: remote.photos,
-            sleep: remote.sleep,
+            notes: clone(remote.notes), tasks: clone(remote.tasks), moods: clone(remote.moods),
+            tags: clone(remote.tags), photos: clone(remote.photos), sleep: clone(remote.sleep),
           };
         } else {
           remoteSnapshot.current = { notes: {}, tasks: {}, moods: {}, tags: {}, photos: {}, sleep: {} };
@@ -107,7 +110,7 @@ export default function App() {
     }
   }, [user, authLoading]);
 
-  // 2. Realtime: заметки, задачи, сон (игнорируем 3 сек после локального изменения)
+  // 2. Realtime: применяем чужие изменения И обновляем снимок, чтобы не пересылать их обратно
   useEffect(() => {
     if (!user || isLocalMode() || !supabase) return;
 
@@ -115,31 +118,42 @@ export default function App() {
       .channel('db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'entries', filter: `user_id=eq.${user.id}` }, (payload) => {
         const entry = payload.new;
-        if (entry) {
-          const nowMs = Date.now();
-          if (nowMs - (lastUpdateTime.current[entry.date] || 0) < 3000) return;
-          setNotes((prev) => ({ ...prev, [entry.date]: entry.content || '' }));
-          if (entry.mood !== null && entry.mood !== undefined) setMoods((prev) => ({ ...prev, [entry.date]: entry.mood }));
-          if (entry.tags && entry.tags.length > 0) setTags((prev) => ({ ...prev, [entry.date]: entry.tags }));
-          if (entry.photos && Array.isArray(entry.photos)) setPhotos((prev) => ({ ...prev, [entry.date]: entry.photos }));
+        if (!entry) return;
+        const nowMs = Date.now();
+        if (nowMs - (lastUpdateTime.current[entry.date] || 0) < 3000) return;
+
+        setNotes((prev) => ({ ...prev, [entry.date]: entry.content || '' }));
+        if (entry.mood !== null && entry.mood !== undefined) setMoods((prev) => ({ ...prev, [entry.date]: entry.mood }));
+        if (entry.tags && entry.tags.length > 0) setTags((prev) => ({ ...prev, [entry.date]: entry.tags }));
+        if (entry.photos && Array.isArray(entry.photos)) setPhotos((prev) => ({ ...prev, [entry.date]: entry.photos }));
+
+        if (remoteSnapshot.current) {
+          remoteSnapshot.current.notes[entry.date] = entry.content || '';
+          if (entry.mood !== null && entry.mood !== undefined) remoteSnapshot.current.moods[entry.date] = entry.mood;
+          if (entry.tags && entry.tags.length > 0) remoteSnapshot.current.tags[entry.date] = entry.tags;
+          if (entry.photos && Array.isArray(entry.photos)) remoteSnapshot.current.photos[entry.date] = entry.photos;
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` }, async (payload) => {
         const d = payload.new?.date || payload.old?.date;
-        if (d) {
-          const nowMs = Date.now();
-          if (nowMs - (lastUpdateTime.current[`tasks-${d}`] || 0) < 3000) return;
-          const { data } = await supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', d);
-          if (data) setTasks((prev) => ({ ...prev, [d]: data.map((task) => ({ id: task.id, text: task.title, done: task.completed })) }));
+        if (!d) return;
+        const nowMs = Date.now();
+        if (nowMs - (lastUpdateTime.current[`tasks-${d}`] || 0) < 3000) return;
+        const { data } = await supabase.from('tasks').select('*').eq('user_id', user.id).eq('date', d);
+        if (data) {
+          const mapped = data.map((task) => ({ id: task.id, text: task.title, done: task.completed }));
+          setTasks((prev) => ({ ...prev, [d]: mapped }));
+          if (remoteSnapshot.current) remoteSnapshot.current.tasks[d] = clone(mapped);
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sleep_logs', filter: `user_id=eq.${user.id}` }, (payload) => {
         const s = payload.new;
-        if (s) {
-          const nowMs = Date.now();
-          if (nowMs - (lastUpdateTime.current[`sleep-${s.date}`] || 0) < 3000) return;
-          setSleep((prev) => ({ ...prev, [s.date]: { hours: s.sleep_start ? parseFloat(s.sleep_start) : 0, quality: s.quality || 0, bedtime: s.sleep_start || '', waketime: s.sleep_end || '' } }));
-        }
+        if (!s) return;
+        const nowMs = Date.now();
+        if (nowMs - (lastUpdateTime.current[`sleep-${s.date}`] || 0) < 3000) return;
+        const val = { hours: s.sleep_start ? parseFloat(s.sleep_start) : 0, quality: s.quality || 0, bedtime: s.sleep_start || '', waketime: s.sleep_end || '' };
+        setSleep((prev) => ({ ...prev, [s.date]: val }));
+        if (remoteSnapshot.current) remoteSnapshot.current.sleep[s.date] = clone(val);
       })
       .subscribe();
 
@@ -173,9 +187,7 @@ export default function App() {
     return () => { if (supabase) supabase.removeChannel(profileChannel); };
   }, [user]);
 
-  // 4. Отправка изменений в базу.
-  // ГЛАВНАЯ ЗАЩИТА: отправляем ТОЛЬКО если данные реально изменены пользователем
-  // относительно снимка с сервера. Загрузка пустых данных больше не стирает базу.
+  // 4. Отправка ТОЛЬКО пользовательских изменений (сравнение со снимком)
   useEffect(() => {
     if (!user || isLocalMode() || !initialLoadDone.current) return;
     const snap = remoteSnapshot.current;
@@ -187,6 +199,7 @@ export default function App() {
     if (unchanged) return;
     lastUpdateTime.current[date] = Date.now();
     syncEntry(user.id, date, notes[date] ?? "", moods[date] ?? null, tags[date] ?? [], photos[date] ?? []);
+    markSnapshotAsSent(notes, tasks, moods, tags, photos, sleep);
   }, [notes, moods, tags, photos, date, user]);
 
   useEffect(() => {
@@ -195,6 +208,7 @@ export default function App() {
     if (snap && JSON.stringify(snap.tasks) === JSON.stringify(tasks)) return;
     lastUpdateTime.current[`tasks-${date}`] = Date.now();
     syncTasks(user.id, date, tasks[date] ?? []);
+    markSnapshotAsSent(notes, tasks, moods, tags, photos, sleep);
   }, [tasks, date, user]);
 
   useEffect(() => {
@@ -205,6 +219,7 @@ export default function App() {
     if (s) {
       lastUpdateTime.current[`sleep-${date}`] = Date.now();
       syncSleep(user.id, date, s);
+      markSnapshotAsSent(notes, tasks, moods, tags, photos, sleep);
     }
   }, [sleep, date, user]);
 
