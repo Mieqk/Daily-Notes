@@ -81,7 +81,7 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
     setMe(my);
 
     // дружбы
-    const { data: rows } = await supabase!.from("friendships").select("*").eq("user_a", userId).or(`user_b.eq.${userId}`);
+        const { data: rows } = await supabase!.from("friendships").select("*").or(`user_a.eq.${userId},user_b.eq.${userId}`);
     const all = (rows ?? []) as Friendship[];
 
     const accepted = all.filter((r) => r.status === "accepted");
