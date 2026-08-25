@@ -171,8 +171,7 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
           </div>
           <div className="min-w-[180px] flex-1">
             <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("name")}</div>
-            <input value={me?.display_name ?? ""} onChange={(e) => saveProfile({ display_name: e.target.value })} placeholder={t("namePh")} className="h-10 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-sm outline-none focus:border-[var(--accent)]" />
-          </div>
+            <input value={me?.display_name ?? ""} onChange={(e) => { const v = e.target.value; setMe((m) => (m ? { ...m, display_name: v } : m)); window.clearTimeout(nameTimer.current); nameTimer.current = window.setTimeout(() => saveProfile({ display_name: v }), 800); }} placeholder={t("namePh")} className="h-10 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-sm outline-none focus:border-[var(--accent)]" />          </div>
           <div>
             <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("myCode")}</div>
             <button onClick={copyCode} className="flex h-10 items-center gap-2 rounded-lg border border-dashed border-[var(--accent)] bg-[var(--accent-soft)] px-4 font-mono text-[15px] font-bold tracking-[0.2em] text-[var(--accent-deep)] active:scale-95">
