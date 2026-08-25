@@ -12,7 +12,15 @@ interface AccountMenuProps {
   onGoFriends: () => void;
 }
 
-interface Profile { id: string; display_name: string | null; avatar: string | null; friend_code: string | null; }
+interface Profile {
+  id: string;
+  display_name: string | null;
+  avatar: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  friend_code: string | null;
+}
+
 interface Req { id: string; profile: Profile; }
 
 const L: Record<string, Record<string, string>> = {
@@ -55,16 +63,31 @@ export default function AccountMenu({ userId, lang, streak, notesCount, hasPin, 
     load();
   };
 
+  const ava = (p: Profile | null, sizeCls: string, emojiSize: string) =>
+    p?.avatar_url ? (
+      <img src={p.avatar_url} alt="" className={`${sizeCls} object-cover`} />
+    ) : (
+      <span className={`${sizeCls} grid place-items-center bg-[var(--accent-soft)]`} style={{ fontSize: emojiSize }}>
+        {p?.avatar || "👤"}
+      </span>
+    );
+
+  const badges = [
+    { icon: "🌱", on: true },
+    { icon: "🔥", on: streak >= 3 },
+    { icon: "✍️", on: notesCount >= 10 },
+  ].filter((b) => b.on);
+
   return (
     <>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--line)] bg-[var(--panel)] text-[16px] transition-all active:scale-90"
+        className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-[var(--line)] bg-[var(--panel)] transition-all active:scale-90"
         aria-label={t("account")}
       >
-        {me?.avatar || "👤"}
+        {ava(me, "h-full w-full", "16px")}
         {reqs.length > 0 && (
-          <span className="absolute -right-1 -top-1 grid h-4.5 min-w-[18px] place-items-center rounded-full bg-[var(--danger)] px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 grid min-w-[18px] place-items-center rounded-full bg-[var(--danger)] px-1 text-[10px] font-bold text-white">
             {reqs.length}
           </span>
         )}
@@ -76,10 +99,15 @@ export default function AccountMenu({ userId, lang, streak, notesCount, hasPin, 
           <div className="animate-pop fixed right-3 top-[70px] z-50 w-[320px] max-w-[calc(100vw-24px)] rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow)" }}>
             {/* Профиль */}
             <div className="flex items-center gap-3">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[var(--accent-soft)] text-[24px]">{me?.avatar || "👤"}</span>
+              <span className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">{ava(me, "h-full w-full", "24px")}</span>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[14.5px] font-bold">{me?.display_name || t("account")}</div>
-                <div className="text-[11px] text-[var(--ink-faint)]">{t("code")}: <span className="font-mono font-bold tracking-widest">{me?.friend_code ?? "…"}</span></div>
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate text-[14.5px] font-bold">{me?.display_name || t("account")}</span>
+                  <span className="flex shrink-0 gap-0.5 text-[12px]">{badges.map((b) => <span key={b.icon}>{b.icon}</span>)}</span>
+                </div>
+                <div className="truncate text-[11px] text-[var(--ink-faint)]">
+                  {me?.bio || <>{t("code")}: <span className="font-mono font-bold tracking-widest">{me?.friend_code ?? "…"}</span></>}
+                </div>
               </div>
             </div>
 
@@ -98,7 +126,7 @@ export default function AccountMenu({ userId, lang, streak, notesCount, hasPin, 
                 {reqs.map((r) => (
                   <div key={r.id} className="flex items-center justify-between gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 py-2">
                     <span className="flex min-w-0 items-center gap-2">
-                      <span className="text-[16px]">{r.profile.avatar || "🙂"}</span>
+                      <span className="h-7 w-7 shrink-0 overflow-hidden rounded-lg">{ava(r.profile, "h-full w-full", "14px")}</span>
                       <span className="truncate text-[12.5px] font-semibold">{r.profile.display_name || r.profile.friend_code}</span>
                     </span>
                     <button onClick={() => accept(r.id)} className="h-8 shrink-0 rounded-lg bg-[var(--accent)] px-3 text-[11.5px] font-semibold text-[var(--accent-ink)] active:scale-95">
