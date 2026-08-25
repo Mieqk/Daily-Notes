@@ -22,7 +22,7 @@ interface Friendship {
   status: string;
 }
 
-const AVATARS = ["😎", "", "", "🌸", "🔥", "", "", "", "🐙", "🦄", "🍀", ""];
+const AVATARS = ["😎", "🌙", "🌸", "", "", "🐶", "🦊", "", "🦄", "🍀", "⭐", "🎧"];
 
 const L: Record<string, Record<string, string>> = {
   ru: {
