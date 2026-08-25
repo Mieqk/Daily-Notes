@@ -22,6 +22,7 @@ import {
   PenIcon,
   StatsIcon,
   SleepIcon,
+  UsersIcon,
 } from "../icons";
 
 interface SidebarProps {
