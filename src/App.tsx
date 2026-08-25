@@ -335,6 +335,7 @@ export default function App() {
               <span className="font-display text-lg font-semibold tabular-nums tracking-tight">{clock}</span>
             </span>
             <span className="hidden h-9 items-center rounded-full border border-[var(--line)] bg-[var(--panel)] px-3.5 text-xs font-medium text-[var(--ink-soft)] sm:flex">{dateChip}</span>
+            {userId && <AccountMenu userId={userId} lang={lang} streak={streak} notesCount={notesCount} hasPin={Boolean(pinHash)} onLock={() => setLocked(true)} onGoFriends={() => setTab("friends")} />}
           </div>
         </header>
 
