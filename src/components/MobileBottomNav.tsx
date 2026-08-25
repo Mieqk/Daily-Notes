@@ -1,4 +1,4 @@
-import { CalendarIcon, StatsIcon, NotebookIcon, SleepIcon, GearIcon } from "../icons";
+import { CalendarIcon, StatsIcon, NotebookIcon, SleepIcon, GearIcon, UsersIcon } from "../icons";
 import type { Tab } from "../store";
 
 interface MobileBottomNavProps {
