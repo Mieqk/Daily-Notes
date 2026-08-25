@@ -45,6 +45,8 @@ interface SidebarProps {
 type MenuId = "theme" | "lang" | null;
 
 const TABS: { id: Tab; icon: (p: { className?: string }) => ReactNode; key: TKey }[] = [
+  { id: "daily", icon: CalendarIcon, key: "tabDaily" },
+  { id: "stats", icon: StatsIcon, key: "tabStats" },
   { id: "sleep", icon: SleepIcon, key: "tabSleep" },
   { id: "notes", icon: NotebookIcon, key: "tabNotes" },
   { id: "friends", icon: UsersIcon, key: "tabFriends" },
