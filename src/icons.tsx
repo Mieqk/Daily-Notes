@@ -334,8 +334,9 @@ export const WifiOff = ({ className = "h-5 w-5" }: IconProps) => (
     <path d="M16.5 15.05a7 7 0 0 1 2.58 2.58" />
     <circle cx="12" cy="20" r="1" fill="currentColor" stroke="none" />
   </svg>
+);
 
-  export function UsersIcon({ className }: { className?: string }) {
+export function UsersIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
       <circle cx="9" cy="8" r="3.5" />
@@ -345,4 +346,3 @@ export const WifiOff = ({ className = "h-5 w-5" }: IconProps) => (
     </svg>
   );
 }
-
