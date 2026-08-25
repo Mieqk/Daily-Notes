@@ -345,4 +345,4 @@ export const WifiOff = ({ className = "h-5 w-5" }: IconProps) => (
     </svg>
   );
 }
-);
+
