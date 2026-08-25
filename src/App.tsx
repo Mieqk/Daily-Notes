@@ -43,7 +43,6 @@ export default function App() {
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
   const [lang, setLang] = useStored<Lang>("dn.lang", "ru");
   const [fontScale, setFontScale] = useStored<number>("dn.font", 1);
-  // useStored = страховка: данные переживут случайную перезагрузку до синхрона
   const [notes, setNotes] = useStored<Record<string, string>>("dn.notes", {});
   const [tasks, setTasks] = useStored<Record<string, Task[]>>("dn.tasks", {});
   const [moods, setMoods] = useStored<Record<string, number>>("dn.moods", {});
@@ -84,7 +83,6 @@ export default function App() {
     remoteSnapshot.current = { notes: clone(n), tasks: clone(tk), moods: clone(md), tags: clone(tg), photos: clone(ph), sleep: clone(sl) };
   };
 
-  // 1. Загрузка данных
   useEffect(() => {
     if (!authLoading && userId) {
       setLocalMode(false);
@@ -137,7 +135,6 @@ export default function App() {
     }
   }, [userId, authLoading]);
 
-  // 2. Realtime
   useEffect(() => {
     if (!userId || isLocalMode() || !supabase) return;
 
@@ -190,7 +187,6 @@ export default function App() {
     return () => { if (supabase) supabase.removeChannel(channel); };
   }, [userId]);
 
-  // 3. Realtime настройки
   useEffect(() => {
     if (!userId || isLocalMode() || !supabase) return;
 
@@ -217,7 +213,6 @@ export default function App() {
     return () => { if (supabase) supabase.removeChannel(profileChannel); };
   }, [userId]);
 
-  // 4. Отправка изменений
   useEffect(() => {
     if (!userId || isLocalMode() || !initialLoadDone.current) return;
     const snap = remoteSnapshot.current;
@@ -270,9 +265,6 @@ export default function App() {
     document.title = lang === "ru" ? "Дейли Ноутс" : "Daily Notes";
   }, [lang]);
 
-  // ===== ЧЕСТНАЯ СЕРИЯ =====
-  // День засчитывается, только если заметка создана в этот же день.
-  // Если сегодня ещё не писал — серия показывается по вчерашнюю (не сгорает днём).
   const today = todayISO();
   let streak = 0;
   {
@@ -293,8 +285,12 @@ export default function App() {
   if (locked && pinHash) return <LockScreen pinLength={pinLen} onTry={(pin) => { if (hashPin(pin) === pinHash) { setLocked(false); return true; } return false; }} t={t} />;
 
   const tabMeta: Record<Tab, { title: string; sub: string }> = {
-    daily: { title: t("dailyTitle"), sub: t("dailySub") }, stats: { title: t("statsTitle"), sub: t("statsSub") },
-    notes: { title: t("notesTitle"), sub: t("notesSub") }, sleep: { title: t("sleepTitle"), sub: t("sleepSub") }, settings: { title: t("settingsTitle"), sub: t("settingsSub") },
+    daily: { title: t("dailyTitle"), sub: t("dailySub") },
+    stats: { title: t("statsTitle"), sub: t("statsSub") },
+    notes: { title: t("notesTitle"), sub: t("notesSub") },
+    sleep: { title: t("sleepTitle"), sub: t("sleepSub") },
+    friends: { title: t("friendsTitle"), sub: t("friendsSub") },
+    settings: { title: t("settingsTitle"), sub: t("settingsSub") },
   };
 
   const clock = now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
