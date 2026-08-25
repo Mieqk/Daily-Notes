@@ -11,6 +11,7 @@ const TABS = [
   { id: "stats" as Tab, icon: StatsIcon, label: "Стата" },
   { id: "notes" as Tab, icon: NotebookIcon, label: "Заметки" },
   { id: "sleep" as Tab, icon: SleepIcon, label: "Сон" },
+  { id: "friends" as Tab, icon: UsersIcon, label: "Друзья" },
   { id: "settings" as Tab, icon: GearIcon, label: "Настройки" },
 ];
 
