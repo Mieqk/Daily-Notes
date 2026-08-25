@@ -17,6 +17,8 @@ const ru = {
   langTitle: "Язык интерфейса",
   storageHint: "Данные хранятся локально в вашем браузере",
   lockBtn: "Заблокировать",
+  friendsTitle: "Друзья",
+  friendsSub: "делись моментами с близкими",
 
   dailyTitle: "Дейли ноут",
   dailySub: "запись, задачи и настроение на выбранный день",
@@ -206,6 +208,8 @@ const en: Record<TKey, string> = {
   langTitle: "Interface language",
   storageHint: "Data is stored locally in your browser",
   lockBtn: "Lock app",
+  friendsTitle: "Friends",
+  friendsSub: "share moments with close ones",
 
   dailyTitle: "Daily note",
   dailySub: "journal, tasks & mood for the selected day",
@@ -393,6 +397,8 @@ const be: Record<TKey, string> = {
   langTitle: "Мова інтэрфейсу",
   storageHint: "Дадзеныя захоўваюцца лакальна ў вашым браўзеры",
   lockBtn: "Заблакаваць",
+  friendsTitle: "Сябры",
+  friendsSub: "дзяліся момантамі з блізкімі",
 
   dailyTitle: "Дзённы запіс",
   dailySub: "запіс, задачы і настрой на выбраны дзень",
@@ -570,9 +576,9 @@ const uk: Record<TKey, string> = {
   tabDaily: "Щоденний запис",
   tabStats: "Статистика",
   tabNotes: "Нотатки",
-  tabFriends: "Друзі",
   tabSettings: "Налаштування",
   tabSleep: "Сон",
+  tabFriends: "Друзі",
   personalize: "Персоналізація",
   theme: "Тема",
   language: "Мова",
@@ -580,6 +586,8 @@ const uk: Record<TKey, string> = {
   langTitle: "Мова інтерфейсу",
   storageHint: "Дані зберігаються локально у вашому браузері",
   lockBtn: "Заблокувати",
+  friendsTitle: "Друзі",
+  friendsSub: "ділися моментами з близькими",
 
   dailyTitle: "Щоденний запис",
   dailySub: "запис, завдання і настрій на обраний день",
@@ -757,8 +765,8 @@ const de: Record<TKey, string> = {
   tabDaily: "Tagesnotiz",
   tabStats: "Statistik",
   tabNotes: "Notizen",
-  tabFriends: "Freunde",
   tabSettings: "Einstellungen",
+  tabFriends: "Freunde",
   personalize: "Personalisieren",
   theme: "Thema",
   tabSleep: "Schlaf",
@@ -767,6 +775,8 @@ const de: Record<TKey, string> = {
   langTitle: "Oberflächensprache",
   storageHint: "Daten werden lokal in Ihrem Browser gespeichert",
   lockBtn: "App sperren",
+  friendsTitle: "Freunde",
+  friendsSub: "Momente mit Nahestehenden teilen",
 
   dailyTitle: "Tagesnotiz",
   dailySub: "Tagebuch, Aufgaben & Stimmung für den ausgewählten Tag",
@@ -944,8 +954,8 @@ const fr: Record<TKey, string> = {
   tabDaily: "Note quotidienne",
   tabStats: "Statistiques",
   tabNotes: "Notes",
-  tabFriends: "Amis",
   tabSettings: "Paramètres",
+  tabFriends: "Amis",
   personalize: "Personnaliser",
   theme: "Thème",
   language: "Langue",
@@ -954,6 +964,8 @@ const fr: Record<TKey, string> = {
   langTitle: "Langue de l'interface",
   storageHint: "Les données sont stockées localement dans votre navigateur",
   lockBtn: "Verrouiller l'appli",
+  friendsTitle: "Amis",
+  friendsSub: "partagez des moments avec vos proches",
 
   dailyTitle: "Note quotidienne",
   dailySub: "journal, tâches & humeur du jour sélectionné",
@@ -1129,8 +1141,8 @@ const es: Record<TKey, string> = {
   tabDaily: "Nota diaria",
   tabStats: "Estadísticas",
   tabNotes: "Notas",
-  tabFriends: "Amigos",
   tabSettings: "Configuración",
+  tabFriends: "Amigos",
   personalize: "Personalizar",
   theme: "Tema",
   language: "Idioma",
@@ -1139,6 +1151,8 @@ const es: Record<TKey, string> = {
   storageHint: "Los datos se almacenan localmente en su navegador",
   lockBtn: "Bloquear aplicación",
   tabSleep: "Sueño",
+  friendsTitle: "Amigos",
+  friendsSub: "comparte momentos con seres queridos",
 
   dailyTitle: "Nota diaria",
   dailySub: "diario, tareas y estado de ánimo del día seleccionado",
@@ -1307,7 +1321,6 @@ const es: Record<TKey, string> = {
   sleepRecentSub: "detalles de entradas de sueño recientes",
 };
 
-
 export const MOODS: Record<Lang, string[]> = {
   ru: ["Тяжело", "Так себе", "Нормально", "Хорошо", "Отлично"],
   en: ["Rough", "Meh", "Okay", "Good", "Great"],
@@ -1409,22 +1422,3 @@ export function localeOf(lang: Lang): string {
 }
 
 export const STRINGS: Record<Lang, Record<TKey, string>> = { ru, en, be, uk, de, fr, es };
-
-// Additional auth-related strings (added for sync feature)
-const ru_auth = {
-  secAccount: "Аккаунт",
-  secAccountSub: "управление аккаунтом и синхронизацией",
-  logoutBtn: "Выйти",
-  toastLoggedOut: "Вы вышли из аккаунта",
-  localModeText: "Вы работаете в локальном режиме. Данные хранятся только в этом браузере.",
-  localModeHint: "Войдите в аккаунт для синхронизации между устройствами",
-};
-
-const en_auth: Record<keyof typeof ru_auth, string> = {
-  secAccount: "Account",
-  secAccountSub: "account & sync management",
-  logoutBtn: "Sign out",
-  toastLoggedOut: "You have been signed out",
-  localModeText: "You are in local mode. Data is stored only in this browser.",
-  localModeHint: "Sign in to sync across devices",
-};
