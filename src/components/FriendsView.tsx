@@ -69,6 +69,7 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
   const [found, setFound] = useState<Profile | null>(null);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const nameTimer = useRef<number>(0);
 
   const load = async () => {
     // мой профиль + код
