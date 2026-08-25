@@ -16,6 +16,7 @@ import SleepView from "./components/SleepView";
 import InstallPrompt from "./components/InstallPrompt";
 import AuthScreen from "./components/AuthScreen";
 import MobileBottomNav from "./components/MobileBottomNav";
+import FriendsView from "./components/FriendsView";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
 import { isLocalMode, setLocalMode, performInitialSync, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, type SyncStatus } from "./lib/sync";
