@@ -182,6 +182,7 @@ VITE_SUPABASE_ANON_KEY=YOUR-ANON-KEY
 - **Экспорт данных:** Скачайте все данные в Markdown или JSON
 - **Очистка:** Полное удаление всех данных
 
+![Daily Note Interface](screenshots/settings.png)
 
 ## 📱 Установка на телефон (PWA)
 
