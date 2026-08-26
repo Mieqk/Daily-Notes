@@ -24,10 +24,21 @@ interface Profile {
   banner_url: string | null;
   bio: string | null;
   friend_code: string | null;
+  status_emoji: string | null;
+  status_text: string | null;
 }
 
-const AVATARS = ["😎", "🌙", "", "🐶", "🦊", "🐼", "", "⭐", "", "", "🌊", "🍩"];
+const AVATARS = ["😎", "🌙", "🌸", "🐶", "", "🐼", "🐸", "⭐", "🎧", "", "🌊", "🍩"];
 const BIO_MAX = 140;
+
+const PRESETS: { e: string; k: string }[] = [
+  { e: "🎮", k: "stGame" },
+  { e: "💻", k: "stWork" },
+  { e: "😴", k: "stSleep" },
+  { e: "🎧", k: "stMusic" },
+  { e: "✨", k: "stGood" },
+  { e: "🏃", k: "stActive" },
+];
 
 const L: Record<string, Record<string, string>> = {
   ru: {
@@ -42,6 +53,8 @@ const L: Record<string, Record<string, string>> = {
     info: "Сводка", streak: "серия", notes: "заметок",
     friendSince: "В друзьях с", remove: "Удалить из друзей", removeSure: "Точно удалить?",
     badgeEarly: "Первооткрыватель", badgeStreak: "Серия 3+", badgeWriter: "10+ записей", friendBadge: "Друг",
+    statusTitle: "Статус", statusPh: "Свой статус…", statusClear: "Убрать",
+    stGame: "Играю", stWork: "Работаю", stSleep: "Сплю", stMusic: "Слушаю музыку", stGood: "Хорошее настроение", stActive: "Активен",
   },
   en: {
     myProfile: "My profile", back: "Back", loading: "Loading…",
@@ -55,6 +68,8 @@ const L: Record<string, Record<string, string>> = {
     info: "Summary", streak: "streak", notes: "notes",
     friendSince: "Friends since", remove: "Remove from friends", removeSure: "Really remove?",
     badgeEarly: "Early bird", badgeStreak: "3+ streak", badgeWriter: "10+ entries", friendBadge: "Friend",
+    statusTitle: "Status", statusPh: "Custom status…", statusClear: "Clear",
+    stGame: "Gaming", stWork: "Working", stSleep: "Sleeping", stMusic: "Listening to music", stGood: "Feeling great", stActive: "Active",
   },
 };
 
@@ -72,6 +87,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
   const [copied, setCopied] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const nameTimer = useRef<number>(0);
+  const statusTimer = useRef<number>(0);
   const confirmTimer = useRef<number>(0);
   const bannerInput = useRef<HTMLInputElement>(null);
   const avatarInput = useRef<HTMLInputElement>(null);
@@ -169,6 +185,14 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
       </span>
     );
 
+  const statusPill = (pr: Profile | null, big?: boolean) =>
+    pr?.status_emoji || pr?.status_text ? (
+      <span className={`inline-flex max-w-full items-center gap-1.5 truncate rounded-full bg-[var(--accent-soft)] font-semibold text-[var(--accent-deep)] ${big ? "px-3 py-1 text-[12.5px]" : "px-2 py-0.5 text-[10.5px]"}`}>
+        {pr.status_emoji && <span className="shrink-0">{pr.status_emoji}</span>}
+        {pr.status_text && <span className="truncate">{pr.status_text}</span>}
+      </span>
+    ) : null;
+
   const badges = isOwn
     ? [
         { icon: "🌱", label: t("badgeEarly"), on: true },
@@ -191,9 +215,9 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] transition-all hover:text-[var(--ink)] active:scale-90"
             aria-label={t("back")}
           >
-            <ArrowLeftIcon className="h-4.5 w-4.5" />
+            <ArrowLeftIcon className="h-4 w-4" />
           </button>
-          <span className="text-[15px] font-bold">{isOwn ? t("myProfile") : p?.display_name || p?.friend_code || "…"}</span>
+          <span className="truncate text-[15px] font-bold">{isOwn ? t("myProfile") : p?.display_name || p?.friend_code || "…"}</span>
         </div>
       </div>
 
@@ -220,7 +244,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
             {isOwn && <input ref={bannerInput} type="file" accept="image/*" className="hidden" onChange={onPickImage("banner")} />}
           </div>
 
-          {/* Аватар + имя */}
+          {/* Аватар + имя + статус */}
           <div className="flex items-end gap-4 px-1">
             <div className="relative z-10 -mt-10 shrink-0">
               <button
@@ -249,7 +273,8 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
               ) : (
                 <h1 className="truncate text-[20px] font-bold">{p.display_name || p.friend_code || "—"}</h1>
               )}
-              <div className="mt-1 flex flex-wrap gap-1.5">
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                {statusPill(p)}
                 {badges.map((b) => (
                   <span key={b.icon} title={b.label} className="flex items-center gap-1 rounded-full bg-[var(--hover)] px-2 py-0.5 text-[10.5px] font-semibold text-[var(--ink-soft)]">
                     <span>{b.icon}</span>{b.label}
@@ -296,6 +321,51 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
               </div>
             )}
 
+            {/* Статус (только свой) */}
+            {isOwn && (
+              <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
+                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">📡 {t("statusTitle")}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {PRESETS.map((pr) => {
+                    const active = p.status_emoji === pr.e && p.status_text === t(pr.k);
+                    return (
+                      <button
+                        key={pr.k}
+                        onClick={() => saveProfile({ status_emoji: pr.e, status_text: t(pr.k) })}
+                        className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-all active:scale-95 ${
+                          active ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "bg-[var(--hover)] text-[var(--ink-soft)] hover:bg-[var(--accent-soft)]"
+                        }`}
+                      >
+                        <span>{pr.e}</span>{t(pr.k)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-2 flex gap-1.5">
+                  <input
+                    value={p.status_text ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setP((m) => (m ? { ...m, status_text: v } : m));
+                      window.clearTimeout(statusTimer.current);
+                      statusTimer.current = window.setTimeout(() => saveProfile({ status_text: v.trim() || null }), 800);
+                    }}
+                    placeholder={t("statusPh")}
+                    maxLength={40}
+                    className="h-9 min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[12.5px] outline-none focus:border-[var(--accent)]"
+                  />
+                  {(p.status_emoji || p.status_text) && (
+                    <button
+                      onClick={() => saveProfile({ status_emoji: null, status_text: null })}
+                      className="h-9 shrink-0 rounded-lg border border-[var(--line)] px-3 text-[12px] font-semibold text-[var(--ink-faint)] transition-colors hover:bg-[var(--hover)]"
+                    >
+                      {t("statusClear")}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Био */}
             <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
               {bioEdit && isOwn ? (
@@ -326,7 +396,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
               ) : (
                 <button
                   onClick={() => { if (isOwn) { setBioDraft(p.bio ?? ""); setBioEdit(true); } }}
-                  className={`w-full text-left text-[13.5px] leading-relaxed text-[var(--ink-soft)] ${isOwn ? "rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-[var(--hover)]" : "cursor-default"}`}
+                  className={`w-full text-left text-[13.5px] leading-relaxed text-[var(--ink-soft)] ${isOwn ? "-mx-2 -my-1 rounded-lg px-2 py-1 transition-colors hover:bg-[var(--hover)]" : "cursor-default"}`}
                 >
                   {p.bio ? p.bio : isOwn ? <span className="text-[var(--ink-faint)]">+ {t("bioPh")}</span> : <span className="text-[var(--ink-faint)]">…</span>}
                 </button>
