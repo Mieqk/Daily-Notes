@@ -20,6 +20,8 @@ interface Profile {
   avatar_url: string | null;
   bio: string | null;
   friend_code: string | null;
+  status_emoji: string | null;
+  status_text: string | null;
 }
 
 interface Req { id: string; profile: Profile; }
