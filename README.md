@@ -130,7 +130,7 @@ VITE_SUPABASE_ANON_KEY=YOUR-ANON-KEY
 6. **Код друга** - Уникальные 6 символов, копирование в один тап
 7. **Сводка** - Серия и число заметок, бейджи достижений
 
-![Daily Note Interface](screenshots/Profile.png)
+![Daily Note Interface](screenshots/profile.png)
 
 #### Друзья (вкладка слева)
 1. **Мой код** - Плашка с кодом для шаринга прямо во вкладке
