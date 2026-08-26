@@ -1,4 +1,10 @@
 # Daily Note 📔
+[![Скачать](https://img.shields.io/badge/скачать-последнюю_версию-1E90FF?style=flat-square&labelColor=555555&logo=github&logoColor=white)](https://github.com/Mieqk/Daily-Notes)
+![Звёзды](https://img.shields.io/github/stars/Mieqk/Daily-Notes?style=flat-square&labelColor=555555&color=2ea44f&logo=github&logoColor=white)
+![Последний коммит](https://img.shields.io/github/last-commit/Mieqk/Daily-Notes?style=flat-square&labelColor=555555&color=007ec6)
+![Деплой](https://img.shields.io/badge/деплой-Vercel-black?style=flat-square&labelColor=555555&logo=vercel&logoColor=white)
+![Версия](https://img.shields.io/badge/версия-v3.0.4-8A2BE2?style=flat-square&labelColor=555555)
+![Лицензия](https://img.shields.io/github/license/Mieqk/Daily-Notes?style=flat-square&labelColor=555555&color=lightgrey)
 
 Минималистичный цифровой дневник и ежедневный планировщик, который помогает отслеживать настроение, фиксировать мысли и управлять задачами в одном красивом месте.
 
