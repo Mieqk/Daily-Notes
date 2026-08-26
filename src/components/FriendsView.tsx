@@ -97,6 +97,13 @@ export default function FriendsView({ userId, lang, streak, notesCount }: Friend
   const bannerInput = useRef<HTMLInputElement>(null);
   const avatarInput = useRef<HTMLInputElement>(null);
 
+  // сообщения гаснут сами
+  useEffect(() => {
+    if (!msg) return;
+    const id = window.setTimeout(() => setMsg(null), 2600);
+    return () => window.clearTimeout(id);
+  }, [msg]);
+
   const load = async () => {
     let my = (await supabase!.from("profiles").select("*").eq("id", userId).single()).data as Profile | null;
     if (my && !my.friend_code) {
@@ -245,8 +252,8 @@ export default function FriendsView({ userId, lang, streak, notesCount }: Friend
 
         <div className="px-4 pb-4 sm:px-5">
           {/* Аватар + имя + бейджи */}
-          <div className="-mt-8 flex items-end gap-3">
-            <div className="relative">
+          <div className="flex items-end gap-3">
+            <div className="relative z-10 -mt-8 shrink-0">
               <button
                 onClick={() => setAvatarOpen((o) => !o)}
                 className="block h-16 w-16 overflow-hidden rounded-2xl border-4 border-[var(--panel)] transition-all active:scale-95"
@@ -304,7 +311,8 @@ export default function FriendsView({ userId, lang, streak, notesCount }: Friend
                   nameTimer.current = window.setTimeout(() => saveProfile({ display_name: v }), 800);
                 }}
                 placeholder={t("namePh")}
-                className="w-full bg-transparent text-[16px] font-bold outline-none placeholder:text-[var(--ink-faint)]"
+                maxLength={40}
+                className="block h-8 w-full min-w-0 rounded-lg bg-transparent px-1 text-[16px] font-bold text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--ink-faint)] focus:bg-[var(--hover)]"
               />
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {badges.map((b) => (
