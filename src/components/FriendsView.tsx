@@ -17,6 +17,8 @@ interface Profile {
   avatar_url: string | null;
   bio: string | null;
   friend_code: string | null;
+  status_emoji: string | null;
+  status_text: string | null;
 }
 
 interface Friendship {
@@ -169,7 +171,13 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
       <span className="h-10 w-10 shrink-0 overflow-hidden rounded-xl">{avaNode(p, "20px")}</span>
       <span className="min-w-0">
         <span className="block truncate text-[14px] font-semibold">{p.display_name || p.friend_code || "—"}</span>
-        {p.bio && <span className="block truncate text-[11.5px] text-[var(--ink-faint)]">{p.bio}</span>}
+        <span className="block truncate text-[11.5px] text-[var(--ink-faint)]">
+          {p.status_emoji || p.status_text ? (
+            <>{p.status_emoji} {p.status_text}</>
+          ) : (
+            p.bio || "\u00A0"
+          )}
+        </span>
       </span>
     </span>
   );
@@ -273,4 +281,3 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
     </div>
   );
 }
-
