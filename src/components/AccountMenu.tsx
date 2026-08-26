@@ -103,7 +103,9 @@ export default function AccountMenu({ userId, lang, streak, notesCount, hasPin, 
               <span className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">{ava(me, "h-full w-full", "24px")}</span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[14.5px] font-bold">{me?.display_name || t("account")}</span>
-                <span className="block truncate text-[11.5px] text-[var(--ink-faint)]">{me?.bio || `${t("account")} · ${me?.friend_code ?? "…"}`}</span>
+                <span className="block truncate text-[11.5px] text-[var(--ink-faint)]">
+                 {me?.status_emoji || me?.status_text ? <>{me?.status_emoji} {me?.status_text}</> : me?.bio || `${t("account")} · ${me?.friend_code ?? "…"}`}
+                </span>
               </span>
               <span className="text-[11px] font-semibold text-[var(--accent)]">→</span>
             </button>
