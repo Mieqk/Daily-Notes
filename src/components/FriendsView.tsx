@@ -273,4 +273,4 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
     </div>
   );
 }
-}
+
