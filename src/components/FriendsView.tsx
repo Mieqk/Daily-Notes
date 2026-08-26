@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Lang } from "../i18n";
 import { supabase } from "../lib/supabase";
+import ProfilePage from "./ProfilePage";
 
 interface FriendsViewProps {
   userId: string;
@@ -68,6 +69,7 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [viewId, setViewId] = useState<string | null>(null);
   const confirmTimer = useRef<number>(0);
 
   useEffect(() => {
@@ -218,7 +220,9 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
         <div className="flex flex-col gap-2">
           {incoming.map(({ row, profile }) => (
             <div key={row.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
-              {person(profile)}
+              <button onClick={() => setViewId(profile.id)} className="min-w-0 flex-1 text-left transition-opacity hover:opacity-80">
+                {person(profile)}
+              </button>
               <span className="flex shrink-0 gap-2">
                 <button onClick={() => answer(row, "accepted")} className="h-9 rounded-lg bg-[var(--accent)] px-3.5 text-[12.5px] font-semibold text-[var(--accent-ink)] active:scale-95">
                   {t("accept")}
@@ -239,7 +243,9 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
         <div className="flex flex-col gap-2">
           {friends.map(({ row, profile }) => (
             <div key={row.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
-              {person(profile)}
+              <button onClick={() => setViewId(profile.id)} className="min-w-0 flex-1 text-left transition-opacity hover:opacity-80">
+                {person(profile)}
+              </button>
               <button
                 onClick={() => askRemove(row)}
                 className={`h-8 shrink-0 rounded-lg px-2.5 text-[11.5px] font-semibold transition-colors ${
@@ -254,6 +260,17 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
           ))}
         </div>
       </div>
+
+      {viewId && (
+        <ProfilePage
+          viewerId={userId}
+          profileId={viewId}
+          lang={lang}
+          onClose={() => setViewId(null)}
+          onChanged={load}
+        />
+      )}
     </div>
   );
+}
 }
