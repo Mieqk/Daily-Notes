@@ -141,7 +141,7 @@ export default function App() {
     const channel = supabase
       .channel('db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'entries', filter: `user_id=eq.${userId}` }, (payload) => {
-        const entry = payload.new;
+        const entry = payload.new as Record<string, any>;
         if (!entry) return;
         const nowMs = Date.now();
         if (nowMs - (lastUpdateTime.current[entry.date] || 0) < 3000) return;
@@ -162,10 +162,11 @@ export default function App() {
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` }, async (payload) => {
-        const d = payload.new?.date || payload.old?.date;
+        const d = (payload.new as Record<string, any>)?.date || (payload.old as Record<string, any>)?.date;
         if (!d) return;
         const nowMs = Date.now();
         if (nowMs - (lastUpdateTime.current[`tasks-${d}`] || 0) < 3000) return;
+        if (!supabase) return;
         const { data } = await supabase.from('tasks').select('*').eq('user_id', userId).eq('date', d);
         if (data) {
           const mapped = data.map((task) => ({ id: task.id, text: task.title, done: task.completed }));
@@ -174,8 +175,8 @@ export default function App() {
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sleep_logs', filter: `user_id=eq.${userId}` }, (payload) => {
-        const s = payload.new;
-        if (!s) return;
+        const s = payload.new as Record<string, any>;
+        if (!s || !s.date) return;
         const nowMs = Date.now();
         if (nowMs - (lastUpdateTime.current[`sleep-${s.date}`] || 0) < 3000) return;
         const val = { hours: Number(s.hours) || 0, quality: s.quality || 0, bedtime: s.sleep_start || '', waketime: s.sleep_end || '', awakenings: Number(s.awakenings) || 0, note: s.note || '' };
@@ -338,7 +339,7 @@ export default function App() {
         <main key={tab + date} className="animate-rise min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-8 sm:py-8">
           {tab === "daily" && <DailyView date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} lang={lang} t={t} showToast={showToast} />}
           {tab === "stats" && <Suspense fallback={<div className="grid h-64 place-items-center text-sm text-[var(--ink-faint)]"><span className="animate-livedot h-2.5 w-2.5 rounded-full bg-[var(--accent)]" /></div>}><StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} /></Suspense>}
-          {tab === "sleep" && <SleepView sleep={sleep} lang={lang} t={t} setSleep={(iso, data) => setSleep({ ...sleep, [iso]: data })} />}
+          {tab === "sleep" && <SleepView sleep={sleep} lang={lang} t={t} setSleep={(iso, data) => setSleep((prev) => { const next = { ...prev }; if (data) next[iso] = data; else delete next[iso]; return next; })} />}
           {tab === "notes" && <NotesView notes={notes} tasks={tasks} moods={moods} tags={tags} photos={photos} moodEmoji={moodEmoji} writingFont={writingFont} onOpen={openDate} lang={lang} t={t} />}
           {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} streak={streak} notesCount={notesCount} />}
           {tab === "settings" && <SettingsView theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={setPinHash} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} showToast={showToast} />}

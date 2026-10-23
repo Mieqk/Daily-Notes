@@ -1,6 +1,6 @@
 async function listFlashModels(key, version) {
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/${version}/models?pageSize=200&key=${key}`);
+    const r = await fetch(`https://generativelanguage.googleapis.com/${version}/models?pageSize=200`, { headers: { "x-goog-api-key": key } });
     if (!r.ok) return [];
     const d = await r.json();
     return (d.models || [])
@@ -14,17 +14,18 @@ async function listFlashModels(key, version) {
 }
 
 export default async function handler(req, res) {
-  const lang = String(req.query.lang || "ru");
+  const lang = String(req.query.lang || "ru").slice(0, 5);
   const key = process.env.GEMINI_API_KEY;
 
   if (!key) {
     return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
   }
 
+  const LANG_NAMES = { ru: "Russian", en: "English", be: "Belarusian", uk: "Ukrainian", de: "German", fr: "French", es: "Spanish" };
   const prompt =
     lang === "ru"
       ? "Придумай один короткий интересный научный, исторический или природный факт. Ответь только самим фактом, одним-двумя предложениями, без вступлений и подписей."
-      : "Come up with one short interesting science, history or nature fact. Reply with only the fact itself, one or two sentences, no intro or labels.";
+      : `Come up with one short interesting science, history or nature fact. Reply in ${LANG_NAMES[lang] || "English"} with only the fact itself, one or two sentences, no intro or labels.`;
 
   const errors = [];
 
@@ -41,10 +42,10 @@ export default async function handler(req, res) {
   for (const model of models) {
     try {
       const r = await fetch(
-        `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
           body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
         }
       );

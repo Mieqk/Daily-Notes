@@ -62,8 +62,6 @@ const FONTS: { id: WritingFontId; key: TKey }[] = [
   { id: "body", key: "fontBody" },
   { id: "serif", key: "fontSerif" },
   { id: "mono", key: "fontMono" },
-  { id: "hand1", key: "fontHand1" },
-  { id: "hand2", key: "fontHand2" },
 ];
 
 const BGS: { id: BgId; key: TKey }[] = [
@@ -597,7 +595,7 @@ export default function SettingsView(props: SettingsViewProps) {
                   </svg>
                 </button>
                 
-                <AuthScreen onContinueLocally={() => setShowAuthModal(false)} />
+                <AuthScreen onContinueLocally={() => setShowAuthModal(false)} theme={theme} onTheme={onTheme} />
               </div>
             </div>
           </div>

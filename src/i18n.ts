@@ -109,8 +109,6 @@ const ru = {
   fontBody: "Основной",
   fontSerif: "Книжный",
   fontMono: "Моноширинный",
-  fontHand1: "Рукописный 1",
-  fontHand2: "Рукописный 2",
   fontSample: "Быстрая бурая лиса прыгает через ленивую собаку. 0123456789",
   secText: "Размер текста",
   secTextSub: "масштабирует весь интерфейс",
@@ -187,6 +185,13 @@ const ru = {
   sleepPhasesSub: "время в каждой фазе за период",
   sleepRecent: "Последние записи",
   sleepRecentSub: "детали последних записей о сне",
+  secAccount: "Аккаунт",
+  secAccountSub: "управление аккаунтом и синхронизацией",
+  toastLoggedOut: "Вы вышли из аккаунта",
+  logoutBtn: "Выйти",
+  localModeText: "Вы работаете в локальном режиме. Данные хранятся только в этом браузере.",
+  localModeHint: "Войдите в аккаунт для синхронизации между устройствами",
+  loginBtn: "Войти для синхронизации",
 };
 
 export type TKey = keyof typeof ru;
@@ -300,8 +305,6 @@ const en: Record<TKey, string> = {
   fontBody: "Default",
   fontSerif: "Bookish",
   fontMono: "Monospace",
-  fontHand1: "Handwritten 1",
-  fontHand2: "Handwritten 2",
   fontSample: "The quick brown fox jumps over the lazy dog. 0123456789",
   secText: "Text size",
   secTextSub: "scales the whole interface",
@@ -378,6 +381,13 @@ const en: Record<TKey, string> = {
   sleepPhasesSub: "time in each phase for the period",
   sleepRecent: "Recent entries",
   sleepRecentSub: "details of recent sleep entries",
+  secAccount: "Account",
+  secAccountSub: "manage your account and sync",
+  toastLoggedOut: "You have signed out",
+  logoutBtn: "Sign out",
+  localModeText: "You are in local mode. Data is stored only in this browser.",
+  localModeHint: "Sign in to sync between devices",
+  loginBtn: "Sign in to sync",
 };
 
 const be: Record<TKey, string> = {
@@ -489,8 +499,6 @@ const be: Record<TKey, string> = {
   fontBody: "Асноўны",
   fontSerif: "Кніжны",
   fontMono: "Монашырынны",
-  fontHand1: "Рукапісны 1",
-  fontHand2: "Рукапісны 2",
   fontSample: "Хуткая бурая ліса скача праз лянную сабаку. 0123456789",
   secText: "Памер тэксту",
   secTextSub: "маштабуе ўвесь інтэрфейс",
@@ -567,6 +575,13 @@ const be: Record<TKey, string> = {
   sleepPhasesSub: "час у кожнай фазе за перыяд",
   sleepRecent: "Апошнія запісы",
   sleepRecentSub: "дэталі апошніх запісаў аб сне",
+  secAccount: "Акаўнт",
+  secAccountSub: "кіраванне акаўнтам і сінхранізацыяй",
+  toastLoggedOut: "Вы выйшлі з акаўнта",
+  logoutBtn: "Выйсці",
+  localModeText: "Вы працуеце ў лакальным рэжыме. Дадзеныя захоўваюцца толькі ў гэтым браўзеры.",
+  localModeHint: "Увайдзіце ў акаўнт для сінхранізацыі паміж прыладамі",
+  loginBtn: "Увайсці для сінхранізацыі",
 };
 
 const uk: Record<TKey, string> = {
@@ -678,8 +693,6 @@ const uk: Record<TKey, string> = {
   fontBody: "Основний",
   fontSerif: "Книжковий",
   fontMono: "Моноширинний",
-  fontHand1: "Рукописний 1",
-  fontHand2: "Рукописний 2",
   fontSample: "Швидка бура лисиця стрибає через ледачу собаку. 0123456789",
   secText: "Розмір тексту",
   secTextSub: "масштабує весь інтерфейс",
@@ -756,6 +769,13 @@ const uk: Record<TKey, string> = {
   sleepPhasesSub: "час у кожній фазі за період",
   sleepRecent: "Останні записи",
   sleepRecentSub: "деталі останніх записів про сон",
+  secAccount: "Акаунт",
+  secAccountSub: "керування акаунтом і синхронізацією",
+  toastLoggedOut: "Ви вийшли з акаунта",
+  logoutBtn: "Вийти",
+  localModeText: "Ви працюєте в локальному режимі. Дані зберігаються лише в цьому браузері.",
+  localModeHint: "Увійдіть в акаунт для синхронізації між пристроями",
+  loginBtn: "Увійти для синхронізації",
 };
 
 const de: Record<TKey, string> = {
@@ -867,8 +887,6 @@ const de: Record<TKey, string> = {
   fontBody: "Standard",
   fontSerif: "Buchartig",
   fontMono: "Monospace",
-  fontHand1: "Handschrift 1",
-  fontHand2: "Handschrift 2",
   fontSample: "Der schnelle braune Fuchs springt über den faulen Hund. 0123456789",
   secText: "Textgröße",
   secTextSub: "skaliert die gesamte Oberfläche",
@@ -945,6 +963,13 @@ const de: Record<TKey, string> = {
   sleepPhasesSub: "Zeit in jeder Phase für den Zeitraum",
   sleepRecent: "Letzte Einträge",
   sleepRecentSub: "Details der letzten Schlafeinträge",
+  secAccount: "Konto",
+  secAccountSub: "Konto und Synchronisierung verwalten",
+  toastLoggedOut: "Du wurdest abgemeldet",
+  logoutBtn: "Abmelden",
+  localModeText: "Du arbeitest im lokalen Modus. Die Daten werden nur in diesem Browser gespeichert.",
+  localModeHint: "Melde dich an, um zwischen Geräten zu synchronisieren",
+  loginBtn: "Zum Synchronisieren anmelden",
 };
 
 const fr: Record<TKey, string> = {
@@ -1132,6 +1157,13 @@ const fr: Record<TKey, string> = {
   sleepPhasesSub: "temps dans chaque phase pour la période",
   sleepRecent: "Entrées récentes",
   sleepRecentSub: "détails des entrées de sommeil récentes",
+  secAccount: "Compte",
+  secAccountSub: "gérer le compte et la synchronisation",
+  toastLoggedOut: "Vous êtes déconnecté",
+  logoutBtn: "Se déconnecter",
+  localModeText: "Vous êtes en mode local. Les données sont stockées uniquement dans ce navigateur.",
+  localModeHint: "Connectez-vous pour synchroniser entre appareils",
+  loginBtn: "Se connecter pour synchroniser",
 };
 
 const es: Record<TKey, string> = {
@@ -1319,6 +1351,13 @@ const es: Record<TKey, string> = {
   sleepPhasesSub: "tiempo en cada fase para el período",
   sleepRecent: "Entradas recientes",
   sleepRecentSub: "detalles de entradas de sueño recientes",
+  secAccount: "Cuenta",
+  secAccountSub: "gestionar la cuenta y la sincronización",
+  toastLoggedOut: "Has cerrado sesión",
+  logoutBtn: "Cerrar sesión",
+  localModeText: "Estás en modo local. Los datos se guardan solo en este navegador.",
+  localModeHint: "Inicia sesión para sincronizar entre dispositivos",
+  loginBtn: "Iniciar sesión para sincronizar",
 };
 
 export const MOODS: Record<Lang, string[]> = {

@@ -95,42 +95,49 @@ export async function performInitialSync(userId: string) {
   }
 }
 
-function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number) {
-  let timeoutId: ReturnType<typeof setTimeout>;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => fn(...args), delay);
+// Отдельный таймер на ключ (пользователь + дата), чтобы правки разных дней не затирали друг друга
+function debounceByKey<A extends unknown[]>(fn: (...args: A) => void | Promise<void>, delay: number, keyOf: (...args: A) => string) {
+  const timers = new Map<string, ReturnType<typeof setTimeout>>();
+  return (...args: A) => {
+    const key = keyOf(...args);
+    const prev = timers.get(key);
+    if (prev) clearTimeout(prev);
+    timers.set(key, setTimeout(() => { timers.delete(key); void fn(...args); }, delay));
   };
 }
 
-const debouncedUpsertEntry = debounce(async (userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) => {
+const debouncedUpsertEntry = debounceByKey(async (userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) => {
   if (isLocalMode() || !supabase) return;
   const { error } = await supabase.from('entries').upsert({ user_id: userId, date, content, mood, tags, photos, updated_at: new Date().toISOString() }, { onConflict: 'user_id,date' });
   if (error) console.error('[SYNC] Failed to sync entry:', error);
-}, 2000);
+}, 2000, (userId, date) => `${userId}:${date}`);
 
-const debouncedUpsertTasks = debounce(async (userId: string, date: string, tasks: Task[]) => {
+const debouncedUpsertTasks = debounceByKey(async (userId: string, date: string, tasks: Task[]) => {
   if (isLocalMode() || !supabase) return;
-  const tasksToUpsert = tasks.map(t => ({ user_id: userId, date, id: t.id, title: t.text, completed: t.done }));
-  const { data: existing } = await supabase.from('tasks').select('id').eq('user_id', userId).eq('date', date);
-  const existingIds = existing?.map(t => t.id) || [];
-  const toDelete = existingIds.filter(id => !tasks.find(t => t.id === id));
-  if (toDelete.length > 0) await supabase.from('tasks').delete().in('id', toDelete);
+  const { data: existing, error: selErr } = await supabase.from('tasks').select('id').eq('user_id', userId).eq('date', date);
+  if (selErr) { console.error('[SYNC] Failed to read tasks:', selErr); return; }
+  const toDelete = (existing ?? []).map((t) => t.id).filter((id) => !tasks.find((t) => t.id === id));
+  if (toDelete.length > 0) {
+    const { error: delErr } = await supabase.from('tasks').delete().in('id', toDelete).eq('user_id', userId);
+    if (delErr) { console.error('[SYNC] Failed to delete tasks:', delErr); return; }
+  }
+  if (tasks.length === 0) return;
+  const tasksToUpsert = tasks.map((t) => ({ user_id: userId, date, id: t.id, title: t.text, completed: t.done }));
   const { error } = await supabase.from('tasks').upsert(tasksToUpsert);
   if (error) console.error('[SYNC] Failed to sync tasks:', error);
-}, 2000);
+}, 2000, (userId, date) => `${userId}:${date}`);
 
-const debouncedUpsertSleep = debounce(async (userId: string, date: string, sleepData: SleepData) => {
+const debouncedUpsertSleep = debounceByKey(async (userId: string, date: string, sleepData: SleepData) => {
   if (isLocalMode() || !supabase) return;
   const { error } = await supabase.from('sleep_logs').upsert({ user_id: userId, date, sleep_start: sleepData.bedtime || '', sleep_end: sleepData.waketime || '', hours: sleepData.hours || 0, quality: sleepData.quality || 0, awakenings: sleepData.awakenings || 0, note: sleepData.note || '' }, { onConflict: 'user_id,date' });
   if (error) console.error('[SYNC] Failed to sync sleep:', error);
-}, 2000);
+}, 2000, (userId, date) => `${userId}:${date}`);
 
-const debouncedUpsertSettings = debounce(async (userId: string, settings: Record<string, unknown>) => {
+const debouncedUpsertSettings = debounceByKey(async (userId: string, settings: Record<string, unknown>) => {
   if (isLocalMode() || !supabase) return;
   const { error } = await supabase.from('profiles').update({ settings }).eq('id', userId);
   if (error) console.error('[SYNC] Failed to sync settings:', error);
-}, 2000);
+}, 2000, (userId) => userId);
 
 export function syncEntry(userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) { debouncedUpsertEntry(userId, date, content, mood, tags, photos); }
 export function syncTasks(userId: string, date: string, tasks: Task[]) { debouncedUpsertTasks(userId, date, tasks); }
