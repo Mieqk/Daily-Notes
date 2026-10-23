@@ -264,7 +264,12 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.profiles (id, username, settings)
-  VALUES (NEW.id, NULL, '{}');
+  VALUES (NEW.id, NULL, '{}')
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  -- Ошибка создания профиля не должна блокировать вход/регистрацию
+  RAISE WARNING 'handle_new_user failed: %', SQLERRM;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
