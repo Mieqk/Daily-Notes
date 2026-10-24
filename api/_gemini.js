@@ -1,10 +1,11 @@
+const BASE = process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com"; // переопределяется только в тестах
 // Общий вызов Gemini для серверных функций: перебирает рекомендуемые и доступные flash-модели.
 const modelCache = new Map(); // version -> { at, list }
 async function listFlashModels(key, version) {
   const hit = modelCache.get(version);
   if (hit && Date.now() - hit.at < 10 * 60_000) return hit.list;
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/${version}/models?pageSize=200`, { headers: { "x-goog-api-key": key } });
+    const r = await fetch(`${BASE}/${version}/models?pageSize=200`, { headers: { "x-goog-api-key": key } });
     if (!r.ok) return [];
     const d = await r.json();
     const list = (d.models || [])
@@ -35,7 +36,7 @@ export async function generateText(key, prompt, generationConfig = {}, diag = []
   const models = [...PREFERRED, ...dynamic.filter((m) => !PREFERRED.includes(m))].slice(0, 4);
 
   const call = async (model, config) => {
-    const r = await fetch(`https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent`, {
+    const r = await fetch(`${BASE}/${version}/models/${model}:generateContent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: config }),

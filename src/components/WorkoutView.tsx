@@ -134,7 +134,7 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
       {view === "coach" ? (
         <>
           <div className="text-[13px] text-[var(--ink-soft)]">
-            <b className="text-[var(--ink)]">{day.length}</b> {l.exercises.toLowerCase()} · <b className="text-[var(--ink)]">{doneSets.length}</b> {l.setsDone.toLowerCase()} · <b className="text-[var(--ink)]">{Math.round(volume)}</b> {l.kg}
+            {dateLabel}: <b className="text-[var(--ink)]">{day.length}</b> {l.exercises.toLowerCase()} · <b className="text-[var(--ink)]">{doneSets.length}</b> {l.setsDone.toLowerCase()} · <b className="text-[var(--ink)]">{Math.round(volume)}</b> {l.kg}
           </div>
           <CoachChat mode="workout" lang={lang} context={coachContext} onApply={applyCoach} />
         </>

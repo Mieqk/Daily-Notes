@@ -204,7 +204,7 @@ export default function NutritionView({ lang }: { lang: Lang }) {
       {view === "coach" ? (
         <>
           <div className="flex items-baseline justify-between text-[13px] text-[var(--ink-soft)]">
-            <span><b className="text-[var(--ink)]">{total.kcal}</b> / {safeGoal} {l.kcal}</span>
+            <span>{dateLabel}: <b className="text-[var(--ink)]">{total.kcal}</b> / {safeGoal} {l.kcal}</span>
             <span>{l.p[0]} {round1(total.p)} · {l.f[0]} {round1(total.f)} · {l.c[0]} {round1(total.c)}</span>
           </div>
           <CoachChat mode="food" lang={lang} context={coachContext} onApply={applyCoach} />

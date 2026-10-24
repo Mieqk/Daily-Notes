@@ -43,7 +43,7 @@ interface Props {
 
 export default function CoachChat({ mode, lang, context, onApply }: Props) {
   const l = (L[mode][lang] ?? L[mode].en);
-  const [on, setOn] = useStored<boolean>(mode === "food" ? "dn.aiFood" : "dn.aiWorkout", false);
+  const [on, setOn] = useStored<boolean>(mode === "food" ? "dn.coachFood" : "dn.coachWorkout", false);
   const [msgs, setMsgs] = useStored<Msg[]>(`dn.coach.${mode}`, []);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
