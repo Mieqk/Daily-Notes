@@ -39,9 +39,41 @@ jobs:
 
       - name: Add Capacitor and Android project
         run: |
-          npm install --no-save "@capacitor/core@$CAP_VERSION" "@capacitor/cli@$CAP_VERSION" "@capacitor/android@$CAP_VERSION"
+          npm install --no-save "@capacitor/core@$CAP_VERSION" "@capacitor/cli@$CAP_VERSION" "@capacitor/android@$CAP_VERSION" "@capacitor/app@$CAP_VERSION" "@capacitor/browser@$CAP_VERSION"
           npx cap add android
           npx cap sync android
+
+      # Возврат из браузера после входа через Google: ссылка io.vercel.dailynotes://auth открывает приложение.
+      - name: Add OAuth deep link
+        run: |
+          python3 - <<'PY'
+          p = "android/app/src/main/AndroidManifest.xml"
+          s = open(p, encoding="utf-8").read()
+          flt = """
+                  <intent-filter>
+                      <action android:name="android.intent.action.VIEW" />
+                      <category android:name="android.intent.category.DEFAULT" />
+                      <category android:name="android.intent.category.BROWSABLE" />
+                      <data android:scheme="io.vercel.dailynotes" android:host="auth" />
+                  </intent-filter>
+              """
+          assert "</activity>" in s
+          open(p, "w", encoding="utf-8").write(s.replace("</activity>", flt + "</activity>", 1))
+          PY
+          grep -n "io.vercel.dailynotes" android/app/src/main/AndroidManifest.xml
+
+      # Иконка из public/icons/icon-512.png вместо стандартной от Capacitor.
+      - name: Set launcher icon
+        run: |
+          RES=android/app/src/main/res
+          rm -rf "$RES"/mipmap-anydpi-v26
+          for pair in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+            d="$RES/mipmap-${pair%%:*}"; sz="${pair##*:}"
+            mkdir -p "$d"
+            convert public/icons/icon-512.png -resize ${sz}x${sz} "$d/ic_launcher.png"
+            cp "$d/ic_launcher.png" "$d/ic_launcher_round.png"
+            rm -f "$d/ic_launcher_foreground.png"
+          done
 
       - name: Set version
         id: ver

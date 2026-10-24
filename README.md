@@ -224,6 +224,10 @@ APK собирает GitHub Actions (`.github/workflows/android-apk.yml`) и к�
 2. Закодируйте: `base64 -w0 release.jks` (на macOS: `base64 -i release.jks`).
 3. В репозитории: Settings → Secrets and variables → Actions → добавьте секреты `ANDROID_KEYSTORE_BASE64` (вывод шага 2), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (`dailynote`), `ANDROID_KEY_PASSWORD`.
 
+**Вход через Google в APK.** Google не пускает вход во встроенный WebView, поэтому в приложении он открывается в системном браузере и возвращается по ссылке `io.vercel.dailynotes://auth`. Один раз добавьте её в Supabase: Authentication → URL Configuration → Redirect URLs → `io.vercel.dailynotes://auth`. Без этого после входа снова откроется сайт в браузере.
+
+Иконка APK берётся из `public/icons/icon-512.png` при сборке.
+
 Файл `release.jks` и пароли не коммитьте. Установка: скачайте APK на телефон и разрешите установку из неизвестных источников.
 
 ### 💻 Компьютер (Chrome / Edge)

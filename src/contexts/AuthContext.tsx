@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { unsubscribePush } from '../lib/push';
+import { initNativeAuthListener } from '../lib/nativeAuth';
 
 interface AuthContextType {
   user: User | null;
@@ -45,7 +46,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    const removeNative = initNativeAuthListener();
+
+    return () => {
+      subscription.unsubscribe();
+      removeNative();
+    };
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
