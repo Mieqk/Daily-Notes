@@ -1,98 +1,65 @@
-import { DiceIcon } from "../icons";
-import { useEffect, useState } from "react";
+import { CheckIcon, DiceIcon, PlusIcon } from "../icons";
+import { useState } from "react";
 import type { Lang } from "../i18n";
 import { todayISO } from "../store";
+import { FACTS, factIndexForDate, type FactCategory } from "../facts";
 
-const L: Record<string, { title: string; sub: string; btn: string; loading: string; ai: string; book: string }> = {
-  ru: { title: "Факт дня", sub: "нейросеть подбирает интересное каждый день", btn: "Ещё факт", loading: "Нейросеть думает…", ai: "сгенерировано ИИ", book: "из коллекции" },
-  en: { title: "Fact of the day", sub: "the AI picks something new every day", btn: "Another fact", loading: "AI is thinking…", ai: "AI-generated", book: "from collection" },
-  be: { title: "Факт дня", sub: "нейрасетка штодзень падбірае цікавае", btn: "Яшчэ факт", loading: "Нейрасетка думае…", ai: "згенеравана ШІ", book: "з калекцыі" },
-  uk: { title: "Факт дня", sub: "нейромережа щодня добирає цікаве", btn: "Ще факт", loading: "Нейромережа думає…", ai: "згенеровано ШІ", book: "з колекції" },
-  de: { title: "Fakt des Tages", sub: "die KI wählt jeden Tag etwas Neues", btn: "Noch ein Fakt", loading: "KI denkt nach…", ai: "KI-generiert", book: "aus der Sammlung" },
-  fr: { title: "Fait du jour", sub: "l'IA choisit chaque jour une nouveauté", btn: "Un autre fait", loading: "L'IA réfléchit…", ai: "généré par IA", book: "de la collection" },
-  es: { title: "Dato del día", sub: "la IA elige algo nuevo cada día", btn: "Otro dato", loading: "La IA está pensando…", ai: "generado por IA", book: "de la colección" },
+const L: Record<string, { title: string; sub: string; btn: string; loading: string; ai: string; book: string; save: string; saved: string; aiBtn: string; cats: Record<FactCategory, string> }> = {
+  ru: { title: "Факт дня", sub: "", btn: "Ещё факт", loading: "Нейросеть думает…", ai: "сгенерировано ИИ", book: "из коллекции", save: "В заметку", saved: "Добавлено", aiBtn: "Факт от ИИ", cats: { nature: "Природа", space: "Космос", body: "Тело", history: "История" } },
+  en: { title: "Fact of the day", sub: "", btn: "Another fact", loading: "AI is thinking…", ai: "AI-generated", book: "from collection", save: "Save to note", saved: "Added", aiBtn: "AI fact", cats: { nature: "Nature", space: "Space", body: "Body", history: "History" } },
 };
 
-const FALLBACK: { ru: string; en: string }[] = [
-  { ru: "Мёд не портится тысячи лет: археологи находили съедобный мёд в гробницах возрастом более 3000 лет.", en: "Honey never spoils: archaeologists have found 3,000-year-old honey that was still edible." },
-  { ru: "У осьминогов три сердца и голубая кровь.", en: "Octopuses have three hearts and blue blood." },
-  { ru: "Один день на Венере длится дольше, чем один год на Венере.", en: "A day on Venus lasts longer than a year on Venus." },
-  { ru: "Банан — это ягода, а клубника — нет.", en: "Bananas are berries, but strawberries are not." },
-  { ru: "Акулы появились раньше деревьев: они существуют более 400 миллионов лет.", en: "Sharks are older than trees: over 400 million years." },
-  { ru: "Кошки не чувствуют сладкий вкус.", en: "Cats cannot taste sweetness." },
-  { ru: "Луна отдаляется от Земли примерно на 3,8 см в год.", en: "The Moon drifts about 3.8 cm away from Earth every year." },
-  { ru: "Запах дождя называется петрикор.", en: "The smell of rain is called petrichor." },
-  { ru: "Морские выдры держатся за лапки во сне, чтобы их не унесло друг от друга.", en: "Sea otters hold paws while sleeping so they do not drift apart." },
-  { ru: "Улитки могут проспать до трёх лет.", en: "Snails can sleep for up to three years." },
-];
+type Labels = (typeof L)["ru"];
 
-function daySeed(iso: string): number {
-  let h = 0;
-  for (let i = 0; i < iso.length; i++) h = (h * 31 + iso.charCodeAt(i)) >>> 0;
-  return h;
-}
-
-export default function FactOfDay({ lang }: { lang: Lang }) {
-  const labels = L[lang] ?? L.en;
+export default function FactOfDay({ lang, onSave }: { lang: Lang; onSave?: (text: string) => void }) {
+  const labels: Labels = lang === "ru" ? L.ru : L.en;
   const today = todayISO();
+  const [idx, setIdx] = useState(() => factIndexForDate(today));
   const [aiFact, setAiFact] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [fallbackIdx, setFallbackIdx] = useState(() => daySeed(today) % FALLBACK.length);
+  const [loading, setLoading] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const fact = FACTS[idx % FACTS.length];
+  const text = aiFact ?? (lang === "ru" ? fact.ru : fact.en);
+
+  const next = () => {
+    setAiFact(null);
+    setJustSaved(false);
+    setIdx((i) => (i + 1) % FACTS.length);
+  };
+
+  const askAi = async () => {
     setLoading(true);
-    const cacheKey = `dn.fact.${today}.${lang}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      setAiFact(cached);
-      setLoading(false);
-      return;
-    }
-    fetch(`/api/fact?lang=${lang}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("bad"))))
-      .then((d) => {
-        if (cancelled) return;
-        if (d?.fact) {
-          setAiFact(d.fact);
-          try { localStorage.setItem(cacheKey, d.fact); } catch { /* ignore */ }
-        } else setAiFact(null);
-      })
-      .catch(() => { if (!cancelled) setAiFact(null); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [today, lang]);
-
-  const fromAi = aiFact !== null;
-  const text = fromAi ? aiFact : (lang === "ru" ? FALLBACK[fallbackIdx].ru : FALLBACK[fallbackIdx].en);
-
-  const shuffle = async () => {
-    setLoading(true);
+    setJustSaved(false);
     try {
       const r = await fetch(`/api/fact?lang=${lang}&r=${Date.now()}`);
       const d = await r.json();
       if (!d?.fact) throw new Error("bad");
       setAiFact(d.fact);
     } catch {
-      setAiFact(null);
-      setFallbackIdx((i) => (i + 1 + Math.floor(Math.random() * (FALLBACK.length - 1))) % FALLBACK.length);
+      next();
     } finally {
       setLoading(false);
     }
   };
 
+  const save = () => {
+    if (!onSave || justSaved) return;
+    onSave(text);
+    setJustSaved(true);
+    window.setTimeout(() => setJustSaved(false), 2000);
+  };
+
+  const btnCls = "flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[12px] font-semibold text-[var(--ink-soft)] transition-all duration-150 hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95";
+
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <span className="text-[14.5px] font-bold">{labels.title}</span>
         <span className="rounded-full bg-[var(--hover)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink-faint)]">
-          {fromAi ? labels.ai : labels.book}
+          {aiFact ? labels.ai : labels.cats[fact.cat]}
         </span>
-        <button
-          onClick={shuffle}
-          aria-label={labels.btn}
-          className="ml-auto flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[12px] font-semibold text-[var(--ink-soft)] transition-all duration-150 hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95"
-        >
+        <button onClick={next} aria-label={labels.btn} className={`ml-auto ${btnCls}`}>
           <DiceIcon className="h-4 w-4" /> <span className="hidden sm:inline">{labels.btn}</span>
         </button>
       </div>
@@ -104,6 +71,14 @@ export default function FactOfDay({ lang }: { lang: Lang }) {
       ) : (
         <p className="text-[13.5px] leading-relaxed text-[var(--ink-soft)]">{text}</p>
       )}
+      <div className="flex flex-wrap gap-2">
+        {onSave && (
+          <button onClick={save} disabled={loading} className={btnCls}>
+            {justSaved ? <CheckIcon className="h-4 w-4" /> : <PlusIcon className="h-4 w-4" />} {justSaved ? labels.saved : labels.save}
+          </button>
+        )}
+        <button onClick={askAi} disabled={loading} className={btnCls}>{labels.aiBtn}</button>
+      </div>
     </div>
   );
 }
