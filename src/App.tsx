@@ -300,7 +300,7 @@ export default function App() {
   useEffect(() => { document.documentElement.style.fontSize = FONT_SCALES[fontScale] ?? "100%"; }, [fontScale]);
   useEffect(() => {
     document.documentElement.setAttribute("lang", lang);
-    document.title = lang === "ru" ? "Дейли Ноутс" : "Daily Notes";
+    document.title = lang === "ru" || lang === "be" || lang === "uk" ? "Дейли Ноутс" : "Daily Notes";
   }, [lang]);
 
   const today = todayISO();

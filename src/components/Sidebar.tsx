@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import type { Lang, TKey } from "../i18n";
-import { localeOf } from "../i18n";
+import { localeOf, WEEKDAYS_SHORT } from "../i18n";
 import type { Tab } from "../store";
 import { fromISO, toISO, todayISO } from "../store";
 import { THEMES, themeMeta } from "../themes";
@@ -87,10 +87,7 @@ function MiniCalendar({
     setMonth(new Date(d.getFullYear(), d.getMonth(), 1));
   }, [selected]);
 
-  const weekdays =
-    lang === "ru"
-      ? ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
-      : ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+  const weekdays = WEEKDAYS_SHORT[lang];
 
   const y = month.getFullYear();
   const m = month.getMonth();

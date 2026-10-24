@@ -1475,6 +1475,17 @@ export const TEMPLATES: DayTemplate[] = [
   },
 ];
 
+/** Короткие названия дней недели с понедельника. */
+export const WEEKDAYS_SHORT: Record<Lang, string[]> = {
+  ru: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
+  en: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+  be: ["Пн", "Аў", "Ср", "Чц", "Пт", "Сб", "Нд"],
+  uk: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"],
+  de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+  fr: ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"],
+  es: ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"],
+};
+
 export function localeOf(lang: Lang): string {
   const map: Record<Lang, string> = {
     ru: "ru-RU",

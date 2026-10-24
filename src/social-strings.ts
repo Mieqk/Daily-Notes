@@ -1,6 +1,6 @@
 import type { Lang } from "./i18n";
 
-/** Строки общих воспоминаний, парных привычек, челленджей и уведомлений. Остальные языки показывают английский. */
+/** Строки общих воспоминаний, парных привычек, челленджей и уведомлений. */
 const ru = {
   memTitle: "Общие воспоминания", memEmpty: "Пока нет общих воспоминаний. Запишите момент, который хочется сохранить с другом.",
   memAdd: "Добавить воспоминание", memWith: "С кем", memText: "Что запомнилось?", memTag: "Тег (по желанию)", memAll: "Все",
@@ -48,7 +48,117 @@ const en: Strings = {
   ntNotePush: "Notifications also arrive while the app is closed. You can turn them off in your browser or device settings.",
 };
 
-const ALL: Partial<Record<Lang, Strings>> = { ru, en };
+const be: Strings = {
+  memTitle: "Агульныя ўспаміны", memEmpty: "Пакуль няма агульных успамінаў. Занатуйце момант, які хочацца захаваць з сябрам.",
+  memAdd: "Дадаць успамін", memWith: "З кім", memText: "Што запомнілася?", memTag: "Тэг (па жаданні)", memAll: "Усе",
+  memSave: "Захаваць", memYouWith: "Вы і {name}", memDelete: "Выдаліць", memNoFriends: "Дадайце сябра, каб дзяліцца ўспамінамі",
+  buddyTitle: "Парныя звычкі", buddyEmpty: "Абярыце звычку і сябра: серыя расце, толькі калі адзначыліся абодва.",
+  buddyAdd: "Новая парная звычка", buddyPh: "Напрыклад: 10 хвілін прагулкі", buddyStart: "Пачаць", buddyWith: "З {name}",
+  buddyDone: "Адзначыцца сёння", buddyChecked: "Вы адзначыліся", buddyWaiting: "Чакаем {name}", buddyBoth: "Абодва адзначыліся сёння",
+  buddyStreak: "Серыя разам: {n}", buddyLeave: "Скончыць", buddyConfirm: "Дакладна скончыць?",
+  chTitle: "Чэленджы", chEmpty: "Стварыце мэту на некалькі дзён і паклічце сяброў.", chAdd: "Новы чэлендж",
+  chPh: "Назва (напрыклад, Без цукру)", chDays: "Дзён", chInvite: "Каго паклікаць", chStart: "Стварыць",
+  chToday: "Адзначыцца сёння", chCheckedToday: "Адзначана на сёння", chProgress: "Агульны прагрэс: {n}%",
+  chDay: "Дзень {n} з {total}", chFinished: "Чэлендж завершаны", chMembers: "Удзельнікі", chLeave: "Выйсці", chDelete: "Выдаліць",
+  chConfirm: "Дакладна?", chNeedFriend: "Абярыце хаця б аднаго сябра",
+  loading: "Загрузка…", error: "Не атрымалася, паспрабуйце яшчэ раз",
+  ntTitle: "Апавяшчэнні", ntSub: "Напамін пра запіс і весткі ад сяброў, пакуль праграма адкрыта",
+  ntEnable: "Уключыць апавяшчэнні", ntOn: "Апавяшчэнні ўключаны", ntDenied: "Апавяшчэнні забаронены ў наладах браўзера",
+  ntUnsupported: "Гэты браўзер не падтрымлівае апавяшчэнні", ntTest: "Праверыць",
+  ntReminder: "Час зазірнуць у дзённік", ntReminderBody: "Як прайшоў дзень? Запішыце пару радкоў.",
+  ntThanks: "Вам сказалі дзякуй", ntSos: "Сябар просіць падтрымкі", ntFriends: "Паведамленні ад сяброў",
+  ntNote: "Фонавыя пушы пры закрытай праграме запатрабуюць сервера; цяпер апавяшчэнні працуюць, пакуль укладка або PWA адкрыта.",
+};
+
+const uk: Strings = {
+  memTitle: "Спільні спогади", memEmpty: "Поки що немає спільних спогадів. Запишіть мить, яку хочеться зберегти з другом.",
+  memAdd: "Додати спогад", memWith: "З ким", memText: "Що запам'яталося?", memTag: "Тег (за бажанням)", memAll: "Усі",
+  memSave: "Зберегти", memYouWith: "Ви і {name}", memDelete: "Видалити", memNoFriends: "Додайте друга, щоб ділитися спогадами",
+  buddyTitle: "Парні звички", buddyEmpty: "Оберіть звичку та друга: серія росте, лише коли відмітилися обоє.",
+  buddyAdd: "Нова парна звичка", buddyPh: "Наприклад: 10 хвилин прогулянки", buddyStart: "Почати", buddyWith: "З {name}",
+  buddyDone: "Відмітитися сьогодні", buddyChecked: "Ви відмітилися", buddyWaiting: "Чекаємо на {name}", buddyBoth: "Обоє відмітилися сьогодні",
+  buddyStreak: "Серія разом: {n}", buddyLeave: "Закінчити", buddyConfirm: "Точно закінчити?",
+  chTitle: "Челенджі", chEmpty: "Створіть ціль на кілька днів і запросіть друзів.", chAdd: "Новий челендж",
+  chPh: "Назва (наприклад, Без цукру)", chDays: "Днів", chInvite: "Кого запросити", chStart: "Створити",
+  chToday: "Відмітитися сьогодні", chCheckedToday: "Відмічено на сьогодні", chProgress: "Загальний прогрес: {n}%",
+  chDay: "День {n} з {total}", chFinished: "Челендж завершено", chMembers: "Учасники", chLeave: "Вийти", chDelete: "Видалити",
+  chConfirm: "Точно?", chNeedFriend: "Оберіть хоча б одного друга",
+  loading: "Завантаження…", error: "Не вдалося, спробуйте ще раз",
+  ntTitle: "Сповіщення", ntSub: "Нагадування про запис і новини від друзів, поки застосунок відкрито",
+  ntEnable: "Увімкнути сповіщення", ntOn: "Сповіщення увімкнено", ntDenied: "Сповіщення заборонено в налаштуваннях браузера",
+  ntUnsupported: "Цей браузер не підтримує сповіщення", ntTest: "Перевірити",
+  ntReminder: "Час зазирнути в щоденник", ntReminderBody: "Як минув день? Запишіть кілька рядків.",
+  ntThanks: "Вам сказали дякую", ntSos: "Друг просить підтримки", ntFriends: "Повідомлення від друзів",
+  ntNote: "Фонові пуші при закритому застосунку потребуватимуть сервера; зараз сповіщення працюють, поки вкладка або PWA відкриті.",
+};
+
+const de: Strings = {
+  memTitle: "Gemeinsame Erinnerungen", memEmpty: "Noch keine gemeinsamen Erinnerungen. Halte einen Moment fest, den du mit einem Freund bewahren möchtest.",
+  memAdd: "Erinnerung hinzufügen", memWith: "Mit wem", memText: "Woran erinnerst du dich?", memTag: "Tag (optional)", memAll: "Alle",
+  memSave: "Speichern", memYouWith: "Du und {name}", memDelete: "Löschen", memNoFriends: "Füge einen Freund hinzu, um Erinnerungen zu teilen",
+  buddyTitle: "Gemeinsame Gewohnheiten", buddyEmpty: "Wähle eine Gewohnheit und einen Freund: Die Serie wächst nur, wenn beide einchecken.",
+  buddyAdd: "Neue gemeinsame Gewohnheit", buddyPh: "Z. B. 10 Minuten spazieren", buddyStart: "Starten", buddyWith: "Mit {name}",
+  buddyDone: "Heute einchecken", buddyChecked: "Du hast eingecheckt", buddyWaiting: "Warten auf {name}", buddyBoth: "Beide haben heute eingecheckt",
+  buddyStreak: "Serie zusammen: {n}", buddyLeave: "Beenden", buddyConfirm: "Wirklich beenden?",
+  chTitle: "Challenges", chEmpty: "Setze dir ein Ziel für ein paar Tage und lade Freunde ein.", chAdd: "Neue Challenge",
+  chPh: "Name (z. B. Ohne Zucker)", chDays: "Tage", chInvite: "Einladen", chStart: "Erstellen",
+  chToday: "Heute einchecken", chCheckedToday: "Heute eingecheckt", chProgress: "Gruppenfortschritt: {n} %",
+  chDay: "Tag {n} von {total}", chFinished: "Challenge abgeschlossen", chMembers: "Teilnehmer", chLeave: "Verlassen", chDelete: "Löschen",
+  chConfirm: "Sicher?", chNeedFriend: "Wähle mindestens einen Freund",
+  loading: "Wird geladen…", error: "Etwas ist schiefgelaufen, bitte versuche es noch einmal",
+  ntTitle: "Benachrichtigungen", ntSub: "Erinnerung an den Eintrag und Neuigkeiten von Freunden, solange die App geöffnet ist",
+  ntEnable: "Benachrichtigungen aktivieren", ntOn: "Benachrichtigungen sind aktiviert", ntDenied: "Benachrichtigungen sind in den Browsereinstellungen blockiert",
+  ntUnsupported: "Dieser Browser unterstützt keine Benachrichtigungen", ntTest: "Testen",
+  ntReminder: "Zeit, ins Tagebuch zu schauen", ntReminderBody: "Wie war dein Tag? Schreib ein paar Zeilen.",
+  ntThanks: "Jemand hat dir gedankt", ntSos: "Ein Freund bittet um Unterstützung", ntFriends: "Nachrichten von Freunden",
+  ntNote: "Hintergrund-Push bei geschlossener App braucht einen Server; derzeit funktionieren Benachrichtigungen, solange der Tab oder die PWA geöffnet ist.",
+};
+
+const fr: Strings = {
+  memTitle: "Souvenirs partagés", memEmpty: "Aucun souvenir partagé pour l'instant. Notez un moment que vous voulez garder avec un ami.",
+  memAdd: "Ajouter un souvenir", memWith: "Avec qui", memText: "De quoi vous souvenez-vous ?", memTag: "Tag (facultatif)", memAll: "Tous",
+  memSave: "Enregistrer", memYouWith: "Vous et {name}", memDelete: "Supprimer", memNoFriends: "Ajoutez un ami pour partager des souvenirs",
+  buddyTitle: "Habitudes à deux", buddyEmpty: "Choisissez une habitude et un ami : la série ne progresse que si les deux valident.",
+  buddyAdd: "Nouvelle habitude à deux", buddyPh: "Par ex. 10 minutes de marche", buddyStart: "Commencer", buddyWith: "Avec {name}",
+  buddyDone: "Valider aujourd'hui", buddyChecked: "Vous avez validé", buddyWaiting: "En attente de {name}", buddyBoth: "Les deux ont validé aujourd'hui",
+  buddyStreak: "Série ensemble : {n}", buddyLeave: "Terminer", buddyConfirm: "Vraiment terminer ?",
+  chTitle: "Défis", chEmpty: "Créez un objectif pour quelques jours et invitez vos amis.", chAdd: "Nouveau défi",
+  chPh: "Nom (par ex. Sans sucre)", chDays: "Jours", chInvite: "Inviter", chStart: "Créer",
+  chToday: "Valider aujourd'hui", chCheckedToday: "Validé pour aujourd'hui", chProgress: "Progression du groupe : {n} %",
+  chDay: "Jour {n} sur {total}", chFinished: "Défi terminé", chMembers: "Participants", chLeave: "Quitter", chDelete: "Supprimer",
+  chConfirm: "Sûr ?", chNeedFriend: "Choisissez au moins un ami",
+  loading: "Chargement…", error: "Une erreur est survenue, veuillez réessayer",
+  ntTitle: "Notifications", ntSub: "Rappel d'écriture et nouvelles des amis tant que l'application est ouverte",
+  ntEnable: "Activer les notifications", ntOn: "Les notifications sont activées", ntDenied: "Les notifications sont bloquées dans les réglages du navigateur",
+  ntUnsupported: "Ce navigateur ne prend pas en charge les notifications", ntTest: "Tester",
+  ntReminder: "C'est l'heure d'ouvrir votre journal", ntReminderBody: "Comment s'est passée votre journée ? Écrivez quelques lignes.",
+  ntThanks: "Quelqu'un vous a remercié", ntSos: "Un ami demande du soutien", ntFriends: "Messages d'amis",
+  ntNote: "Les notifications push en arrière-plan, application fermée, nécessitent un serveur ; pour l'instant, les notifications fonctionnent tant que l'onglet ou la PWA est ouvert.",
+};
+
+const es: Strings = {
+  memTitle: "Recuerdos compartidos", memEmpty: "Aún no hay recuerdos compartidos. Anota un momento que quieras guardar con un amigo.",
+  memAdd: "Añadir recuerdo", memWith: "Con quién", memText: "¿Qué recuerdas?", memTag: "Etiqueta (opcional)", memAll: "Todos",
+  memSave: "Guardar", memYouWith: "Tú y {name}", memDelete: "Eliminar", memNoFriends: "Añade un amigo para compartir recuerdos",
+  buddyTitle: "Hábitos en pareja", buddyEmpty: "Elige un hábito y un amigo: la racha solo crece cuando ambos se registran.",
+  buddyAdd: "Nuevo hábito en pareja", buddyPh: "P. ej. caminar 10 minutos", buddyStart: "Empezar", buddyWith: "Con {name}",
+  buddyDone: "Registrarse hoy", buddyChecked: "Te has registrado", buddyWaiting: "Esperando a {name}", buddyBoth: "Ambos se registraron hoy",
+  buddyStreak: "Racha juntos: {n}", buddyLeave: "Terminar", buddyConfirm: "¿Terminar de verdad?",
+  chTitle: "Retos", chEmpty: "Crea una meta para unos días e invita a tus amigos.", chAdd: "Nuevo reto",
+  chPh: "Nombre (p. ej. Sin azúcar)", chDays: "Días", chInvite: "A quién invitar", chStart: "Crear",
+  chToday: "Registrarse hoy", chCheckedToday: "Registrado por hoy", chProgress: "Progreso del grupo: {n} %",
+  chDay: "Día {n} de {total}", chFinished: "Reto terminado", chMembers: "Participantes", chLeave: "Salir", chDelete: "Eliminar",
+  chConfirm: "¿Seguro?", chNeedFriend: "Elige al menos un amigo",
+  loading: "Cargando…", error: "Algo salió mal, inténtalo de nuevo",
+  ntTitle: "Notificaciones", ntSub: "Recordatorio para escribir y novedades de amigos mientras la app está abierta",
+  ntEnable: "Activar notificaciones", ntOn: "Las notificaciones están activadas", ntDenied: "Las notificaciones están bloqueadas en los ajustes del navegador",
+  ntUnsupported: "Este navegador no admite notificaciones", ntTest: "Probar",
+  ntReminder: "Es hora de abrir tu diario", ntReminderBody: "¿Cómo fue tu día? Escribe unas líneas.",
+  ntThanks: "Alguien te dio las gracias", ntSos: "Un amigo pide apoyo", ntFriends: "Mensajes de amigos",
+  ntNote: "Las notificaciones push en segundo plano, con la app cerrada, requerirán un servidor; por ahora funcionan mientras la pestaña o la PWA estén abiertas.",
+};
+
+const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };
 
 export type SocialKey = keyof Strings;
 export const makeSocial = (lang: Lang) => (k: SocialKey): string => (ALL[lang] ?? en)[k];
