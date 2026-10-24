@@ -30,6 +30,7 @@ import {
   TrashIcon,
 } from "../icons";
 import FactOfDay from "./FactOfDay";
+import DailyQuestion from "./DailyQuestion";
 import { shrinkPhoto } from "../lib/images";
 
 // Генератор настоящих UUID для совместимости с Supabase
@@ -289,6 +290,12 @@ useSwipe({
               </span>
             </div>
           </div>
+
+        <DailyQuestion
+          date={date}
+          lang={lang}
+          onInsert={(text) => setText(value.trim() ? `${value.replace(/\s+$/, "")}\n\n${text}` : text)}
+        />
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)]">{t("templates")}</span>

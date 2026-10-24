@@ -18,6 +18,7 @@ const ru = {
   installSub: "Быстрый доступ к вашему дневнику", install: "Установить", close: "Закрыть",
   newPwTitle: "Новый пароль", newPwSave: "Сохранить пароль", pwUpdated: "Пароль обновлён", storageFull: "Память браузера заполнена: фото или данные не сохранились. Удалите лишние фото.",
   viewList: "Список", viewCalendar: "Календарь", calEntries: "Записей за месяц", calMood: "Настроение", calNoEntry: "Нет записи", calToday: "К сегодня",
+  qTitle: "Вопрос дня", qPlaceholder: "Ваш ответ…", qShare: "Поделиться с друзьями", qUpdate: "Обновить для друзей", qUnshare: "Убрать", qShared: "Видно друзьям", qLoginHint: "Войдите в аккаунт, чтобы делиться ответами с друзьями", qAddToNote: "В запись дня", qError: "Не получилось сохранить. Попробуйте ещё раз", qFriendsTitle: "Ответы друзей на вопрос дня", qFriendsEmpty: "Пока никто не поделился ответом", qYou: "Вы",
 };
 type Strings = typeof ru;
 
@@ -38,6 +39,7 @@ const en: Strings = {
   installSub: "Quick access to your diary", install: "Install", close: "Close",
   newPwTitle: "New password", newPwSave: "Save password", pwUpdated: "Password updated", storageFull: "Browser storage is full: a photo or data was not saved. Remove some photos.",
   viewList: "List", viewCalendar: "Calendar", calEntries: "Entries this month", calMood: "Mood", calNoEntry: "No entry", calToday: "Today",
+  qTitle: "Question of the day", qPlaceholder: "Your answer…", qShare: "Share with friends", qUpdate: "Update for friends", qUnshare: "Remove", qShared: "Visible to friends", qLoginHint: "Sign in to share answers with friends", qAddToNote: "Add to today’s note", qError: "Could not save. Please try again", qFriendsTitle: "Friends’ answers to the question of the day", qFriendsEmpty: "Nobody has shared an answer yet", qYou: "You",
 };
 
 const be: Strings = {
@@ -57,6 +59,7 @@ const be: Strings = {
   installSub: "Хуткі доступ да вашага дзённіка", install: "Усталяваць", close: "Закрыць",
   newPwTitle: "Новы пароль", newPwSave: "Захаваць пароль", pwUpdated: "Пароль абноўлены", storageFull: "Памяць браўзера запоўнена: фота або даныя не захаваліся. Выдаліце лішнія фота.",
   viewList: "Спіс", viewCalendar: "Каляндар", calEntries: "Запісаў за месяц", calMood: "Настрой", calNoEntry: "Няма запісу", calToday: "Да сёння",
+  qTitle: "Пытанне дня", qPlaceholder: "Ваш адказ…", qShare: "Падзяліцца з сябрамі", qUpdate: "Абнавіць для сяброў", qUnshare: "Прыбраць", qShared: "Бачна сябрам", qLoginHint: "Увайдзіце ў акаўнт, каб дзяліцца адказамі з сябрамі", qAddToNote: "У запіс дня", qError: "Не атрымалася захаваць. Паспрабуйце яшчэ раз", qFriendsTitle: "Адказы сяброў на пытанне дня", qFriendsEmpty: "Пакуль ніхто не падзяліўся адказам", qYou: "Вы",
 };
 
 const uk: Strings = {
@@ -76,6 +79,7 @@ const uk: Strings = {
   installSub: "Швидкий доступ до вашого щоденника", install: "Встановити", close: "Закрити",
   newPwTitle: "Новий пароль", newPwSave: "Зберегти пароль", pwUpdated: "Пароль оновлено", storageFull: "Пам’ять браузера заповнена: фото або дані не збереглися. Видаліть зайві фото.",
   viewList: "Список", viewCalendar: "Календар", calEntries: "Записів за місяць", calMood: "Настрій", calNoEntry: "Немає запису", calToday: "До сьогодні",
+  qTitle: "Питання дня", qPlaceholder: "Ваша відповідь…", qShare: "Поділитися з друзями", qUpdate: "Оновити для друзів", qUnshare: "Прибрати", qShared: "Видно друзям", qLoginHint: "Увійдіть в акаунт, щоб ділитися відповідями з друзями", qAddToNote: "У запис дня", qError: "Не вдалося зберегти. Спробуйте ще раз", qFriendsTitle: "Відповіді друзів на питання дня", qFriendsEmpty: "Поки ніхто не поділився відповіддю", qYou: "Ви",
 };
 
 const de: Strings = {
@@ -95,6 +99,7 @@ const de: Strings = {
   installSub: "Schneller Zugriff auf dein Tagebuch", install: "Installieren", close: "Schließen",
   newPwTitle: "Neues Passwort", newPwSave: "Passwort speichern", pwUpdated: "Passwort aktualisiert", storageFull: "Browser-Speicher voll: Foto oder Daten wurden nicht gespeichert. Entferne einige Fotos.",
   viewList: "Liste", viewCalendar: "Kalender", calEntries: "Einträge in diesem Monat", calMood: "Stimmung", calNoEntry: "Kein Eintrag", calToday: "Heute",
+  qTitle: "Frage des Tages", qPlaceholder: "Deine Antwort…", qShare: "Mit Freunden teilen", qUpdate: "Für Freunde aktualisieren", qUnshare: "Entfernen", qShared: "Für Freunde sichtbar", qLoginHint: "Melde dich an, um Antworten mit Freunden zu teilen", qAddToNote: "In den Tageseintrag", qError: "Speichern fehlgeschlagen. Bitte erneut versuchen", qFriendsTitle: "Antworten deiner Freunde auf die Frage des Tages", qFriendsEmpty: "Noch hat niemand eine Antwort geteilt", qYou: "Du",
 };
 
 const fr: Strings = {
@@ -114,6 +119,7 @@ const fr: Strings = {
   installSub: "Accès rapide à ton journal", install: "Installer", close: "Fermer",
   newPwTitle: "Nouveau mot de passe", newPwSave: "Enregistrer le mot de passe", pwUpdated: "Mot de passe mis à jour", storageFull: "Stockage du navigateur plein : une photo ou des données n’ont pas été enregistrées. Supprime des photos.",
   viewList: "Liste", viewCalendar: "Calendrier", calEntries: "Notes ce mois-ci", calMood: "Humeur", calNoEntry: "Pas de note", calToday: "Aujourd’hui",
+  qTitle: "Question du jour", qPlaceholder: "Ta réponse…", qShare: "Partager avec les amis", qUpdate: "Mettre à jour pour les amis", qUnshare: "Retirer", qShared: "Visible par les amis", qLoginHint: "Connecte-toi pour partager tes réponses avec tes amis", qAddToNote: "Dans la note du jour", qError: "Échec de l’enregistrement. Réessaie", qFriendsTitle: "Réponses des amis à la question du jour", qFriendsEmpty: "Personne n’a encore partagé de réponse", qYou: "Toi",
 };
 
 const es: Strings = {
@@ -133,6 +139,7 @@ const es: Strings = {
   installSub: "Acceso rápido a tu diario", install: "Instalar", close: "Cerrar",
   newPwTitle: "Nueva contraseña", newPwSave: "Guardar contraseña", pwUpdated: "Contraseña actualizada", storageFull: "Almacenamiento del navegador lleno: no se guardó una foto o datos. Elimina algunas fotos.",
   viewList: "Lista", viewCalendar: "Calendario", calEntries: "Entradas este mes", calMood: "Ánimo", calNoEntry: "Sin entrada", calToday: "Hoy",
+  qTitle: "Pregunta del día", qPlaceholder: "Tu respuesta…", qShare: "Compartir con amigos", qUpdate: "Actualizar para amigos", qUnshare: "Quitar", qShared: "Visible para amigos", qLoginHint: "Inicia sesión para compartir respuestas con tus amigos", qAddToNote: "A la nota del día", qError: "No se pudo guardar. Inténtalo de nuevo", qFriendsTitle: "Respuestas de amigos a la pregunta del día", qFriendsEmpty: "Nadie ha compartido una respuesta aún", qYou: "Tú",
 };
 
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };

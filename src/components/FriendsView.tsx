@@ -3,6 +3,7 @@ import type { Lang } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { fetchProfiles } from "../lib/profiles";
 import ProfilePage from "./ProfilePage";
+import FriendsAnswers from "./FriendsAnswers";
 
 interface FriendsViewProps {
   userId: string;
@@ -198,6 +199,8 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
           {msg.text}
         </div>
       )}
+
+      <FriendsAnswers userId={userId} lang={lang} />
 
       {/* ===== Добавить друга ===== */}
       <div className={`${card} mb-5 animate-rise p-4`} style={{ boxShadow: "var(--shadow-sm)" }}>
