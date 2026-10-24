@@ -27,6 +27,12 @@ export function todayISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/** Запись запечатана «капсулой времени», пока сегодняшняя дата раньше даты открытия. */
+export function isSealed(capsules: Record<string, string>, date: string, today: string = todayISO()): boolean {
+  const open = capsules[date];
+  return Boolean(open) && today < open;
+}
+
 export function toISO(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
