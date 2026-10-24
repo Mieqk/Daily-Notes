@@ -32,7 +32,7 @@ export default function FactOfDay({ lang, onSave }: { lang: Lang; onSave?: (text
     setLoading(true);
     setJustSaved(false);
     try {
-      const r = await fetch(`/api/fact?lang=${lang}&r=${Date.now()}`);
+      const r = await fetch(`/api/fact?lang=${lang}&r=${Date.now()}&avoid=${encodeURIComponent(text.slice(0, 150))}`);
       const d = await r.json();
       if (!d?.fact) throw new Error("bad");
       setAiFact(d.fact);
