@@ -28,11 +28,13 @@ const rank = (name) => {
 const deadModels = new Set(); // модели, ответившие 404 (отключены): пропускаем до перезапуска функции
 
 // diag — необязательный массив: сюда попадают причины отказов моделей (без ключа и данных пользователя).
-// opts.timeoutMs — предел на один запрос к модели, opts.deadlineMs — предел на всю попытку со сменой моделей.
+// opts.timeoutMs — предел на один запрос к модели, opts.deadlineMs — предел на всю попытку со сменой моделей
+// (он должен быть меньше maxDuration функции, иначе Vercel оборвёт её ответом 504).
+// opts.thinking — варианты thinkingConfig для быстрых ответов: пробуются по очереди, пока модель не примет один из них.
 export async function generateText(key, prompt, generationConfig = {}, diag = [], opts = {}) {
   const errors = diag;
   const started = Date.now();
-  const { timeoutMs = 25_000, deadlineMs = 50_000 } = opts;
+  const { timeoutMs = 25_000, deadlineMs = 50_000, thinking = [] } = opts;
   let version = "v1beta";
   let dynamic = await listFlashModels(key, version);
   if (!dynamic.length) {
@@ -43,27 +45,30 @@ export async function generateText(key, prompt, generationConfig = {}, diag = []
   const fallback = ["gemini-3.8-flash", "gemini-3.6-flash"].filter((m) => !deadModels.has(m));
   const models = [...(sorted.length ? sorted.slice(0, 3) : fallback), "gemini-flash-latest"].filter((m, i, a) => a.indexOf(m) === i);
 
-  const call = async (model, config) => {
+  const call = async (model, config, limit) => {
     const r = await fetch(`${BASE}/${version}/models/${model}:generateContent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: config }),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: AbortSignal.timeout(limit),
     });
     return { r, data: await r.json() };
   };
 
   for (const model of models) {
-    if (Date.now() - started > deadlineMs) {
+    const left = deadlineMs - (Date.now() - started);
+    if (left < 2000) {
       errors.push("deadline exceeded");
       break;
     }
+    const limit = Math.min(timeoutMs, left);
     try {
-      let { r, data } = await call(model, generationConfig);
-      // не все модели принимают thinkingConfig: повторяем эту же модель без него
-      if (!r.ok && generationConfig.thinkingConfig && /think/i.test(data?.error?.message || "")) {
-        const { thinkingConfig, ...rest } = generationConfig;
-        ({ r, data } = await call(model, rest));
+      // разные модели по-разному отключают размышления: пробуем варианты, потом без них
+      const variants = [...thinking, null];
+      let r, data;
+      for (const v of variants) {
+        ({ r, data } = await call(model, v ? { ...generationConfig, thinkingConfig: v } : generationConfig, limit));
+        if (r.ok || r.status !== 400 || !/think/i.test(data?.error?.message || "")) break;
       }
       if (!r.ok) {
         if (r.status === 404 && model !== "gemini-flash-latest") deadModels.add(model);

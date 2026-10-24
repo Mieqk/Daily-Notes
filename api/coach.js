@@ -120,10 +120,14 @@ export default async function handler(req, res) {
   const out = await generateText(key, prompt, {
     temperature: 0.9,
     maxOutputTokens: 4096,
-    thinkingConfig: { thinkingBudget: 0 },
     responseMimeType: "application/json",
     responseSchema: SCHEMAS[mode],
-  }, diag, { timeoutMs: 20_000, deadlineMs: 40_000 });
+  }, diag, {
+    // функция живёт 60 секунд (vercel.json): на всё про всё 40, чтобы ответить ошибкой, а не 504
+    timeoutMs: 14_000,
+    deadlineMs: 40_000,
+    thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
+  });
   if (!out) return res.status(500).json({ error: "ai failed", detail: diag.join(" | ").slice(0, 400) });
 
   const parsed = parseReply(out.text, mode);

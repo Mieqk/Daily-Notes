@@ -62,7 +62,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
     setError(null);
     try {
       const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), 45_000);
+      const timer = setTimeout(() => ctl.abort(), 55_000);
       const r = await fetch("/api/coach", {
         signal: ctl.signal,
         method: "POST",
