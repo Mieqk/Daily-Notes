@@ -12,14 +12,30 @@ interface SleepViewProps {
   setSleep: (iso: string, data: SleepData | null) => void;
 }
 
-const EXTRA: Record<string, { note: string; notePh: string; awake: string; auto: string; history: string; unit: string; goal: string }> = {
-  ru: { note: "Блокнот о сне", notePh: "Сны, мысли перед сном, что мешало уснуть…", awake: "Просыпаний", auto: "считается само", history: "История по дням", unit: "ч", goal: "Цель" },
-  en: { note: "Sleep notebook", notePh: "Dreams, thoughts before bed…", awake: "Wake-ups", auto: "auto", history: "Day-by-day history", unit: "h", goal: "Goal" },
-  be: { note: "Блокнот пра сон", notePh: "Сны, думкі перад сном…", awake: "Пробуджэнняў", auto: "аўта", history: "Гісторыя па днях", unit: "г", goal: "Мэта" },
-  uk: { note: "Нотатник про сон", notePh: "Сни, думки перед сном…", awake: "Пробуджень", auto: "авто", history: "Історія по днях", unit: "год", goal: "Мета" },
-  de: { note: "Schlaf-Notizbuch", notePh: "Träume, Gedanken vor dem Schlaf…", awake: "Aufwachen", auto: "auto", history: "Verlauf nach Tagen", unit: "Std", goal: "Ziel" },
-  fr: { note: "Carnet de sommeil", notePh: "Rêves, pensées avant de dormir…", awake: "Réveils", auto: "auto", history: "Historique par jour", unit: "h", goal: "Objectif" },
-  es: { note: "Cuaderno de sueño", notePh: "Sueños, pensamientos antes de dormir…", awake: "Despertares", auto: "auto", history: "Historial por días", unit: "h", goal: "Meta" },
+const EXTRA: Record<string, { note: string; notePh: string; awake: string; auto: string; history: string; unit: string; goal: string; trends: string; avg7: string; avg30: string; avgBed: string; avgWake: string; regularity: string; bestNight: string; worstNight: string; debt: string; minUnit: string }> = {
+  ru: { note: "Блокнот о сне", notePh: "Сны, мысли перед сном, что мешало уснуть…", awake: "Просыпаний", auto: "считается само", history: "История по дням", unit: "ч", goal: "Цель", trends: "Тренды за 30 дней", avg7: "За 7 дней", avg30: "За 30 дней", avgBed: "Засыпаете в среднем", avgWake: "Просыпаетесь в среднем", regularity: "Разброс времени засыпания", bestNight: "Лучшая ночь", worstNight: "Короче всех", debt: "Долг сна за неделю", minUnit: "мин" },
+  en: { note: "Sleep notebook", notePh: "Dreams, thoughts before bed…", awake: "Wake-ups", auto: "auto", history: "Day-by-day history", unit: "h", goal: "Goal", trends: "30-day trends", avg7: "Last 7 days", avg30: "Last 30 days", avgBed: "Average bedtime", avgWake: "Average wake-up", regularity: "Bedtime variation", bestNight: "Best night", worstNight: "Shortest night", debt: "Sleep debt this week", minUnit: "min" },
+  be: { note: "Блокнот пра сон", notePh: "Сны, думкі перад сном…", awake: "Пробуджэнняў", auto: "аўта", history: "Гісторыя па днях", unit: "г", goal: "Мэта", trends: "Трэнды за 30 дзён", avg7: "За 7 дзён", avg30: "За 30 дзён", avgBed: "Засынаеце ў сярэднім", avgWake: "Прачынаецеся ў сярэднім", regularity: "Разброс часу засынання", bestNight: "Лепшая ноч", worstNight: "Самая кароткая", debt: "Доўг сну за тыдзень", minUnit: "хв" },
+  uk: { note: "Нотатник про сон", notePh: "Сни, думки перед сном…", awake: "Пробуджень", auto: "авто", history: "Історія по днях", unit: "год", goal: "Мета", trends: "Тренди за 30 днів", avg7: "За 7 днів", avg30: "За 30 днів", avgBed: "Засинаєте в середньому", avgWake: "Прокидаєтесь у середньому", regularity: "Розкид часу засинання", bestNight: "Найкраща ніч", worstNight: "Найкоротша", debt: "Борг сну за тиждень", minUnit: "хв" },
+  de: { note: "Schlaf-Notizbuch", notePh: "Träume, Gedanken vor dem Schlaf…", awake: "Aufwachen", auto: "auto", history: "Verlauf nach Tagen", unit: "Std", goal: "Ziel", trends: "30-Tage-Trends", avg7: "Letzte 7 Tage", avg30: "Letzte 30 Tage", avgBed: "Ø Einschlafzeit", avgWake: "Ø Aufstehzeit", regularity: "Schwankung der Einschlafzeit", bestNight: "Beste Nacht", worstNight: "Kürzeste Nacht", debt: "Schlafdefizit diese Woche", minUnit: "Min" },
+  fr: { note: "Carnet de sommeil", notePh: "Rêves, pensées avant de dormir…", awake: "Réveils", auto: "auto", history: "Historique par jour", unit: "h", goal: "Objectif", trends: "Tendances sur 30 jours", avg7: "7 derniers jours", avg30: "30 derniers jours", avgBed: "Coucher moyen", avgWake: "Réveil moyen", regularity: "Variation du coucher", bestNight: "Meilleure nuit", worstNight: "Nuit la plus courte", debt: "Dette de sommeil cette semaine", minUnit: "min" },
+  es: { note: "Cuaderno de sueño", notePh: "Sueños, pensamientos antes de dormir…", awake: "Despertares", auto: "auto", history: "Historial por días", unit: "h", goal: "Meta", trends: "Tendencias de 30 días", avg7: "Últimos 7 días", avg30: "Últimos 30 días", avgBed: "Hora media de dormir", avgWake: "Hora media de despertar", regularity: "Variación al acostarse", bestNight: "Mejor noche", worstNight: "Noche más corta", debt: "Deuda de sueño esta semana", minUnit: "min" },
+};
+
+
+const hm = (min: number) => {
+  const m = ((Math.round(min) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+};
+const parseHM = (v?: string) => {
+  if (!v || !v.includes(":")) return null;
+  const [h, m] = v.split(":").map(Number);
+  return Number.isNaN(h) || Number.isNaN(m) ? null : h * 60 + m;
+};
+const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+const stdev = (xs: number[]) => {
+  const m = mean(xs);
+  return m === null || xs.length < 2 ? null : Math.sqrt(xs.reduce((a, b) => a + (b - m) ** 2, 0) / xs.length);
 };
 
 function calcHours(bedtime?: string, waketime?: string): number | null {
@@ -102,6 +118,23 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
     w = Math.max(AXIS_START, Math.min(AXIS_START + AXIS_SPAN, w));
     tl = { left: ((b - AXIS_START) / AXIS_SPAN) * 100, width: Math.max(1.5, ((w - b) / AXIS_SPAN) * 100) };
   }
+
+  /* ---------- тренды за 30 дней ---------- */
+  const nights = Array.from({ length: 30 }, (_, i) => ({ iso: shiftISO(today, -i), d: sleep[shiftISO(today, -i)] }))
+    .filter((x) => x.d && x.d.hours > 0);
+  const last7 = nights.filter((_, i) => nights[i].iso >= shiftISO(today, -6));
+  const avg7h = mean(last7.map((x) => x.d!.hours));
+  const avg30h = mean(nights.map((x) => x.d!.hours));
+  // время отхода ко сну считаем с учётом полуночи: 00:30 -> 24:30
+  const bedMins = nights.map((x) => parseHM(x.d!.bedtime)).filter((m): m is number => m !== null).map((m) => (m < 12 * 60 ? m + 1440 : m));
+  const wakeMins = nights.map((x) => parseHM(x.d!.waketime)).filter((m): m is number => m !== null);
+  const avgBed = mean(bedMins);
+  const avgWake = mean(wakeMins);
+  const bedSd = stdev(bedMins);
+  const best = nights.length ? nights.reduce((a, b) => (b.d!.quality > a.d!.quality || (b.d!.quality === a.d!.quality && b.d!.hours > a.d!.hours) ? b : a)) : null;
+  const worst = nights.length ? nights.reduce((a, b) => (b.d!.hours < a.d!.hours ? b : a)) : null;
+  const debt = last7.reduce((acc, x) => acc + Math.max(0, goal - x.d!.hours), 0);
+  const dayFmt = (iso: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(fromISO(iso));
   const TICKS = ["18", "21", "00", "03", "06", "09", "12"];
 
   /* ---------- неделя: 7 столбцов, пустые дни тоже видны ---------- */
@@ -243,6 +276,29 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
           </div>
         </div>
       </div>
+
+      {nights.length >= 2 && (
+        <div className={`${card} animate-rise mt-5 !p-5`} style={{ boxShadow: "var(--shadow-sm)" }}>
+          <h3 className="mb-4 text-[15px] font-bold">{L.trends}</h3>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 lg:grid-cols-4">
+            {[
+              { k: L.avg7, v: avg7h !== null ? `${avg7h.toFixed(1)} ${L.unit}` : "—" },
+              { k: L.avg30, v: avg30h !== null ? `${avg30h.toFixed(1)} ${L.unit}` : "—" },
+              { k: L.avgBed, v: avgBed !== null ? hm(avgBed) : "—" },
+              { k: L.avgWake, v: avgWake !== null ? hm(avgWake) : "—" },
+              { k: L.regularity, v: bedSd !== null ? `±${Math.round(bedSd)} ${L.minUnit}` : "—" },
+              { k: L.debt, v: last7.length ? `${debt.toFixed(1)} ${L.unit}` : "—" },
+              { k: L.bestNight, v: best ? `${dayFmt(best.iso)} · ${best.d!.hours.toFixed(1)} ${L.unit}` : "—" },
+              { k: L.worstNight, v: worst ? `${dayFmt(worst.iso)} · ${worst.d!.hours.toFixed(1)} ${L.unit}` : "—" },
+            ].map((x) => (
+              <div key={x.k}>
+                <dt className={label}>{x.k}</dt>
+                <dd className="font-display mt-1 text-[18px] font-bold tabular-nums">{x.v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
 
       {history.length > 0 && (
         <div className={`${card} animate-rise mt-5`} style={{ boxShadow: "var(--shadow-sm)" }}>

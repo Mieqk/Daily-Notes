@@ -13,7 +13,30 @@ async function listFlashModels(key, version) {
   }
 }
 
+// Простое ограничение частоты по IP (в памяти экземпляра функции: смягчает перебор,
+// но не заменяет Vercel Firewall rate limiting для жёсткого лимита)
+const WINDOW_MS = 60_000;
+const MAX_PER_WINDOW = 12;
+const hits = new Map();
+
+function tooMany(ip) {
+  const now = Date.now();
+  const list = (hits.get(ip) || []).filter((t) => now - t < WINDOW_MS);
+  list.push(now);
+  hits.set(ip, list);
+  if (hits.size > 5000) {
+    for (const [k, v] of hits) if (!v.some((t) => now - t < WINDOW_MS)) hits.delete(k);
+  }
+  return list.length > MAX_PER_WINDOW;
+}
+
 export default async function handler(req, res) {
+  const ip = String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "unknown").split(",")[0].trim();
+  if (tooMany(ip)) {
+    res.setHeader("Retry-After", "60");
+    return res.status(429).json({ error: "too many requests" });
+  }
+
   const lang = String(req.query.lang || "ru").slice(0, 5);
   const key = process.env.GEMINI_API_KEY;
 

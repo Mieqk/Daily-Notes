@@ -95,14 +95,30 @@ export async function performInitialSync(userId: string) {
   }
 }
 
+// Все отложенные отправки: нужны, чтобы сбросить их разом при закрытии вкладки
+const pendingFlushers = new Set<() => void>();
+
+/** Немедленно отправляет всё, что ждёт своих 2 секунд (вызывать при скрытии/закрытии страницы). */
+export function flushPendingSync() {
+  [...pendingFlushers].forEach((f) => f());
+}
+
 // Отдельный таймер на ключ (пользователь + дата), чтобы правки разных дней не затирали друг друга
 function debounceByKey<A extends unknown[]>(fn: (...args: A) => void | Promise<void>, delay: number, keyOf: (...args: A) => string) {
-  const timers = new Map<string, ReturnType<typeof setTimeout>>();
+  const timers = new Map<string, { id: ReturnType<typeof setTimeout>; run: () => void }>();
   return (...args: A) => {
     const key = keyOf(...args);
     const prev = timers.get(key);
-    if (prev) clearTimeout(prev);
-    timers.set(key, setTimeout(() => { timers.delete(key); void fn(...args); }, delay));
+    if (prev) { clearTimeout(prev.id); pendingFlushers.delete(prev.run); }
+    const run = () => {
+      const cur = timers.get(key);
+      if (cur) clearTimeout(cur.id);
+      timers.delete(key);
+      pendingFlushers.delete(run);
+      void fn(...args);
+    };
+    timers.set(key, { id: setTimeout(run, delay), run });
+    pendingFlushers.add(run);
   };
 }
 
