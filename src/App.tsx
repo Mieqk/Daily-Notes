@@ -21,6 +21,7 @@ import AuthScreen from "./components/AuthScreen";
 import MobileBottomNav from "./components/MobileBottomNav";
 import FriendsView from "./components/FriendsView";
 import AccountMenu from "./components/AccountMenu";
+import { useNotifications } from "./hooks/useNotifications";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
 import { isLocalMode, setLocalMode, performInitialSync, mergeLocalIntoRemote, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, deleteAllRemote, flushPendingSync, type SyncStatus } from "./lib/sync";
@@ -74,6 +75,8 @@ export default function App() {
 
   const localRef = useRef({ notes, tasks, moods, tags, photos, sleep });
   localRef.current = { notes, tasks, moods, tags, photos, sleep };
+
+  useNotifications(userId, lang, reminder);
 
   const now = useNow(1000);
   const locale = localeOf(lang);
