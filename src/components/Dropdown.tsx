@@ -47,7 +47,7 @@ export default function Dropdown({
   return (
     <>
       {/* невидимая подложка: клик вне меню закрывает его */}
-      <div className="fixed inset-0 z-40 cursor-default" onMouseDown={onClose} />
+      <div className="fixed inset-0 z-40 cursor-default" onMouseDown={onClose} aria-hidden="true" />
       <div
         className={`absolute z-50 ${
           direction === "up" ? "bottom-full mb-2.5" : "top-full mt-2.5"
@@ -55,6 +55,7 @@ export default function Dropdown({
         style={{ width, transformOrigin: origin }}
       >
         <div
+          role="menu"
           className="animate-pop relative rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-2"
           style={{ boxShadow: "var(--shadow)" }}
         >

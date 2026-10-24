@@ -8,7 +8,7 @@
   --panel-2: #fdfdf9;
   --ink: #1b231e;
   --ink-soft: #4c5a51;
-  --ink-faint: #87938a;
+  --ink-faint: #5e6861;
   --line: #d8ddd0;
   --hover: #e3e7db;
   --accent: #226b52;
@@ -30,7 +30,7 @@
   --panel-2: #212a31;
   --ink: #e7ede6;
   --ink-soft: #a9b6ac;
-  --ink-faint: #6e7c72;
+  --ink-faint: #8b978e;
   --line: #2b353c;
   --hover: #242e35;
   --accent: #e3b455;
@@ -52,7 +52,7 @@
   --panel-2: #192836;
   --ink: #dfe9ef;
   --ink-soft: #9fb4c0;
-  --ink-faint: #64798a;
+  --ink-faint: #8093a1;
   --line: #23384a;
   --hover: #1b2b39;
   --accent: #43b3a7;
@@ -74,7 +74,7 @@
   --panel-2: #faf9fc;
   --ink: #221e30;
   --ink-soft: #55506a;
-  --ink-faint: #8d87a3;
+  --ink-faint: #656078;
   --line: #d9d5e6;
   --hover: #e2dfee;
   --accent: #6a55c8;
@@ -96,7 +96,7 @@
   --panel-2: #251e2c;
   --ink: #efe7ee;
   --ink-soft: #b7a9ba;
-  --ink-faint: #7c6e80;
+  --ink-faint: #958998;
   --line: #342a3d;
   --hover: #2a2232;
   --accent: #e0637c;
@@ -137,6 +137,11 @@
     font-family: "Golos Text", "Segoe UI", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
   ::selection {

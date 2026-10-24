@@ -25,6 +25,8 @@ export default function MobileBottomNav({ tab, onTab }: MobileBottomNavProps) {
             <button
               key={id}
               onClick={() => onTab(id)}
+              aria-label={label}
+              aria-current={active ? "page" : undefined}
               className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2 min-w-[60px] transition-all duration-200 ${
                 active
                   ? "bg-[var(--accent)] text-[var(--accent-ink)]"
