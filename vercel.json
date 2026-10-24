@@ -3,6 +3,7 @@
   "framework": "vite",
   "installCommand": "npm install --legacy-peer-deps",
   "functions": {
-    "api/coach.js": { "maxDuration": 30 }
+    "api/coach.js": { "maxDuration": 60 },
+    "api/insights.js": { "maxDuration": 60 }
   }
 }
