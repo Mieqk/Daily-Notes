@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import type { Lang, TKey } from "../i18n";
 import type { BgId, WritingFontId } from "../store";
 import { FONT_STACKS, hashPin } from "../store";
+import { biometricSupported, registerBiometric } from "../lib/biometric";
+import { makeDevice } from "../device-strings";
 import { THEMES } from "../themes";
 import type { ThemeId } from "../themes";
 import { BG_IMAGES } from "../bg";
@@ -10,6 +12,7 @@ import {
   AlertIcon,
   CheckIcon,
   DownloadIcon,
+  FingerprintIcon,
   GlobeIcon,
   LockIcon,
   MoodVisual,
@@ -41,6 +44,8 @@ interface SettingsViewProps {
   onMoodEmoji: (e: string[]) => void;
   pinHash: string | null;
   onPinChange: (hash: string | null) => void;
+  bioId: string | null;
+  onBioChange: (id: string | null) => void;
   onClearAll: () => void;
   onExportMd: () => void;
   onExportJson: () => void;
@@ -145,6 +150,8 @@ export default function SettingsView(props: SettingsViewProps) {
     onMoodEmoji,
     pinHash,
     onPinChange,
+    bioId,
+    onBioChange,
     onClearAll,
     t,
     notesCount,
@@ -157,6 +164,14 @@ export default function SettingsView(props: SettingsViewProps) {
   const [p1, setP1] = useState("");
   const [p2, setP2] = useState("");
   const [pinErr, setPinErr] = useState<string | null>(null);
+  const d = makeDevice(lang);
+  const [bioOk, setBioOk] = useState(false);
+  useEffect(() => { void biometricSupported().then(setBioOk); }, []);
+  const toggleBio = async () => {
+    if (bioId) { onBioChange(null); showToast(d("toastBioOff")); return; }
+    const id = await registerBiometric();
+    if (id) { onBioChange(id); showToast(d("toastBioOn")); } else showToast(d("bioRegFail"));
+  };
 
   const savePin = () => {
     const a = p1.replace(/\D/g, "");
@@ -463,6 +478,23 @@ export default function SettingsView(props: SettingsViewProps) {
             </div>
           )}
           <p className="mt-3 text-[11px] leading-snug text-[var(--ink-faint)]">{t("pinNote")}</p>
+          <div className="mt-4 border-t border-[var(--line)] pt-4">
+            <div className="mb-2 flex items-center gap-2">
+              <FingerprintIcon className="h-4 w-4 text-[var(--accent)]" />
+              <span className="text-[12.5px] font-semibold">{d("bioTitle")}</span>
+              {bioId && <span className="text-[11.5px] text-[var(--ink-faint)]">· {d("bioOn")}</span>}
+            </div>
+            <button
+              onClick={toggleBio}
+              disabled={!bioId && (!pinHash || !bioOk)}
+              className={`h-10 rounded-lg px-4 text-[13px] font-semibold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${bioId ? "border border-[var(--line)] text-[var(--danger)] hover:bg-[var(--danger-soft)]" : "bg-[var(--accent)] font-bold text-[var(--accent-ink)] hover:brightness-110"}`}
+            >
+              {bioId ? d("bioDisable") : d("bioEnable")}
+            </button>
+            <p className="mt-2 text-[11px] leading-snug text-[var(--ink-faint)]">
+              {!bioOk ? d("bioUnsupported") : !pinHash && !bioId ? d("bioNeedPin") : d("bioNote")}
+            </p>
+          </div>
         </Section>
       </div>
 

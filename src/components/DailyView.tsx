@@ -22,6 +22,7 @@ import {
   BrushIcon,
   CheckIcon,
   ImageIcon,
+  CameraIcon,
   LockIcon,
   LeafIcon,
   MicIcon,
@@ -35,6 +36,8 @@ import {
 import FactOfDay from "./FactOfDay";
 import DailyQuestion from "./DailyQuestion";
 import { makeUI } from "../ui-strings";
+import { makeDevice } from "../device-strings";
+import CameraCapture from "./CameraCapture";
 import { shrinkPhoto } from "../lib/images";
 
 // Генератор настоящих UUID для совместимости с Supabase
@@ -97,6 +100,21 @@ export default function DailyView(props: DailyViewProps) {
   const pct = dayTasks.length ? Math.round((done / dayTasks.length) * 100) : 0;
 
   const u = makeUI(lang);
+  const dv = makeDevice(lang);
+  const [camOpen, setCamOpen] = useState(false);
+  const camRef = useRef<HTMLInputElement>(null);
+  const hasCamera = typeof navigator !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia);
+  // getUserMedia, если есть; иначе системная камера через capture
+  const openCamera = () => { if (hasCamera) setCamOpen(true); else camRef.current?.click(); };
+  const addShot = async (f: File) => {
+    setCamOpen(false);
+    if (dayPhotos.length >= 6) return;
+    try {
+      const url = await shrinkPhoto(f);
+      setPhotos((m) => ({ ...m, [date]: [...(m[date] ?? []), url].slice(0, 6) }));
+      bumpStatus();
+    } catch { /* ignore */ }
+  };
   const sealed = isSealed(capsules, date);
   const openDate = capsules[date];
   const daysLeft = sealed ? Math.max(1, Math.round((fromISO(openDate).getTime() - fromISO(todayISO()).getTime()) / 86_400_000)) : 0;
@@ -319,6 +337,9 @@ useSwipe({
               <button onClick={() => fileRef.current?.click()} className="flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-semibold text-[var(--ink-soft)] transition-all duration-200 hover:bg-[var(--hover)] hover:text-[var(--ink)] active:scale-95">
                 <ImageIcon className="h-4 w-4" /><span className="hidden sm:inline">{t("addPhoto")}</span>
               </button>
+              <button onClick={openCamera} aria-label={dv("camTake")} title={dv("camTake")} className="flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-semibold text-[var(--ink-soft)] transition-all duration-200 hover:bg-[var(--hover)] hover:text-[var(--ink)] active:scale-95">
+                <CameraIcon className="h-4 w-4" />
+              </button>
               <span className="relative">
                 <button onClick={() => setCapOpen((v) => !v)} disabled={!value.trim()} aria-expanded={capOpen} title={u("capHint")} className="flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-semibold text-[var(--ink-soft)] transition-all duration-200 hover:bg-[var(--hover)] hover:text-[var(--ink)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40">
                   <LockIcon className="h-4 w-4" /><span className="hidden whitespace-nowrap xl:inline">{u("capTitle")}</span>
@@ -336,6 +357,8 @@ useSwipe({
                 )}
               </span>
               <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
+              <input ref={camRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFiles} />
+              {camOpen && <CameraCapture lang={lang} onCapture={addShot} onClose={() => setCamOpen(false)} />}
               <span className="hidden h-7 items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-[11px] font-semibold text-[var(--ink-soft)] min-[420px]:flex" title={`${t("secFont")}: ${t("settingsTitle")}`}>
                 <PenIcon className="h-3 w-3 text-[var(--accent)]" />{writingFont === "body" ? t("fontBody") : writingFont === "serif" ? t("fontSerif") : t("fontMono")}
               </span>

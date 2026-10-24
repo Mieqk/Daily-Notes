@@ -369,3 +369,22 @@ export const DiceIcon = ({ className = "h-5 w-5" }: IconProps) => (
     <circle cx="9" cy="15" r="1" />
   </svg>
 );
+
+export const CameraIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M4 8.5A2 2 0 0 1 6 6.5h1.6l1.3-2h6.2l1.3 2H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8.5Z" />
+    <circle cx="12" cy="12.6" r="3.4" />
+  </svg>
+);
+
+export const FingerprintIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M6.5 8.5A6.5 6.5 0 0 1 12 5.5a6.5 6.5 0 0 1 6.5 6.5c0 1.5-.2 3-.7 4.4M12 9a3 3 0 0 0-3 3c0 2.2-.4 4-1.2 5.5M12 12c0 2.8-.6 5.2-1.7 7M15 12.5c0 2.2-.4 4.2-1.2 6M4.5 13c.3-1.2.4-2.4.4-3.6" />
+  </svg>
+);
+
+export const XIcon = ({ className = "h-4 w-4" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+);

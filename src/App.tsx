@@ -5,6 +5,8 @@ import { STRINGS, localeOf } from "./i18n";
 import { makeUI } from "./ui-strings";
 import type { ThemeId } from "./themes";
 import type { BgId, Tab, Task, SleepData, WritingFontId } from "./store";
+import { verifyBiometric } from "./lib/biometric";
+import { makeDevice } from "./device-strings";
 import { buildMarkdown, downloadText, hashPin, shiftISO, toISO, todayISO, useNow, useStored } from "./store";
 import { BG_IMAGES } from "./bg";
 import Sidebar from "./components/Sidebar";
@@ -58,6 +60,7 @@ export default function App() {
   const [writingFont, setWritingFont] = useStored<WritingFontId>("dn.wfont", "body");
   const [bg, setBg] = useStored<BgId>("dn.bg", "dots");
   const [pinHash, setPinHash] = useStored<string | null>("dn.pin", null);
+  const [bioId, setBioId] = useStored<string | null>("dn.bio", null);
   const [sleep, setSleep] = useStored<Record<string, SleepData>>("dn.sleep", {});
   const [capsules, setCapsules] = useStored<Record<string, string>>("dn.capsules", {});
 
@@ -327,7 +330,7 @@ export default function App() {
   const openDate = (iso: string) => { setDate(iso); setTab("daily"); };
   const pinLen = pinHash ? Math.max(4, parseInt(pinHash.slice(-1), 36) || 4) : 4;
 
-  if (locked && pinHash) return <LockScreen pinLength={pinLen} onTry={(pin) => { if (hashPin(pin) === pinHash) { setLocked(false); return true; } return false; }} t={t} />;
+  if (locked && pinHash) return <LockScreen pinLength={pinLen} onTry={(pin) => { if (hashPin(pin) === pinHash) { setLocked(false); return true; } return false; }} t={t} onBiometric={bioId ? async () => { if (await verifyBiometric(bioId)) { setLocked(false); return true; } return false; } : undefined} bioLabel={makeDevice(lang)("bioUnlock")} bioFailText={makeDevice(lang)("bioFail")} />;
 
   const tabMeta: Record<Tab, { title: string; sub: string }> = {
     daily: { title: t("dailyTitle"), sub: t("dailySub") },
@@ -394,7 +397,7 @@ export default function App() {
             </div>
           )}
           {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} sleep={sleep} streak={streak} notesCount={notesCount} />}
-          {tab === "settings" && <SettingsView theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={setPinHash} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} showToast={showToast} />}
+          {tab === "settings" && <SettingsView theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={(h) => { setPinHash(h); if (!h) setBioId(null); }} bioId={bioId} onBioChange={setBioId} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} showToast={showToast} />}
         </main>
       </div>
 
