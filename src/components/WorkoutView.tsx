@@ -3,6 +3,7 @@ import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
 import { fromISO, shiftISO, todayISO, useStored } from "../store";
 import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
+import CoachChat, { SEG, type CoachItem } from "./CoachChat";
 
 interface WSet { id: string; kg: number; reps: number; done: boolean }
 interface WEx { id: string; name: string; sets: WSet[] }
@@ -36,17 +37,14 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
   const l = L[lang] ?? L.en;
   const [log, setLog] = useStored<Record<string, WEx[]>>("dn.workoutLog", {});
   const [tpls, setTpls] = useStored<Tpl[]>("dn.workoutTpl", []);
-  const [aiOn, setAiOn] = useStored<boolean>("dn.aiWorkout", false);
+  const [view, setView] = useState<"coach" | "day">("coach");
   const [date, setDate] = useState(todayISO());
   const [name, setName] = useState("");
   const [tplName, setTplName] = useState("");
   const [saving, setSaving] = useState(false);
-  const [aiText, setAiText] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [rest, setRest] = useState(0);
   const [restLen, setRestLen] = useStored<number>("dn.restLen", 90);
-  const [askConsent, setAskConsent] = useState(false);
 
   useEffect(() => {
     if (rest <= 0) return;
@@ -109,35 +107,39 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
   };
   const applyTpl = (t: Tpl) => setDay([...day, ...t.ex.map((e) => blank(e.name, e.sets))]);
 
-  const runAi = async (consented = false) => {
-    const text = aiText.trim();
-    if (!text) return;
-    if (!aiOn && consented !== true) { setAskConsent(true); return; }
-    setAiLoading(true);
-    setMsg(null);
-    try {
-      const r = await fetch("/api/workout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lang, text }) });
-      const d = await r.json();
-      if (!r.ok || !Array.isArray(d?.items) || !d.items.length) throw new Error("bad");
-      const items = d.items as { name: string; sets: number; reps: number; kg: number }[];
-      setDay([...day, ...items.map((it) => {
-        const prev = history(it.name).lastSets;
-        return blank(it.name, prev.length ? prev.map((s) => ({ kg: s.kg, reps: s.reps })) : Array.from({ length: it.sets }, () => ({ kg: it.kg, reps: it.reps })));
-      })]);
-      setAiText("");
-    } catch {
-      setMsg(l.aiErr);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
   const doneSets = day.flatMap((e) => e.sets.filter((s) => s.done));
   const volume = doneSets.reduce((a, s) => a + s.kg * s.reps, 0);
+  const topWeights = Object.values(log).flat().reduce<Record<string, number>>((acc, e) => {
+    const best = Math.max(0, ...e.sets.filter((x) => x.done).map((x) => x.kg));
+    if (best > 0) acc[e.name] = Math.max(acc[e.name] ?? 0, best);
+    return acc;
+  }, {});
+  const coachContext =
+    (day.length ? `Today's exercises: ${day.map((e) => `${e.name} ${e.sets.map((x) => `${fmt(x.kg)}x${x.reps}${x.done ? " done" : ""}`).join(", ")}`).join("; ")}.` : "No exercises logged today.") +
+    (Object.keys(topWeights).length ? ` Best weights so far: ${Object.entries(topWeights).slice(0, 8).map(([n, kg]) => `${n} ${fmt(kg)} kg`).join(", ")}.` : "");
+  const applyCoach = (items: CoachItem[]) => setDay([...day, ...items.map((it) => {
+    const prev = history(it.name).lastSets;
+    return blank(it.name, prev.length ? prev.map((x) => ({ kg: x.kg, reps: x.reps })) : Array.from({ length: it.sets ?? 3 }, () => ({ kg: it.kg ?? 0, reps: it.reps ?? 10 })));
+  })]);
   const dateLabel = date === todayISO() ? l.today : new Intl.DateTimeFormat(localeOf(lang), { weekday: "short", day: "numeric", month: "short" }).format(fromISO(date));
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
+      <div className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist">
+        {(["coach", "day"] as const).map((v) => (
+          <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`h-9 rounded-lg text-[13px] font-semibold transition-all ${view === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>{SEG[lang][v]}</button>
+        ))}
+      </div>
+
+      {view === "coach" ? (
+        <>
+          <div className="text-[13px] text-[var(--ink-soft)]">
+            <b className="text-[var(--ink)]">{day.length}</b> {l.exercises.toLowerCase()} · <b className="text-[var(--ink)]">{doneSets.length}</b> {l.setsDone.toLowerCase()} · <b className="text-[var(--ink)]">{Math.round(volume)}</b> {l.kg}
+          </div>
+          <CoachChat mode="workout" lang={lang} context={coachContext} onApply={applyCoach} />
+        </>
+      ) : (
+      <>
       <div className="flex items-center justify-between">
         <button onClick={() => setDate(shiftISO(date, -1))} className={btnCls} aria-label="‹"><ArrowLeftIcon className="h-4 w-4" /></button>
         <span className="text-[15px] font-bold">{dateLabel}</span>
@@ -217,21 +219,6 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
         )}
       </section>
 
-      <section className="flex flex-col gap-2">
-        <div className="flex gap-2">
-          <input className={`${inputCls} !h-11`} value={aiText} maxLength={300} placeholder={l.aiPh} onChange={(e) => setAiText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") runAi(); }} />
-          <button onClick={() => runAi()} disabled={aiLoading || !aiText.trim()} className={primaryCls}>{aiLoading ? "…" : l.build}</button>
-        </div>
-        {askConsent && !aiOn && (
-          <div className="flex flex-col gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel)] p-3">
-            <p className="text-[12px] leading-relaxed text-[var(--ink-soft)]">{l.aiWarn}</p>
-            <button onClick={() => { setAiOn(true); setAskConsent(false); runAi(true); }} className={`${primaryCls} self-start`}>{l.aiEnable}</button>
-          </div>
-        )}
-        {msg && <p className="text-[12.5px] font-semibold text-[var(--ink-soft)]" role="status">{msg}</p>}
-        <p className="text-[11.5px] text-[var(--ink-faint)]">{l.aiNote}</p>
-      </section>
-
       <details className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
         <summary className="cursor-pointer select-none text-[13px] font-semibold text-[var(--ink-soft)]">{l.more}</summary>
         <div className="mt-4 flex flex-col gap-4">
@@ -256,9 +243,11 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
               </ul>
             )}
           </div>
-          {aiOn && <button onClick={() => setAiOn(false)} className="self-start text-[12px] font-semibold text-[var(--ink-faint)] hover:text-[var(--ink)]">{l.aiDisable}: {l.aiTitle}</button>}
+          {msg && <p className="text-[12.5px] font-semibold text-[var(--ink-soft)]" role="status">{msg}</p>}
         </div>
       </details>
+      </>
+      )}
     </div>
   );
 }
