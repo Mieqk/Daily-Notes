@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import type { Lang, TKey } from "../i18n";
-import { MOODS, localeOf } from "../i18n";
+import { MOODS, localeOf, WEEKDAYS_SHORT } from "../i18n";
 import type { Task, SleepData } from "../store";
 import { countWords, downloadText, fromISO, shiftISO, todayISO } from "../store";
 import { DownloadIcon, FlameIcon, MoodVisual, PrinterIcon, StatsIcon } from "../icons";
@@ -472,7 +472,7 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1">
               <div className="flex flex-col gap-[3px] pt-[1px] text-[9px] font-bold text-[var(--ink-faint)]">
-                {(lang === "ru" ? ["Пн", "", "Ср", "", "Пт", "", "Вс"] : ["Mo", "", "We", "", "Fr", "", "Su"]).map(
+                {WEEKDAYS_SHORT[lang].map((w, i) => (i % 2 === 0 ? w : "")).map(
                   (w, i) => (
                     <span key={i} className="grid h-[11px] place-items-center leading-none">
                       {w}

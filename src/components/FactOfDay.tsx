@@ -2,17 +2,22 @@ import { CheckIcon, DiceIcon, PlusIcon } from "../icons";
 import { useState } from "react";
 import type { Lang } from "../i18n";
 import { todayISO } from "../store";
-import { FACTS, factIndexForDate, type FactCategory } from "../facts";
+import { FACTS, factIndexForDate, factText, type FactCategory } from "../facts";
 
 const L: Record<string, { title: string; sub: string; btn: string; loading: string; ai: string; book: string; save: string; saved: string; aiBtn: string; cats: Record<FactCategory, string> }> = {
   ru: { title: "Факт дня", sub: "", btn: "Ещё факт", loading: "Нейросеть думает…", ai: "сгенерировано ИИ", book: "из коллекции", save: "В заметку", saved: "Добавлено", aiBtn: "Факт от ИИ", cats: { nature: "Природа", space: "Космос", body: "Тело", history: "История" } },
   en: { title: "Fact of the day", sub: "", btn: "Another fact", loading: "AI is thinking…", ai: "AI-generated", book: "from collection", save: "Save to note", saved: "Added", aiBtn: "AI fact", cats: { nature: "Nature", space: "Space", body: "Body", history: "History" } },
+  be: { title: "Факт дня", sub: "", btn: "Яшчэ факт", loading: "Нейрасетка думае…", ai: "згенеравана ШІ", book: "з калекцыі", save: "У нататку", saved: "Дададзена", aiBtn: "Факт ад ШІ", cats: { nature: "Прырода", space: "Космас", body: "Цела", history: "Гісторыя" } },
+  uk: { title: "Факт дня", sub: "", btn: "Ще факт", loading: "Нейромережа думає…", ai: "згенеровано ШІ", book: "із колекції", save: "У нотатку", saved: "Додано", aiBtn: "Факт від ШІ", cats: { nature: "Природа", space: "Космос", body: "Тіло", history: "Історія" } },
+  de: { title: "Fakt des Tages", sub: "", btn: "Noch ein Fakt", loading: "KI denkt nach…", ai: "KI-generiert", book: "aus der Sammlung", save: "In Notiz speichern", saved: "Hinzugefügt", aiBtn: "KI-Fakt", cats: { nature: "Natur", space: "Weltraum", body: "Körper", history: "Geschichte" } },
+  fr: { title: "Fait du jour", sub: "", btn: "Un autre fait", loading: "L'IA réfléchit…", ai: "généré par IA", book: "de la collection", save: "Ajouter à une note", saved: "Ajouté", aiBtn: "Fait par IA", cats: { nature: "Nature", space: "Espace", body: "Corps", history: "Histoire" } },
+  es: { title: "Dato del día", sub: "", btn: "Otro dato", loading: "La IA está pensando…", ai: "generado por IA", book: "de la colección", save: "Guardar en nota", saved: "Añadido", aiBtn: "Dato con IA", cats: { nature: "Naturaleza", space: "Espacio", body: "Cuerpo", history: "Historia" } },
 };
 
 type Labels = (typeof L)["ru"];
 
 export default function FactOfDay({ lang, onSave }: { lang: Lang; onSave?: (text: string) => void }) {
-  const labels: Labels = lang === "ru" ? L.ru : L.en;
+  const labels: Labels = L[lang] ?? L.en;
   const today = todayISO();
   const [idx, setIdx] = useState(() => factIndexForDate(today));
   const [aiFact, setAiFact] = useState<string | null>(null);
@@ -20,7 +25,7 @@ export default function FactOfDay({ lang, onSave }: { lang: Lang; onSave?: (text
   const [justSaved, setJustSaved] = useState(false);
 
   const fact = FACTS[idx % FACTS.length];
-  const text = aiFact ?? (lang === "ru" ? fact.ru : fact.en);
+  const text = aiFact ?? factText(fact, idx % FACTS.length, lang);
 
   const next = () => {
     setAiFact(null);

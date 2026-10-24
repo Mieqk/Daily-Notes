@@ -39,6 +39,31 @@ const L: Record<string, Record<string, string>> = {
     requests: "Friend requests", noReqs: "No new requests", accept: "Accept",
     info: "Your summary", streak: "streak", notes: "notes", lock: "Lock",
   },
+  be: {
+    account: "Акаўнт", myProfile: "Мой профіль", toFriends: "Сябры і заяўкі",
+    requests: "Заяўкі ў сябры", noReqs: "Новых заявак няма", accept: "Прыняць",
+    info: "Твая зводка", streak: "серыя", notes: "нататак", lock: "Заблакаваць",
+  },
+  uk: {
+    account: "Акаунт", myProfile: "Мій профіль", toFriends: "Друзі та заявки",
+    requests: "Заявки в друзі", noReqs: "Нових заявок немає", accept: "Прийняти",
+    info: "Твоє зведення", streak: "серія", notes: "нотаток", lock: "Заблокувати",
+  },
+  de: {
+    account: "Konto", myProfile: "Mein Profil", toFriends: "Freunde & Anfragen",
+    requests: "Freundschaftsanfragen", noReqs: "Keine neuen Anfragen", accept: "Annehmen",
+    info: "Deine Übersicht", streak: "Serie", notes: "Notizen", lock: "Sperren",
+  },
+  fr: {
+    account: "Compte", myProfile: "Mon profil", toFriends: "Amis et demandes",
+    requests: "Demandes d'ami", noReqs: "Aucune nouvelle demande", accept: "Accepter",
+    info: "Votre résumé", streak: "série", notes: "notes", lock: "Verrouiller",
+  },
+  es: {
+    account: "Cuenta", myProfile: "Mi perfil", toFriends: "Amigos y solicitudes",
+    requests: "Solicitudes de amistad", noReqs: "No hay solicitudes nuevas", accept: "Aceptar",
+    info: "Tu resumen", streak: "racha", notes: "notas", lock: "Bloquear",
+  },
 };
 
 export default function AccountMenu({ userId, lang, streak, notesCount, hasPin, onLock, onGoFriends }: AccountMenuProps) {

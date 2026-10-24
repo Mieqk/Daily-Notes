@@ -1,3 +1,6 @@
+import type { Lang } from "./i18n";
+import { FACT_TR } from "./facts-i18n";
+
 export type FactCategory = "nature" | "space" | "body" | "history";
 
 export interface Fact {
@@ -62,4 +65,10 @@ export function factIndexForDate(iso: string): number {
   const day = Math.floor(d / 86400000);
   // фиксированный сдвиг-перестановка, чтобы порядок не шёл строго по списку
   return (day * 7 + 3) % FACTS.length;
+}
+
+/** Текст факта на языке интерфейса; для be/uk/de/fr/es берётся перевод, при его отсутствии английский. */
+export function factText(fact: Fact, idx: number, lang: Lang): string {
+  if (lang === "ru") return fact.ru;
+  return FACT_TR[lang]?.[idx] ?? fact.en;
 }
