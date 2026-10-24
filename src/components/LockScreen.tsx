@@ -1,19 +1,37 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { TKey } from "../i18n";
-import { BackspaceIcon, LockIcon, PenIcon } from "../icons";
+import { BackspaceIcon, FingerprintIcon, LockIcon, PenIcon } from "../icons";
 
 interface LockScreenProps {
   pinLength: number;
   onTry: (pin: string) => boolean;
   t: (k: TKey) => string;
+  /** Подтверждение биометрией; если не передан, кнопки нет. PIN работает всегда. */
+  onBiometric?: () => Promise<boolean>;
+  bioLabel?: string;
+  bioFailText?: string;
 }
 
-export default function LockScreen({ pinLength, onTry, t }: LockScreenProps) {
+export default function LockScreen({ pinLength, onTry, t, onBiometric, bioLabel, bioFailText }: LockScreenProps) {
   const [pin, setPin] = useState("");
   const [wrong, setWrong] = useState(false);
+  const [bioFailed, setBioFailed] = useState(false);
+  const bioBusy = useRef(false);
+
+  const tryBio = async () => {
+    if (!onBiometric || bioBusy.current) return;
+    bioBusy.current = true;
+    const ok = await onBiometric();
+    bioBusy.current = false;
+    if (!ok) setBioFailed(true);
+  };
+
+  // Один автозапрос при показе экрана; при отказе остаётся ввод PIN
+  useEffect(() => { void tryBio(); }, []);
 
   const press = (d: string) => {
     setWrong(false);
+    setBioFailed(false);
     setPin((p) => {
       if (p.length >= 8) return p;
       return p + d;
@@ -72,7 +90,7 @@ export default function LockScreen({ pinLength, onTry, t }: LockScreenProps) {
         <h1 className="font-display mt-5 text-xl font-bold tracking-tight">{t("lockTitle")}</h1>
         <p className="mt-1 flex items-center gap-1.5 text-[13px] text-[var(--ink-faint)]">
           <LockIcon className="h-3.5 w-3.5" />
-          {wrong ? t("lockWrong") : t("lockHint")}
+          {wrong ? t("lockWrong") : bioFailed && bioFailText ? bioFailText : t("lockHint")}
         </p>
 
         {/* dots */}
@@ -88,6 +106,15 @@ export default function LockScreen({ pinLength, onTry, t }: LockScreenProps) {
             />
           ))}
         </div>
+
+        {onBiometric && (
+          <button
+            onClick={() => { setBioFailed(false); void tryBio(); }}
+            className="mt-5 flex h-10 items-center gap-2 rounded-lg border border-[var(--line)] px-4 text-[13px] font-semibold text-[var(--accent-deep)] transition-colors hover:bg-[var(--hover)] active:scale-95"
+          >
+            <FingerprintIcon className="h-4.5 w-4.5" />{bioLabel}
+          </button>
+        )}
 
         {/* pad */}
         <div className="mt-7 grid grid-cols-3 gap-2.5">
