@@ -8,6 +8,7 @@ import {
   FONT_STACKS,
   countWords,
   fromISO,
+  isSealed,
   readingMinutes,
   shiftISO,
   todayISO,
@@ -20,6 +21,7 @@ import {
   BrushIcon,
   CheckIcon,
   ImageIcon,
+  LockIcon,
   LeafIcon,
   MicIcon,
   MoodVisual,
@@ -31,6 +33,7 @@ import {
 } from "../icons";
 import FactOfDay from "./FactOfDay";
 import DailyQuestion from "./DailyQuestion";
+import { makeUI } from "../ui-strings";
 import { shrinkPhoto } from "../lib/images";
 
 // Генератор настоящих UUID для совместимости с Supabase
@@ -51,6 +54,8 @@ export interface Reminder {
 }
 
 interface DailyViewProps {
+  capsules: Record<string, string>;
+  setCapsules: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   date: string;
   onDate: (iso: string) => void;
   notes: Record<string, string>;
@@ -76,7 +81,7 @@ const TPL_ICONS = [BriefcaseIcon, LeafIcon, BrushIcon];
 
 export default function DailyView(props: DailyViewProps) {
   const {
-    date, onDate, notes, setNotes, tasks, setTasks, moods, setMoods,
+    capsules, setCapsules, date, onDate, notes, setNotes, tasks, setTasks, moods, setMoods,
     tags, setTags, photos, setPhotos, reminder, setReminder,
     moodEmoji, writingFont, lang, t, showToast,
   } = props;
@@ -89,6 +94,20 @@ export default function DailyView(props: DailyViewProps) {
   const dayPhotos = photos[date] ?? [];
   const done = dayTasks.filter((x) => x.done).length;
   const pct = dayTasks.length ? Math.round((done / dayTasks.length) * 100) : 0;
+
+  const u = makeUI(lang);
+  const sealed = isSealed(capsules, date);
+  const openDate = capsules[date];
+  const daysLeft = sealed ? Math.max(1, Math.round((fromISO(openDate).getTime() - fromISO(todayISO()).getTime()) / 86_400_000)) : 0;
+  const opensToday = date === todayISO() ? Object.entries(capsules).filter(([d, o]) => o === todayISO() && d !== date && (notes[d] ?? "").trim()).map(([d]) => d) : [];
+  const [capOpen, setCapOpen] = useState(false);
+  const [confirmEarly, setConfirmEarly] = useState(false);
+  const seal = (days: number) => { setCapsules((m) => ({ ...m, [date]: shiftISO(todayISO(), days) })); setCapOpen(false); };
+  const openEarly = () => {
+    if (!confirmEarly) { setConfirmEarly(true); window.setTimeout(() => setConfirmEarly(false), 4000); return; }
+    setCapsules((m) => { const next = { ...m }; delete next[date]; return next; });
+    setConfirmEarly(false);
+  };
 
   const [taskInput, setTaskInput] = useState("");
   const [tagInput, setTagInput] = useState("");
@@ -258,9 +277,29 @@ useSwipe({
         </div>
       </div>
 
+      {opensToday.map((d) => (
+        <div key={d} className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-3 text-[13.5px] font-semibold text-[var(--accent-deep)]">
+          <LockIcon className="h-4 w-4" />
+          <span className="min-w-0 flex-1">{u("capOpenedToday").replace("{date}", d)}</span>
+          <button onClick={() => onDate(d)} className="h-9 rounded-lg bg-[var(--accent)] px-4 text-[12.5px] font-bold text-[var(--accent-ink)] active:scale-95">{u("capRead")}</button>
+        </div>
+      ))}
+
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
         <div className="flex min-w-0 flex-col gap-5">
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)]" style={{ boxShadow: "var(--shadow-sm)" }}>
+            {sealed ? (
+              <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent-deep)]"><LockIcon className="h-6 w-6" /></span>
+                <h3 className="font-display text-[17px] font-bold">{u("capSealedTitle")}</h3>
+                <p className="text-sm text-[var(--ink-soft)]">{u("capUntil").replace("{date}", new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" }).format(fromISO(openDate)))}</p>
+                <p className="text-[13px] font-semibold text-[var(--accent-deep)]">{u("capLeft").replace("{n}", String(daysLeft))}</p>
+                <button onClick={openEarly} className={`mt-1 h-10 rounded-lg px-4 text-[13px] font-semibold transition-all active:scale-95 ${confirmEarly ? "bg-[var(--danger)] text-white" : "border border-[var(--line)] text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>
+                  {confirmEarly ? u("capOpenConfirm") : u("capOpenEarly")}
+                </button>
+              </div>
+            ) : (
+              <>
             <textarea value={value} onChange={(e) => setText(e.target.value)} placeholder={t("placeholder")} rows={10} spellCheck={false} className="w-full resize-y bg-transparent px-5 pb-2 pt-5 text-[15.5px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]" style={{ fontFamily: font }} />
             {dayPhotos.length > 0 && (
               <div className="flex flex-wrap gap-2 px-5 pb-3">
@@ -279,6 +318,22 @@ useSwipe({
               <button onClick={() => fileRef.current?.click()} className="flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-semibold text-[var(--ink-soft)] transition-all duration-200 hover:bg-[var(--hover)] hover:text-[var(--ink)] active:scale-95">
                 <ImageIcon className="h-4 w-4" /><span className="hidden sm:inline">{t("addPhoto")}</span>
               </button>
+              <span className="relative">
+                <button onClick={() => setCapOpen((v) => !v)} disabled={!value.trim()} aria-expanded={capOpen} title={u("capHint")} className="flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-semibold text-[var(--ink-soft)] transition-all duration-200 hover:bg-[var(--hover)] hover:text-[var(--ink)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40">
+                  <LockIcon className="h-4 w-4" /><span className="hidden whitespace-nowrap xl:inline">{u("capTitle")}</span>
+                </button>
+                {capOpen && (
+                  <div className="absolute bottom-11 left-0 z-20 w-64 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-3" style={{ boxShadow: "var(--shadow)" }}>
+                    <p className="mb-2 text-[12px] leading-snug text-[var(--ink-soft)]">{u("capHint")}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[7, 30, 90, 180, 365].map((n) => (
+                        <button key={n} onClick={() => seal(n)} className="h-9 rounded-full border border-[var(--line)] px-3 text-[12.5px] font-semibold transition-all hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95">{n} {u("capDays")}</button>
+                      ))}
+                    </div>
+                    <button onClick={() => setCapOpen(false)} className="mt-2 text-[12px] font-semibold text-[var(--ink-faint)] hover:text-[var(--ink)]">{u("capCancel")}</button>
+                  </div>
+                )}
+              </span>
               <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
               <span className="hidden h-7 items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-[11px] font-semibold text-[var(--ink-soft)] min-[420px]:flex" title={`${t("secFont")}: ${t("settingsTitle")}`}>
                 <PenIcon className="h-3 w-3 text-[var(--accent)]" />{writingFont === "body" ? t("fontBody") : writingFont === "serif" ? t("fontSerif") : t("fontMono")}
@@ -289,6 +344,8 @@ useSwipe({
                 {status === "saving" ? t("saving") : status === "saved" ? t("saved") : t("autosave")}
               </span>
             </div>
+              </>
+            )}
           </div>
 
         <DailyQuestion
@@ -412,7 +469,7 @@ useSwipe({
         <div style={{ fontSize: 14, opacity: 0.65, marginBottom: 20 }}>{dateShort}</div>
         {moods[date] !== undefined && (<div style={{ marginBottom: 12, fontSize: 15 }}>{t("summaryMood")}: <b>{MOODS[lang][moods[date]]}</b></div>)}
         {dayTags.length > 0 && (<div style={{ marginBottom: 12, fontSize: 13, opacity: 0.7 }}>{dayTags.map((x) => `#${x}`).join("  ")}</div>)}
-        <div style={{ whiteSpace: "pre-wrap", fontSize: 15, lineHeight: 1.7 }}>{value}</div>
+        <div style={{ whiteSpace: "pre-wrap", fontSize: 15, lineHeight: 1.7 }}>{sealed ? "" : value}</div>
         {dayTasks.length > 0 && (
           <div style={{ marginTop: 24 }}>
             <h2 style={{ fontSize: 17, marginBottom: 8 }}>{t("tasksTitle")}</h2>

@@ -1,3 +1,4 @@
+import { isSealed } from "./store";
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import type { Lang, TKey } from "./i18n";
 import { STRINGS, localeOf } from "./i18n";
@@ -57,6 +58,7 @@ export default function App() {
   const [bg, setBg] = useStored<BgId>("dn.bg", "dots");
   const [pinHash, setPinHash] = useStored<string | null>("dn.pin", null);
   const [sleep, setSleep] = useStored<Record<string, SleepData>>("dn.sleep", {});
+  const [capsules, setCapsules] = useStored<Record<string, string>>("dn.capsules", {});
 
   const [date, setDate] = useState<string>(todayISO());
   const [locked, setLocked] = useState<boolean>(() => Boolean(pinHash));
@@ -140,6 +142,7 @@ export default function App() {
             if (s.writingFont) setWritingFont(s.writingFont);
             if (s.bg) setBg(s.bg);
             if (s.moodEmoji) setMoodEmoji(s.moodEmoji);
+            if (s.capsules && typeof s.capsules === 'object') setCapsules((local) => ({ ...local, ...s.capsules }));
           }
 
           remoteSnapshot.current = {
@@ -236,6 +239,7 @@ export default function App() {
             if (settings.writingFont && settings.writingFont !== last.writingFont) setWritingFont(settings.writingFont);
             if (settings.bg && settings.bg !== last.bg) setBg(settings.bg);
             if (settings.moodEmoji && JSON.stringify(settings.moodEmoji) !== JSON.stringify(last.moodEmoji)) setMoodEmoji(settings.moodEmoji);
+            if (settings.capsules && typeof settings.capsules === 'object') setCapsules((local) => ({ ...local, ...settings.capsules }));
           }
         }
       )
@@ -281,12 +285,12 @@ export default function App() {
   }, [sleep, date, userId]);
 
   useEffect(() => {
-    if (userId && !isLocalMode() && initialLoadDone.current) syncSettings(userId, { theme, lang, font: fontScale, writingFont, bg, moodEmoji });
-  }, [theme, lang, fontScale, writingFont, bg, moodEmoji, userId]);
+    if (userId && !isLocalMode() && initialLoadDone.current) syncSettings(userId, { theme, lang, font: fontScale, writingFont, bg, moodEmoji, capsules });
+  }, [theme, lang, fontScale, writingFont, bg, moodEmoji, capsules, userId]);
 
   const handleThemeChange = (newTheme: ThemeId) => {
     setTheme(newTheme);
-    if (userId && !isLocalMode()) syncSettings(userId, { theme: newTheme, lang, font: fontScale, writingFont, bg, moodEmoji });
+    if (userId && !isLocalMode()) syncSettings(userId, { theme: newTheme, lang, font: fontScale, writingFont, bg, moodEmoji, capsules });
   };
 
   useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
@@ -315,7 +319,7 @@ export default function App() {
     }
     setNotes({}); setTasks({}); setMoods({}); setTags({}); setPhotos({}); setSleep({}); setDate(todayISO());
   };
-  const exportMd = () => downloadText("daily-notes.md", buildMarkdown(notes, tasks, moods, tags, lang), "text/markdown;charset=utf-8");
+  const exportMd = () => downloadText("daily-notes.md", buildMarkdown(Object.fromEntries(Object.entries(notes).map(([d, v]) => [d, isSealed(capsules, d) ? `(${u("capUntil").replace("{date}", capsules[d])})` : v])), tasks, moods, tags, lang), "text/markdown;charset=utf-8");
   const exportJson = () => downloadText("daily-notes.json", JSON.stringify({ notes, tasks, moods, tags, reminder, moodEmoji, writingFont, theme, lang, bg, sleep }, null, 2), "application/json;charset=utf-8");
   const openDate = (iso: string) => { setDate(iso); setTab("daily"); };
   const pinLen = pinHash ? Math.max(4, parseInt(pinHash.slice(-1), 36) || 4) : 4;
@@ -375,10 +379,10 @@ export default function App() {
         </header>
 
         <main key={tab + date} className="animate-rise min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-28 pt-6 sm:px-8 sm:pt-8 md:pb-8">
-          {tab === "daily" && <DailyView date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} lang={lang} t={t} showToast={showToast} />}
+          {tab === "daily" && <DailyView capsules={capsules} setCapsules={setCapsules} date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} lang={lang} t={t} showToast={showToast} />}
           {tab === "stats" && <Suspense fallback={<div className="grid h-64 place-items-center text-sm text-[var(--ink-faint)]"><span className="animate-livedot h-2.5 w-2.5 rounded-full bg-[var(--accent)]" /></div>}><StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} /></Suspense>}
           {tab === "sleep" && <SleepView sleep={sleep} lang={lang} t={t} setSleep={(iso, data) => setSleep((prev) => { const next = { ...prev }; if (data) next[iso] = data; else delete next[iso]; return next; })} />}
-          {tab === "notes" && <NotesView notes={notes} tasks={tasks} moods={moods} tags={tags} photos={photos} moodEmoji={moodEmoji} writingFont={writingFont} onOpen={openDate} lang={lang} t={t} />}
+          {tab === "notes" && <NotesView capsules={capsules} notes={notes} tasks={tasks} moods={moods} tags={tags} photos={photos} moodEmoji={moodEmoji} writingFont={writingFont} onOpen={openDate} lang={lang} t={t} />}
           {tab === "friends" && !userId && (
             <div className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-6 py-12 text-center" style={{ boxShadow: "var(--shadow-sm)" }}>
               <h3 className="text-[16px] font-bold">{t("friendsGuestTitle")}</h3>

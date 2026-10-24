@@ -2,12 +2,13 @@ import { useMemo, useState } from "react";
 import type { Lang, TKey } from "../i18n";
 import { localeOf } from "../i18n";
 import type { Task, WritingFontId } from "../store";
-import { FONT_STACKS, countWords, fromISO, todayISO } from "../store";
-import { ArrowRightIcon, CheckIcon, MoodVisual, SearchIcon, TagIcon } from "../icons";
+import { FONT_STACKS, countWords, fromISO, isSealed, todayISO } from "../store";
+import { ArrowRightIcon, CheckIcon, LockIcon, MoodVisual, SearchIcon, TagIcon } from "../icons";
 import CalendarView from "./CalendarView";
 import { makeUI } from "../ui-strings";
 
 interface NotesViewProps {
+  capsules: Record<string, string>;
   notes: Record<string, string>;
   tasks: Record<string, Task[]>;
   moods: Record<string, number>;
@@ -21,6 +22,7 @@ interface NotesViewProps {
 }
 
 export default function NotesView({
+  capsules,
   notes,
   tasks,
   moods,
@@ -55,7 +57,7 @@ export default function NotesView({
   const filtered = entries.filter((iso) => {
     if (tagFilter && !(tags[iso] ?? []).includes(tagFilter)) return false;
     if (!q) return true;
-    const text = (notes[iso] ?? "").toLowerCase();
+    const text = isSealed(capsules, iso) ? "" : (notes[iso] ?? "").toLowerCase();
     const taskText = (tasks[iso] ?? []).map((x) => x.text).join(" ").toLowerCase();
     const tagText = (tags[iso] ?? []).join(" ").toLowerCase();
     return text.includes(q) || taskText.includes(q) || tagText.includes(q);
@@ -177,12 +179,13 @@ export default function NotesView({
       {/* Cards */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filtered.map((iso, i) => {
-          const text = notes[iso] ?? "";
+          const sealed = isSealed(capsules, iso);
+          const text = sealed ? "" : notes[iso] ?? "";
           const dayTasks = tasks[iso] ?? [];
           const done = dayTasks.filter((x) => x.done).length;
           const mood = moods[iso];
           const dayTags = tags[iso] ?? [];
-          const photo = (photos[iso] ?? [])[0];
+          const photo = sealed ? undefined : (photos[iso] ?? [])[0];
           return (
             <button
               key={iso}
@@ -207,7 +210,12 @@ export default function NotesView({
                   className="line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-[var(--ink-soft)]"
                   style={{ fontFamily: FONT_STACKS[writingFont] }}
                 >
-                  {text}
+                  {sealed ? (
+                    <span className="flex items-center gap-2 font-semibold text-[var(--accent-deep)]">
+                      <LockIcon className="h-4 w-4" />
+                      {u("capUntil").replace("{date}", capsules[iso])}
+                    </span>
+                  ) : text}
                 </span>
                 {dayTags.length > 0 && (
                   <span className="flex flex-wrap gap-1">
