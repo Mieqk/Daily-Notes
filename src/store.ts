@@ -13,7 +13,10 @@ export function useStored<T>(key: string, defaultValue: T): [T, React.Dispatch<R
   useEffect(() => {
     try {
       localStorage.setItem(key, JSON.stringify(value));
-    } catch {}
+    } catch {
+      // чаще всего переполнена квота (фото в base64): сообщаем, а не теряем данные молча
+      window.dispatchEvent(new Event("dn-storage-full"));
+    }
   }, [key, value]);
 
   return [value, setValue];

@@ -10,6 +10,9 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
+  /** пользователь пришёл по ссылке «сброс пароля» и должен задать новый */
+  recovery: boolean;
+  updatePassword: (password: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recovery, setRecovery] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
@@ -32,7 +36,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') setRecovery(true);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -66,6 +71,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   }, []);
 
+  const updatePassword = useCallback(async (password: string) => {
+    if (!supabase) return { error: { message: 'Supabase not configured' } as AuthError };
+    const { error } = await supabase.auth.updateUser({ password });
+    if (!error) setRecovery(false);
+    return { error };
+  }, []);
+
   const value: AuthContextType = {
     user,
     session,
@@ -74,6 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signOut,
     resetPassword,
+    recovery,
+    updatePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

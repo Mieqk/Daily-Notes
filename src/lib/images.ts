@@ -67,3 +67,22 @@ export async function prepareImage(file: File, kind: "avatar" | "banner"): Promi
   const ext = blob.type === "image/webp" ? "webp" : "png";
   return { blob, ext };
 }
+
+/** Фото к записи: уменьшаем до 1280 px по длинной стороне и сжимаем в JPEG, чтобы не забить localStorage. */
+export async function shrinkPhoto(file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) throw new Error("not-image");
+  const img = await loadImage(file);
+  const nw = img.naturalWidth;
+  const nh = img.naturalHeight;
+  if (!nw || !nh) throw new Error("not-image");
+  const k = Math.min(1, 1280 / Math.max(nw, nh));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(nw * k);
+  canvas.height = Math.round(nh * k);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("no-canvas");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.8);
+}

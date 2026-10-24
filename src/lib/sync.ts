@@ -143,3 +143,60 @@ export function syncEntry(userId: string, date: string, content: string, mood: n
 export function syncTasks(userId: string, date: string, tasks: Task[]) { debouncedUpsertTasks(userId, date, tasks); }
 export function syncSleep(userId: string, date: string, sleepData: SleepData) { debouncedUpsertSleep(userId, date, sleepData); }
 export function syncSettings(userId: string, settings: { theme?: string; lang?: string; font?: number; writingFont?: string; bg?: string; moodEmoji?: string[] }) { debouncedUpsertSettings(userId, settings); }
+
+export interface LocalData {
+  notes: Record<string, string>;
+  tasks: Record<string, Task[]>;
+  moods: Record<string, number>;
+  tags: Record<string, string[]>;
+  photos: Record<string, string[]>;
+  sleep: Record<string, SleepData>;
+}
+
+/**
+ * Первый вход с уже накопленными локальными данными: серверные данные главнее,
+ * но то, чего на сервере ещё нет, не теряется. Возвращает объединённое и список дат на выгрузку.
+ */
+export function mergeLocalIntoRemote(remote: LocalData, local: LocalData) {
+  const merged: LocalData = {
+    notes: { ...remote.notes }, tasks: { ...remote.tasks }, moods: { ...remote.moods },
+    tags: { ...remote.tags }, photos: { ...remote.photos }, sleep: { ...remote.sleep },
+  };
+  const entries = new Set<string>();
+  const taskDates = new Set<string>();
+  const sleepDates = new Set<string>();
+
+  const dates = new Set([...Object.keys(local.notes), ...Object.keys(local.moods), ...Object.keys(local.tags), ...Object.keys(local.photos)]);
+  for (const d of dates) {
+    const hasLocal = (local.notes[d] ?? '').trim() || local.moods[d] !== undefined || (local.tags[d]?.length ?? 0) > 0 || (local.photos[d]?.length ?? 0) > 0;
+    if (!hasLocal) continue;
+    const remoteBlank = !(remote.notes[d] ?? '').trim() && remote.moods[d] === undefined;
+    if (!(d in remote.notes) || remoteBlank) {
+      merged.notes[d] = local.notes[d] ?? '';
+      if (local.moods[d] !== undefined) merged.moods[d] = local.moods[d];
+      if (local.tags[d]) merged.tags[d] = local.tags[d];
+      if (local.photos[d]) merged.photos[d] = local.photos[d];
+      entries.add(d);
+    }
+  }
+  for (const [d, list] of Object.entries(local.tasks)) {
+    if (list?.length && !remote.tasks[d]?.length) { merged.tasks[d] = list; taskDates.add(d); }
+  }
+  for (const [d, v] of Object.entries(local.sleep)) {
+    if (v && !(d in remote.sleep)) { merged.sleep[d] = v; sleepDates.add(d); }
+  }
+  return { merged, entries, taskDates, sleepDates };
+}
+
+/** «Стереть все данные» для вошедшего пользователя: удаляем и на сервере, иначе синхронизация вернёт всё обратно. */
+export async function deleteAllRemote(userId: string): Promise<boolean> {
+  if (isLocalMode() || !supabase) return true;
+  const results = await Promise.all([
+    supabase.from('entries').delete().eq('user_id', userId),
+    supabase.from('tasks').delete().eq('user_id', userId),
+    supabase.from('sleep_logs').delete().eq('user_id', userId),
+  ]);
+  const failed = results.find((r) => r.error);
+  if (failed?.error) console.error('[SYNC] Failed to delete remote data:', failed.error);
+  return !failed;
+}

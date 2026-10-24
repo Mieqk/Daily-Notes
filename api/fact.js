@@ -69,5 +69,6 @@ export default async function handler(req, res) {
     }
   }
 
-  return res.status(500).json({ error: "ai failed", errors });
+  console.error("fact: all models failed", errors);
+  return res.status(500).json({ error: "ai failed" });
 }

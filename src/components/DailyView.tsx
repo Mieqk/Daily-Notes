@@ -7,7 +7,6 @@ import type { Task, WritingFontId, SleepData } from "../store";
 import {
   FONT_STACKS,
   countWords,
-  fileToDataURL,
   fromISO,
   readingMinutes,
   shiftISO,
@@ -30,7 +29,8 @@ import {
   TagIcon,
   TrashIcon,
 } from "../icons";
-import FactOfDay from "./FactOfDay";;
+import FactOfDay from "./FactOfDay";
+import { shrinkPhoto } from "../lib/images";
 
 // Генератор настоящих UUID для совместимости с Supabase
 function generateUUID() {
@@ -180,7 +180,7 @@ useSwipe({
     for (const f of files) {
       if (dayPhotos.length >= 6) break;
       try {
-        const url = await fileToDataURL(f);
+        const url = await shrinkPhoto(f);
         setPhotos((m) => ({ ...m, [date]: [...(m[date] ?? []), url].slice(0, 6) }));
         bumpStatus();
       } catch { /* skip broken file */ }
