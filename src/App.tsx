@@ -22,7 +22,7 @@ import FriendsView from "./components/FriendsView";
 import AccountMenu from "./components/AccountMenu";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
-import { isLocalMode, setLocalMode, performInitialSync, mergeLocalIntoRemote, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, deleteAllRemote, type SyncStatus } from "./lib/sync";
+import { isLocalMode, setLocalMode, performInitialSync, mergeLocalIntoRemote, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, deleteAllRemote, flushPendingSync, type SyncStatus } from "./lib/sync";
 
 const FONT_SCALES = ["93.75%", "100%", "109%"];
 
@@ -84,6 +84,13 @@ export default function App() {
     window.addEventListener('dn-storage-full', onFull);
     return () => window.removeEventListener('dn-storage-full', onFull);
   });
+  // Уходим со страницы — отправляем накопленные правки, не дожидаясь 2 секунд
+  useEffect(() => {
+    const flush = () => { if (document.visibilityState === 'hidden') flushPendingSync(); };
+    document.addEventListener('visibilitychange', flush);
+    window.addEventListener('pagehide', flushPendingSync);
+    return () => { document.removeEventListener('visibilitychange', flush); window.removeEventListener('pagehide', flushPendingSync); };
+  }, []);
   useEffect(() => { const unsubscribe = subscribeToSyncStatus(setSyncStatusState); return unsubscribe; }, []);
 
   useEffect(() => {

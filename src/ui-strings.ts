@@ -17,6 +17,7 @@ const ru = {
   loadFail: "Не удалось загрузить данные с сервера", installTitle: "Установить Daily Note",
   installSub: "Быстрый доступ к вашему дневнику", install: "Установить", close: "Закрыть",
   newPwTitle: "Новый пароль", newPwSave: "Сохранить пароль", pwUpdated: "Пароль обновлён", storageFull: "Память браузера заполнена: фото или данные не сохранились. Удалите лишние фото.",
+  viewList: "Список", viewCalendar: "Календарь", calEntries: "Записей за месяц", calMood: "Настроение", calNoEntry: "Нет записи", calToday: "К сегодня",
 };
 type Strings = typeof ru;
 
@@ -36,6 +37,7 @@ const en: Strings = {
   loadFail: "Could not load data from the server", installTitle: "Install Daily Note",
   installSub: "Quick access to your diary", install: "Install", close: "Close",
   newPwTitle: "New password", newPwSave: "Save password", pwUpdated: "Password updated", storageFull: "Browser storage is full: a photo or data was not saved. Remove some photos.",
+  viewList: "List", viewCalendar: "Calendar", calEntries: "Entries this month", calMood: "Mood", calNoEntry: "No entry", calToday: "Today",
 };
 
 const be: Strings = {
@@ -54,6 +56,7 @@ const be: Strings = {
   loadFail: "Не ўдалося загрузіць даныя з сервера", installTitle: "Усталяваць Daily Note",
   installSub: "Хуткі доступ да вашага дзённіка", install: "Усталяваць", close: "Закрыць",
   newPwTitle: "Новы пароль", newPwSave: "Захаваць пароль", pwUpdated: "Пароль абноўлены", storageFull: "Памяць браўзера запоўнена: фота або даныя не захаваліся. Выдаліце лішнія фота.",
+  viewList: "Спіс", viewCalendar: "Каляндар", calEntries: "Запісаў за месяц", calMood: "Настрой", calNoEntry: "Няма запісу", calToday: "Да сёння",
 };
 
 const uk: Strings = {
@@ -72,6 +75,7 @@ const uk: Strings = {
   loadFail: "Не вдалося завантажити дані із сервера", installTitle: "Встановити Daily Note",
   installSub: "Швидкий доступ до вашого щоденника", install: "Встановити", close: "Закрити",
   newPwTitle: "Новий пароль", newPwSave: "Зберегти пароль", pwUpdated: "Пароль оновлено", storageFull: "Пам’ять браузера заповнена: фото або дані не збереглися. Видаліть зайві фото.",
+  viewList: "Список", viewCalendar: "Календар", calEntries: "Записів за місяць", calMood: "Настрій", calNoEntry: "Немає запису", calToday: "До сьогодні",
 };
 
 const de: Strings = {
@@ -90,6 +94,7 @@ const de: Strings = {
   loadFail: "Daten konnten nicht vom Server geladen werden", installTitle: "Daily Note installieren",
   installSub: "Schneller Zugriff auf dein Tagebuch", install: "Installieren", close: "Schließen",
   newPwTitle: "Neues Passwort", newPwSave: "Passwort speichern", pwUpdated: "Passwort aktualisiert", storageFull: "Browser-Speicher voll: Foto oder Daten wurden nicht gespeichert. Entferne einige Fotos.",
+  viewList: "Liste", viewCalendar: "Kalender", calEntries: "Einträge in diesem Monat", calMood: "Stimmung", calNoEntry: "Kein Eintrag", calToday: "Heute",
 };
 
 const fr: Strings = {
@@ -108,6 +113,7 @@ const fr: Strings = {
   loadFail: "Impossible de charger les données du serveur", installTitle: "Installer Daily Note",
   installSub: "Accès rapide à ton journal", install: "Installer", close: "Fermer",
   newPwTitle: "Nouveau mot de passe", newPwSave: "Enregistrer le mot de passe", pwUpdated: "Mot de passe mis à jour", storageFull: "Stockage du navigateur plein : une photo ou des données n’ont pas été enregistrées. Supprime des photos.",
+  viewList: "Liste", viewCalendar: "Calendrier", calEntries: "Notes ce mois-ci", calMood: "Humeur", calNoEntry: "Pas de note", calToday: "Aujourd’hui",
 };
 
 const es: Strings = {
@@ -126,6 +132,7 @@ const es: Strings = {
   loadFail: "No se pudieron cargar los datos del servidor", installTitle: "Instalar Daily Note",
   installSub: "Acceso rápido a tu diario", install: "Instalar", close: "Cerrar",
   newPwTitle: "Nueva contraseña", newPwSave: "Guardar contraseña", pwUpdated: "Contraseña actualizada", storageFull: "Almacenamiento del navegador lleno: no se guardó una foto o datos. Elimina algunas fotos.",
+  viewList: "Lista", viewCalendar: "Calendario", calEntries: "Entradas este mes", calMood: "Ánimo", calNoEntry: "Sin entrada", calToday: "Hoy",
 };
 
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };

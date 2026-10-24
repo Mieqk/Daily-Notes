@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Lang } from "../i18n";
 import { supabase } from "../lib/supabase";
+import { fetchProfiles } from "../lib/profiles";
 import ProfilePage from "./ProfilePage";
 
 interface FriendsViewProps {
@@ -95,12 +96,14 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
     const inc = all.filter((r) => r.status === "pending" && r.sender !== userId);
 
     const withProfiles = async (list: Friendship[]) => {
+      const otherIds = list.map((row) => (row.user_a === userId ? row.user_b : row.user_a));
+      const profiles = await fetchProfiles<Profile>(otherIds);
+      const byId = new Map(profiles.map((pr) => [pr.id, pr]));
       const out: { row: Friendship; profile: Profile }[] = [];
-      for (const row of list) {
-        const otherId = row.user_a === userId ? row.user_b : row.user_a;
-        const { data } = await supabase!.from("profiles").select("*").eq("id", otherId).single();
-        if (data) out.push({ row, profile: data as Profile });
-      }
+      list.forEach((row, i) => {
+        const profile = byId.get(otherIds[i]);
+        if (profile) out.push({ row, profile });
+      });
       return out;
     };
 

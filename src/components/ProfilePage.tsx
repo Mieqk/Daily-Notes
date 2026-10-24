@@ -1,3 +1,4 @@
+import { fetchProfiles } from "../lib/profiles";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type { Lang } from "../i18n";
@@ -26,6 +27,7 @@ interface Profile {
   friend_code: string | null;
   status_emoji: string | null;
   status_text: string | null;
+  privacy?: Record<string, string> | null;
 }
 
 const AVATARS = ["😎", "🌙", "🌸", "🐶", "", "🐼", "🐸", "⭐", "🎧", "", "🌊", "🍩"];
@@ -55,6 +57,8 @@ const L: Record<string, Record<string, string>> = {
     badgeEarly: "Первооткрыватель", badgeStreak: "Серия 3+", badgeWriter: "10+ записей", friendBadge: "Друг",
     statusTitle: "Статус", statusPh: "Свой статус…", statusClear: "Убрать",
     stGame: "Играю", stWork: "Работаю", stSleep: "Сплю", stMusic: "Слушаю музыку", stGood: "Хорошее настроение", stActive: "Активен",
+    privTitle: "Приватность", privNote: "Имя и аватар видят все, кто нашёл вас по коду друга, чтобы понимать, кто это. Остальное видят только друзья, и вы можете скрыть это совсем.",
+    privStatus: "Статус", privBio: "О себе", privBanner: "Баннер", privFriends: "Друзья", privNobody: "Только я",
   },
   en: {
     myProfile: "My profile", back: "Back", loading: "Loading…",
@@ -70,6 +74,8 @@ const L: Record<string, Record<string, string>> = {
     badgeEarly: "Early bird", badgeStreak: "3+ streak", badgeWriter: "10+ entries", friendBadge: "Friend",
     statusTitle: "Status", statusPh: "Custom status…", statusClear: "Clear",
     stGame: "Gaming", stWork: "Working", stSleep: "Sleeping", stMusic: "Listening to music", stGood: "Feeling great", stActive: "Active",
+    privTitle: "Privacy", privNote: "Your name and avatar are visible to anyone who finds you by friend code, so they know who you are. Everything else is visible to friends only, and you can hide it completely.",
+    privStatus: "Status", privBio: "About me", privBanner: "Banner", privFriends: "Friends", privNobody: "Only me",
   },
 };
 
@@ -101,7 +107,9 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase!.from("profiles").select("*").eq("id", profileId).single();
+      const data = isOwn
+        ? (await supabase!.from("profiles").select("*").eq("id", profileId).single()).data
+        : (await fetchProfiles<Profile>([profileId]))[0] ?? null;
       if (cancelled) return;
       setP(data as Profile | null);
       if (viewerId !== profileId) {
@@ -363,6 +371,36 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
                       {t("statusClear")}
                     </button>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Приватность (только свой) */}
+            {isOwn && (
+              <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("privTitle")}</div>
+                <p className="mb-3 text-[12.5px] leading-relaxed text-[var(--ink-soft)]">{t("privNote")}</p>
+                <div className="flex flex-col gap-2">
+                  {([["status", t("privStatus")], ["bio", t("privBio")], ["banner", t("privBanner")]] as const).map(([key, title]) => {
+                    const value = p.privacy?.[key] === "nobody" ? "nobody" : "friends";
+                    return (
+                      <div key={key} className="flex items-center justify-between gap-3">
+                        <span className="text-[13.5px] font-semibold">{title}</span>
+                        <div className="flex rounded-lg border border-[var(--line)] bg-[var(--panel-2)] p-0.5" role="group" aria-label={title}>
+                          {(["friends", "nobody"] as const).map((v) => (
+                            <button
+                              key={v}
+                              onClick={() => saveProfile({ privacy: { ...(p.privacy ?? {}), [key]: v } })}
+                              aria-pressed={value === v}
+                              className={`h-9 rounded-md px-3 text-[12.5px] font-semibold transition-all active:scale-95 ${value === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"}`}
+                            >
+                              {v === "friends" ? t("privFriends") : t("privNobody")}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
