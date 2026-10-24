@@ -4,6 +4,9 @@ import { supabase } from "../lib/supabase";
 import { fetchProfiles } from "../lib/profiles";
 import ProfilePage from "./ProfilePage";
 import FriendsAnswers from "./FriendsAnswers";
+import GratitudeFeed from "./GratitudeFeed";
+import SosPanel from "./SosPanel";
+import { makeUI } from "../ui-strings";
 
 interface FriendsViewProps {
   userId: string;
@@ -74,6 +77,28 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
   const [copied, setCopied] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [viewId, setViewId] = useState<string | null>(null);
+  const u = makeUI(lang);
+  const [thanksTo, setThanksTo] = useState<string | null>(null);
+  const [thanksText, setThanksText] = useState("");
+  const [thanksBusy, setThanksBusy] = useState(false);
+  const [feedKey, setFeedKey] = useState(0);
+
+  const sendThanks = async (toId: string) => {
+    const text = thanksText.trim();
+    if (!text) return;
+    setThanksBusy(true);
+    const { error } = await supabase!.from("gratitude").insert({ from_user: userId, to_user: toId, text });
+    setThanksBusy(false);
+    if (error) {
+      // уникальный индекс: одна благодарность одному другу в сутки
+      setMsg({ kind: "err", text: error.code === "23505" ? u("gAlready") : t("already") });
+      return;
+    }
+    setThanksTo(null);
+    setThanksText("");
+    setFeedKey((k) => k + 1);
+    setMsg({ kind: "ok", text: u("gSentOk") });
+  };
   const confirmTimer = useRef<number>(0);
 
   useEffect(() => {
@@ -200,8 +225,6 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
         </div>
       )}
 
-      <FriendsAnswers userId={userId} lang={lang} />
-
       {/* ===== Добавить друга ===== */}
       <div className={`${card} mb-5 animate-rise p-4`} style={{ boxShadow: "var(--shadow-sm)" }}>
         <div className="mb-3 flex items-center justify-between gap-2 rounded-lg bg-[var(--hover)] px-3 py-2">
@@ -262,9 +285,17 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
         {friends.length === 0 && <p className="text-sm text-[var(--ink-faint)]">{t("noFriends")}</p>}
         <div className="flex flex-col gap-2">
           {friends.map(({ row, profile }) => (
-            <div key={row.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
+            <div key={row.id} className="rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
+            <div className="flex items-center justify-between gap-3">
               <button onClick={() => setViewId(profile.id)} className="min-w-0 flex-1 text-left transition-opacity hover:opacity-80">
                 {person(profile)}
+              </button>
+              <button
+                onClick={() => { setThanksTo(thanksTo === profile.id ? null : profile.id); setThanksText(""); }}
+                aria-expanded={thanksTo === profile.id}
+                className="h-8 shrink-0 rounded-lg px-2.5 text-[12px] font-semibold text-[var(--accent-deep)] transition-colors hover:bg-[var(--accent-soft)]"
+              >
+                {u("gThank")}
               </button>
               <button
                 onClick={() => askRemove(row)}
@@ -277,8 +308,30 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
                 {confirmId === row.id ? t("removeSure") : t("remove")}
               </button>
             </div>
+            {thanksTo === profile.id && (
+              <div className="mt-2.5 flex gap-2">
+                <input
+                  value={thanksText}
+                  onChange={(e) => setThanksText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") sendThanks(profile.id); }}
+                  maxLength={280}
+                  autoFocus
+                  placeholder={u("gPlaceholder")}
+                  aria-label={u("gPlaceholder")}
+                  className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-sm outline-none focus:border-[var(--accent)]"
+                />
+                <button onClick={() => sendThanks(profile.id)} disabled={thanksBusy || !thanksText.trim()} className="h-10 rounded-lg bg-[var(--accent)] px-4 text-[13px] font-semibold text-[var(--accent-ink)] active:scale-95 disabled:opacity-50">{u("gSend")}</button>
+              </div>
+            )}
+            </div>
           ))}
         </div>
+      </div>
+
+      <div className="mt-5">
+        <SosPanel userId={userId} lang={lang} />
+        <FriendsAnswers userId={userId} lang={lang} />
+        <GratitudeFeed userId={userId} lang={lang} refreshKey={feedKey} />
       </div>
 
       {viewId && (
