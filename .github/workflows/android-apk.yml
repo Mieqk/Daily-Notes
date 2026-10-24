@@ -31,7 +31,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
 
       - name: Install dependencies
         run: npm ci
@@ -67,7 +66,7 @@ jobs:
         run: |
           OUT="Daily-Note-${{ steps.ver.outputs.name }}.apk"
           UNSIGNED=$(ls android/app/build/outputs/apk/release/*.apk | head -n1)
-          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n1)
+          BT=$(ls -d "${ANDROID_HOME:-$ANDROID_SDK_ROOT}"/build-tools/* | sort -V | tail -n1)
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
             "$BT/zipalign" -f -p 4 "$UNSIGNED" "$RUNNER_TEMP/aligned.apk"
