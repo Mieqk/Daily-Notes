@@ -1,3 +1,5 @@
+-- ВНИМАНИЕ: файл описывает схему для НОВОЙ базы. На уже работающей базе его не запускайте:
+-- используйте supabase/migrations/*.sql (они рассчитаны на текущую боевую схему).
 -- Daily Notes Supabase Schema
 -- Run this in SQL Editor at https://app.supabase.com
 
