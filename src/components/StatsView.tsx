@@ -14,8 +14,8 @@ import {
 import type { Lang, TKey } from "../i18n";
 import { MOODS, localeOf } from "../i18n";
 import type { Task, SleepData } from "../store";
-import { countWords, fromISO, shiftISO, todayISO } from "../store";
-import { FlameIcon, MoodVisual, StatsIcon } from "../icons";
+import { countWords, downloadText, fromISO, shiftISO, todayISO } from "../store";
+import { DownloadIcon, FlameIcon, MoodVisual, PrinterIcon, StatsIcon } from "../icons";
 
 interface StatsViewProps {
   notes: Record<string, string>;
@@ -225,6 +225,27 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
     );
   };
 
+  const buildStatsMarkdown = () => {
+    const from = days[0].iso;
+    const to = days[days.length - 1].iso;
+    const lines = [
+      `# ${t("statsTitle")}: ${from} — ${to}`,
+      "",
+      `- ${t("statEntries")}: ${entries}`,
+      `- ${t("statAvgMood")}: ${avgMood !== null ? avgMood.toFixed(1) + " / 4" : "—"}`,
+      `- ${t("statTasksDone")}: ${tasksDone} / ${tasksTotal}`,
+      `- ${t("statProductivity")}: ${productivity !== null ? productivity + "%" : "—"}`,
+      `- ${t("statTotalWords")}: ${allTime.words}`,
+      `- ${t("statBestStreak")}: ${allTime.best}`,
+      "",
+      `| | ${t("mood")} | ${t("statTasksDone")} | ${t("words")} |`,
+      "|---|---|---|---|",
+      ...days.map((d) => `| ${d.iso} | ${d.mood !== null ? MOODS[lang][d.mood] : "—"} | ${d.done} / ${d.total} | ${d.words} |`),
+      "",
+    ];
+    return lines.join("\n");
+  };
+
   const card = "rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4";
 
   const statCards: { label: string; value: React.ReactNode; hint?: string }[] = [
@@ -281,10 +302,22 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
             </button>
           ))}
         </div>
-        <span className="hidden items-center gap-2 text-xs text-[var(--ink-faint)] sm:flex">
-          <StatsIcon className="h-4 w-4" />
-          {t("statsSub")}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => downloadText(`daily-notes-stats-${days[0].iso}_${days[days.length - 1].iso}.md`, buildStatsMarkdown(), "text/markdown;charset=utf-8")}
+            className="flex h-10 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-[13px] font-semibold text-[var(--ink-soft)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95"
+          >
+            <DownloadIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("exportMd")}</span>
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="flex h-10 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-[13px] font-semibold text-[var(--ink-soft)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95"
+          >
+            <PrinterIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("printDay")}</span>
+          </button>
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -474,6 +507,30 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
           </div>
         </>
       )}
+
+      <div id="print-sheet" className="hidden" style={{ fontFamily: "Georgia, 'Lora', serif" }}>
+        <div style={{ fontSize: 12, letterSpacing: 2, textTransform: "uppercase", opacity: 0.6 }}>{t("name")}</div>
+        <h1 style={{ fontSize: 26, margin: "8px 0 16px" }}>{t("statsTitle")}: {days[0].iso} — {days[days.length - 1].iso}</h1>
+        <div style={{ fontSize: 14, lineHeight: 1.8, marginBottom: 16 }}>
+          <div>{t("statEntries")}: <b>{entries}</b></div>
+          <div>{t("statAvgMood")}: <b>{avgMood !== null ? avgMood.toFixed(1) + " / 4" : "—"}</b></div>
+          <div>{t("statTasksDone")}: <b>{tasksDone} / {tasksTotal}</b></div>
+          <div>{t("statProductivity")}: <b>{productivity !== null ? productivity + "%" : "—"}</b></div>
+          <div>{t("statBestStreak")}: <b>{allTime.best}</b></div>
+        </div>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <tbody>
+            {days.map((d) => (
+              <tr key={d.iso} style={{ borderTop: "1px solid #ccd3cc" }}>
+                <td style={{ padding: "4px 8px 4px 0" }}>{d.iso}</td>
+                <td style={{ padding: "4px 8px" }}>{d.mood !== null ? MOODS[lang][d.mood] : "—"}</td>
+                <td style={{ padding: "4px 8px" }}>{d.done} / {d.total}</td>
+                <td style={{ padding: "4px 0 4px 8px", textAlign: "right" }}>{d.words}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

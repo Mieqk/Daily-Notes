@@ -4,6 +4,8 @@ import { localeOf } from "../i18n";
 import type { Task, WritingFontId } from "../store";
 import { FONT_STACKS, countWords, fromISO, todayISO } from "../store";
 import { ArrowRightIcon, CheckIcon, MoodVisual, SearchIcon, TagIcon } from "../icons";
+import CalendarView from "./CalendarView";
+import { makeUI } from "../ui-strings";
 
 interface NotesViewProps {
   notes: Record<string, string>;
@@ -32,6 +34,9 @@ export default function NotesView({
 }: NotesViewProps) {
   const [query, setQuery] = useState("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [mode, setMode] = useState<"list" | "calendar">(() => (localStorage.getItem("dn.notesMode") === "calendar" ? "calendar" : "list"));
+  const u = makeUI(lang);
+  const pickMode = (m: "list" | "calendar") => { setMode(m); try { localStorage.setItem("dn.notesMode", m); } catch { /* ignore */ } };
   const locale = localeOf(lang);
 
   const entries = Object.keys(notes)
@@ -65,6 +70,23 @@ export default function NotesView({
 
   return (
     <div className="mx-auto max-w-6xl">
+      <div className="mb-4 inline-flex rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="group">
+        {(["list", "calendar"] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => pickMode(m)}
+            aria-pressed={mode === m}
+            className={`h-9 rounded-lg px-4 text-[13px] font-semibold transition-all duration-200 ${mode === m ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"}`}
+          >
+            {m === "list" ? u("viewList") : u("viewCalendar")}
+          </button>
+        ))}
+      </div>
+
+      {mode === "calendar" ? (
+        <CalendarView notes={notes} tasks={tasks} moods={moods} onOpen={onOpen} lang={lang} />
+      ) : (
+      <>
       {/* Toolbar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="relative w-full max-w-sm">
@@ -216,6 +238,8 @@ export default function NotesView({
           );
         })}
       </div>
+      </>
+      )}
     </div>
   );
 }
