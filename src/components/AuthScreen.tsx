@@ -6,6 +6,7 @@ import type { ThemeId } from '../themes';
 import { THEMES } from '../themes';
 import type { Lang } from '../i18n';
 import { makeUI } from '../ui-strings';
+import { isNativeApp, signInWithGoogleNative } from '../lib/nativeAuth';
 
 interface AuthScreenProps {
   onContinueLocally: () => void;
@@ -40,6 +41,12 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded
     }
     setError(null);
     setLoading(true);
+    if (isNativeApp()) {
+      const nativeError = await signInWithGoogleNative();
+      if (nativeError) setError(nativeError);
+      setLoading(false);
+      return;
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin },
