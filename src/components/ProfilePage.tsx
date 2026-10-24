@@ -1,4 +1,6 @@
+import { createPortal } from "react-dom";
 import { fetchProfiles } from "../lib/profiles";
+import Achievements from "./Achievements";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type { Lang } from "../i18n";
@@ -213,7 +215,8 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
     ? new Intl.DateTimeFormat(localeOf(lang), { day: "numeric", month: "long", year: "numeric" }).format(new Date(friendSince))
     : null;
 
-  return (
+  // Портал в body: иначе transform/z-index родителя (шапка, <main>) прижимают окно под боковую панель
+  return createPortal(
     <div className="fixed inset-0 z-[70] overflow-y-auto overscroll-contain bg-[var(--bg)]">
       {/* Шапка */}
       <div className="sticky top-0 z-10 border-b border-[var(--line)] bg-[var(--bg)]/85 backdrop-blur">
@@ -405,6 +408,9 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
               </div>
             )}
 
+            {/* Ачивки за дружбу (только свои) */}
+            {isOwn && <Achievements userId={viewerId} lang={lang} />}
+
             {/* Био */}
             <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
               {bioEdit && isOwn ? (
@@ -483,6 +489,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }
