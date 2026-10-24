@@ -15,13 +15,14 @@ import SettingsView from "./components/SettingsView";
 import LockScreen from "./components/LockScreen";
 import SleepView from "./components/SleepView";
 import InstallPrompt from "./components/InstallPrompt";
+import NewPasswordScreen from "./components/NewPasswordScreen";
 import AuthScreen from "./components/AuthScreen";
 import MobileBottomNav from "./components/MobileBottomNav";
 import FriendsView from "./components/FriendsView";
 import AccountMenu from "./components/AccountMenu";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
-import { isLocalMode, setLocalMode, performInitialSync, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, type SyncStatus } from "./lib/sync";
+import { isLocalMode, setLocalMode, performInitialSync, mergeLocalIntoRemote, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, deleteAllRemote, type SyncStatus } from "./lib/sync";
 
 const FONT_SCALES = ["93.75%", "100%", "109%"];
 
@@ -37,7 +38,7 @@ type Snapshot = {
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
 export default function App() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, recovery } = useAuth();
   const userId = user?.id ?? null;
 
   const [tab, setTab] = useStored<Tab>("dn.tab", "daily");
@@ -69,12 +70,20 @@ export default function App() {
   const lastUpdateTime = useRef<{ [key: string]: number }>({});
   const lastLocalSettingsRef = useRef({ theme, lang, fontScale, writingFont, bg, moodEmoji });
 
+  const localRef = useRef({ notes, tasks, moods, tags, photos, sleep });
+  localRef.current = { notes, tasks, moods, tags, photos, sleep };
+
   const now = useNow(1000);
   const locale = localeOf(lang);
   const t = (k: TKey) => STRINGS[lang][k] ?? STRINGS.ru[k];
 
   const showToast = (msg: string) => setToast({ id: Date.now(), msg });
   useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(id); }, [toast]);
+  useEffect(() => {
+    const onFull = () => showToast(u('storageFull'));
+    window.addEventListener('dn-storage-full', onFull);
+    return () => window.removeEventListener('dn-storage-full', onFull);
+  });
   useEffect(() => { const unsubscribe = subscribeToSyncStatus(setSyncStatusState); return unsubscribe; }, []);
 
   useEffect(() => {
@@ -96,12 +105,24 @@ export default function App() {
         if (cancelled) return;
 
         if (remote) {
-          setNotes(remote.notes);
-          setTasks(remote.tasks);
-          setMoods(remote.moods);
-          setTags(remote.tags);
-          setPhotos(remote.photos);
-          setSleep(remote.sleep);
+          // Первый вход на этом устройстве: не затираем то, что уже записано локально
+          const firstLogin = localStorage.getItem("dn.syncedUser") === null;
+          let data = { notes: remote.notes, tasks: remote.tasks, moods: remote.moods, tags: remote.tags, photos: remote.photos, sleep: remote.sleep };
+          if (firstLogin) {
+            const m = mergeLocalIntoRemote(data, localRef.current);
+            data = m.merged;
+            m.entries.forEach((d) => syncEntry(userId, d, data.notes[d] ?? "", data.moods[d] ?? null, data.tags[d] ?? [], data.photos[d] ?? []));
+            m.taskDates.forEach((d) => syncTasks(userId, d, data.tasks[d] ?? []));
+            m.sleepDates.forEach((d) => syncSleep(userId, d, data.sleep[d]));
+          }
+          try { localStorage.setItem("dn.syncedUser", userId); } catch { /* ignore */ }
+
+          setNotes(data.notes);
+          setTasks(data.tasks);
+          setMoods(data.moods);
+          setTags(data.tags);
+          setPhotos(data.photos);
+          setSleep(data.sleep);
           setWrittenOn(remote.writtenOn || {});
 
           const s = remote.settings as Record<string, any>;
@@ -115,8 +136,8 @@ export default function App() {
           }
 
           remoteSnapshot.current = {
-            notes: clone(remote.notes), tasks: clone(remote.tasks), moods: clone(remote.moods),
-            tags: clone(remote.tags), photos: clone(remote.photos), sleep: clone(remote.sleep),
+            notes: clone(data.notes), tasks: clone(data.tasks), moods: clone(data.moods),
+            tags: clone(data.tags), photos: clone(data.photos), sleep: clone(data.sleep),
           };
           initialLoadDone.current = true;
         } else if (attempt < 5) {
@@ -144,13 +165,13 @@ export default function App() {
       .channel('db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'entries', filter: `user_id=eq.${userId}` }, (payload) => {
         const entry = payload.new as Record<string, any>;
-        if (!entry) return;
+        if (!entry || !entry.date) return;
         const nowMs = Date.now();
         if (nowMs - (lastUpdateTime.current[entry.date] || 0) < 3000) return;
 
         setNotes((prev) => ({ ...prev, [entry.date]: entry.content || '' }));
         if (entry.mood !== null && entry.mood !== undefined) setMoods((prev) => ({ ...prev, [entry.date]: entry.mood }));
-        if (entry.tags && entry.tags.length > 0) setTags((prev) => ({ ...prev, [entry.date]: entry.tags }));
+        if (Array.isArray(entry.tags)) setTags((prev) => ({ ...prev, [entry.date]: entry.tags }));
         if (entry.photos && Array.isArray(entry.photos)) setPhotos((prev) => ({ ...prev, [entry.date]: entry.photos }));
         if (entry.created_at) {
           setWrittenOn((prev) => ({ ...prev, [entry.date]: toISO(new Date(entry.created_at)) === entry.date }));
@@ -159,7 +180,7 @@ export default function App() {
         if (remoteSnapshot.current) {
           remoteSnapshot.current.notes[entry.date] = entry.content || '';
           if (entry.mood !== null && entry.mood !== undefined) remoteSnapshot.current.moods[entry.date] = entry.mood;
-          if (entry.tags && entry.tags.length > 0) remoteSnapshot.current.tags[entry.date] = entry.tags;
+          if (Array.isArray(entry.tags)) remoteSnapshot.current.tags[entry.date] = entry.tags;
           if (entry.photos && Array.isArray(entry.photos)) remoteSnapshot.current.photos[entry.date] = entry.photos;
         }
       })
@@ -253,7 +274,7 @@ export default function App() {
   }, [sleep, date, userId]);
 
   useEffect(() => {
-    if (userId && !isLocalMode()) syncSettings(userId, { theme, lang, font: fontScale, writingFont, bg, moodEmoji });
+    if (userId && !isLocalMode() && initialLoadDone.current) syncSettings(userId, { theme, lang, font: fontScale, writingFont, bg, moodEmoji });
   }, [theme, lang, fontScale, writingFont, bg, moodEmoji, userId]);
 
   const handleThemeChange = (newTheme: ThemeId) => {
@@ -279,7 +300,14 @@ export default function App() {
   const tasksCount = Object.values(tasks).reduce((sum, list) => sum + (list?.length ?? 0), 0);
   const hasEntry = (iso: string) => Boolean((notes[iso] ?? "").trim());
 
-  const clearAll = () => { setNotes({}); setTasks({}); setMoods({}); setTags({}); setPhotos({}); setDate(todayISO()); };
+  const clearAll = async () => {
+    if (userId && !isLocalMode()) {
+      const ok = await deleteAllRemote(userId);
+      if (!ok) { showToast(u('syncError')); return; }
+      remoteSnapshot.current = { notes: {}, tasks: {}, moods: {}, tags: {}, photos: {}, sleep: {} };
+    }
+    setNotes({}); setTasks({}); setMoods({}); setTags({}); setPhotos({}); setSleep({}); setDate(todayISO());
+  };
   const exportMd = () => downloadText("daily-notes.md", buildMarkdown(notes, tasks, moods, tags, lang), "text/markdown;charset=utf-8");
   const exportJson = () => downloadText("daily-notes.json", JSON.stringify({ notes, tasks, moods, tags, reminder, moodEmoji, writingFont, theme, lang, bg, sleep }, null, 2), "application/json;charset=utf-8");
   const openDate = (iso: string) => { setDate(iso); setTab("daily"); };
@@ -299,6 +327,7 @@ export default function App() {
   const clock = now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const dateChip = new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" }).format(now);
 
+  if (recovery) return <NewPasswordScreen lang={lang} />;
   if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-[var(--bg)]"><div className="animate-pulse text-[var(--ink-faint)]">{makeUI(lang)('loading')}</div></div>;
   if (showAuth) return <AuthScreen lang={lang} onContinueLocally={() => { setLocalMode(true); setShowAuth(false); }} theme={theme} onTheme={handleThemeChange} />;
 

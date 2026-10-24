@@ -124,7 +124,13 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
     setMsg(null);
     const code = searchCode.trim().toUpperCase();
     if (!code) return;
-    const { data } = await supabase!.from("profiles").select("*").eq("friend_code", code).single();
+    // Поиск по коду идёт через RPC, который отдаёт только публичные поля профиля.
+    // Если функции в базе ещё нет (старая схема), пробуем прямой запрос.
+    const rpc = await supabase!.rpc("find_profile_by_code", { code });
+    let data: unknown = Array.isArray(rpc.data) ? rpc.data[0] : null;
+    if (rpc.error) {
+      data = (await supabase!.from("profiles").select("*").eq("friend_code", code).maybeSingle()).data;
+    }
     if (!data) { setMsg({ kind: "err", text: t("notFound") }); return; }
     const p = data as Profile;
     if (p.id === userId) { setMsg({ kind: "err", text: t("selfErr") }); return; }

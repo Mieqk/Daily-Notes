@@ -1,3 +1,5 @@
+-- ВНИМАНИЕ: файл описывает схему для НОВОЙ базы. На уже работающей базе его не запускайте:
+-- используйте supabase/migrations/*.sql (они рассчитаны на текущую боевую схему).
 -- Daily Notes Supabase Schema
 -- Run this in SQL Editor at https://app.supabase.com
 
@@ -209,20 +211,35 @@ DROP POLICY IF EXISTS "Participants can delete friendship" ON friendships;
 CREATE POLICY "Participants can delete friendship" ON friendships
   FOR DELETE USING (auth.uid() = user_a OR auth.uid() = user_b);
 
--- Профиль виден: себе, друзьям, тем, от кого пришла/кому ушла заявка,
--- а также любому вошедшему пользователю по коду друга (поиск по коду).
+-- Профиль виден: себе, друзьям, а также тем, от кого пришла/кому ушла заявка.
+-- Поиск по коду друга идёт через функцию find_profile_by_code ниже и отдаёт
+-- только публичные поля: чужие profiles.settings и прочее напрямую не читаются.
 DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can view related profiles" ON profiles;
 CREATE POLICY "Users can view related profiles" ON profiles
   FOR SELECT USING (
     auth.uid() = id
-    OR friend_code IS NOT NULL AND auth.uid() IS NOT NULL
     OR EXISTS (
       SELECT 1 FROM friendships f
       WHERE (f.user_a = auth.uid() AND f.user_b = profiles.id)
          OR (f.user_b = auth.uid() AND f.user_a = profiles.id)
     )
   );
+
+CREATE OR REPLACE FUNCTION public.find_profile_by_code(code TEXT)
+RETURNS TABLE (
+  id UUID, display_name TEXT, avatar TEXT, avatar_url TEXT, banner_url TEXT,
+  bio TEXT, friend_code TEXT, status_emoji TEXT, status_text TEXT
+) AS $$
+  SELECT p.id, p.display_name, p.avatar, p.avatar_url, p.banner_url,
+         p.bio, p.friend_code, p.status_emoji, p.status_text
+  FROM public.profiles p
+  WHERE auth.uid() IS NOT NULL AND p.friend_code = upper(trim(code))
+  LIMIT 1;
+$$ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public;
+
+REVOKE ALL ON FUNCTION public.find_profile_by_code(TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.find_profile_by_code(TEXT) TO authenticated;
 
 -- ============================================
 -- STORAGE: публичные бакеты для аватаров и баннеров.
