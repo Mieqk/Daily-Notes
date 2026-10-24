@@ -24,6 +24,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { isLocalMode } from "../lib/sync";
 import { createPortal } from "react-dom";
 import AuthScreen from "./AuthScreen";
+import NotificationSettings from "./NotificationSettings";
 
 interface SettingsViewProps {
   theme: ThemeId;
@@ -384,6 +385,8 @@ export default function SettingsView(props: SettingsViewProps) {
         </Section>
 
         {/* Privacy */}
+        <NotificationSettings lang={lang} signedIn={Boolean(user)} />
+
         <Section icon={<LockIcon className="h-4.5 w-4.5" />} title={t("secPrivacy")} sub={t("secPrivacySub")} delay={300}>
           <div className="mb-3 flex items-center gap-2">
             <span

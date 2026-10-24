@@ -6,6 +6,9 @@ import ProfilePage from "./ProfilePage";
 import FriendsAnswers from "./FriendsAnswers";
 import GratitudeFeed from "./GratitudeFeed";
 import SosPanel from "./SosPanel";
+import SharedMemories from "./SharedMemories";
+import BuddyHabits from "./BuddyHabits";
+import Challenges from "./Challenges";
 import { makeUI } from "../ui-strings";
 
 interface FriendsViewProps {
@@ -201,6 +204,8 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
       </span>
     );
 
+  const friendOpts = friends.map(({ profile }) => ({ id: profile.id, name: profile.display_name || profile.friend_code || "—" }));
+
   const person = (p: Profile) => (
     <span className="flex min-w-0 items-center gap-2.5">
       <span className="h-10 w-10 shrink-0 overflow-hidden rounded-xl">{avaNode(p, "20px")}</span>
@@ -330,6 +335,9 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
 
       <div className="mt-5">
         <SosPanel userId={userId} lang={lang} />
+        <BuddyHabits userId={userId} lang={lang} friends={friendOpts} />
+        <Challenges userId={userId} lang={lang} friends={friendOpts} myName={me?.display_name || "—"} />
+        <SharedMemories userId={userId} lang={lang} friends={friendOpts} />
         <FriendsAnswers userId={userId} lang={lang} />
         <GratitudeFeed userId={userId} lang={lang} refreshKey={feedKey} />
       </div>
