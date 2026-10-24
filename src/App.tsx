@@ -393,7 +393,7 @@ export default function App() {
               <button onClick={() => { setLocalMode(false); setShowAuth(true); }} className="mt-2 h-11 rounded-lg bg-[var(--accent)] px-5 text-[13px] font-bold text-[var(--accent-ink)] transition-all hover:brightness-110 active:scale-95">{t("loginBtn")}</button>
             </div>
           )}
-          {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} streak={streak} notesCount={notesCount} />}
+          {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} sleep={sleep} streak={streak} notesCount={notesCount} />}
           {tab === "settings" && <SettingsView theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={setPinHash} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} showToast={showToast} />}
         </main>
       </div>
