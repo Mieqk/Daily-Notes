@@ -2,12 +2,13 @@ import { useEffect, useRef } from "react";
 import type { Lang } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { friendNotificationsEnabled, notify, registerServiceWorker } from "../lib/notify";
+import { PUSH_SYNC_EVENT, syncPush } from "../lib/push";
 import { makeSocial } from "../social-strings";
 import { todayISO } from "../store";
 
 interface Reminder { time: string; enabled: boolean }
 
-/** Ежедневное напоминание и уведомления о благодарностях и SOS друзей, пока приложение открыто. */
+/** Ежедневное напоминание и уведомления о благодарностях и SOS друзей. Пока приложение открыто, показывает их сам; при закрытом их присылает сервер (web-push). */
 export function useNotifications(userId: string | null, lang: Lang, reminder: Reminder) {
   const s = makeSocial(lang);
   const sRef = useRef(s);
@@ -32,6 +33,15 @@ export function useNotifications(userId: string | null, lang: Lang, reminder: Re
     const id = window.setInterval(tick, 30_000);
     return () => window.clearInterval(id);
   }, [reminder.enabled, reminder.time]);
+
+  // Фоновые пуши: держим подписку и её настройки (язык, время напоминания) в Supabase актуальными
+  useEffect(() => {
+    if (!userId) return;
+    const sync = () => { syncPush(userId, { lang, reminderEnabled: reminder.enabled, reminderTime: reminder.time }); };
+    sync();
+    window.addEventListener(PUSH_SYNC_EVENT, sync);
+    return () => window.removeEventListener(PUSH_SYNC_EVENT, sync);
+  }, [userId, lang, reminder.enabled, reminder.time]);
 
   useEffect(() => {
     if (!userId || !supabase) return;

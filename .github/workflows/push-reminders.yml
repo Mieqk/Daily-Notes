@@ -1,0 +1,21 @@
+# Дёргает /api/push-reminders по расписанию. Vercel Hobby разрешает cron только раз в сутки,
+# поэтому частый вызов делает GitHub Actions. Нужны секреты репозитория:
+#   PUSH_REMINDERS_URL — например https://ваш-домен/api/push-reminders
+#   CRON_SECRET — то же значение, что в переменных окружения Vercel
+# Без секретов задание просто пропускается.
+name: Push reminders
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call reminders endpoint
+        env:
+          URL: ${{ secrets.PUSH_REMINDERS_URL }}
+          SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$SECRET" ]; then echo "secrets are not set, skipping"; exit 0; fi
+          curl -fsS --max-time 60 -H "Authorization: Bearer $SECRET" "$URL"

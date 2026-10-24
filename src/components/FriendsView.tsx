@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Lang } from "../i18n";
+import { sendPushEvent } from "../lib/push";
 import { supabase } from "../lib/supabase";
 import { fetchProfiles } from "../lib/profiles";
 import ProfilePage from "./ProfilePage";
@@ -93,13 +94,14 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
     const text = thanksText.trim();
     if (!text) return;
     setThanksBusy(true);
-    const { error } = await supabase!.from("gratitude").insert({ from_user: userId, to_user: toId, text });
+    const { data: row, error } = await supabase!.from("gratitude").insert({ from_user: userId, to_user: toId, text }).select("id").single();
     setThanksBusy(false);
     if (error) {
       // уникальный индекс: одна благодарность одному другу в сутки
       setMsg({ kind: "err", text: error.code === "23505" ? u("gAlready") : t("already") });
       return;
     }
+    if (row?.id) sendPushEvent("gratitude", row.id);
     setThanksTo(null);
     setThanksText("");
     setFeedKey((k) => k + 1);

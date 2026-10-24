@@ -1,5 +1,5 @@
 // Минимальный сервис-воркер: показывает уведомления и открывает приложение по клику.
-// Обработчик push готов для серверной отправки (Web Push), сам сервер пока не подключён.
+// Обработчик push принимает фоновые уведомления, которые рассылает сервер (api/push.js, api/push-reminders.js).
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 

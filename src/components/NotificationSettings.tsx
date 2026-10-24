@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Lang } from "../i18n";
 import { friendNotificationsEnabled, notificationPermission, notify, requestNotifications, setFriendNotifications } from "../lib/notify";
+import { PUSH_SYNC_EVENT, pushSupported } from "../lib/push";
 import { makeSocial } from "../social-strings";
 
 /** Карточка настроек уведомлений: разрешение браузера, вести от друзей, проверка. */
@@ -9,8 +10,11 @@ export default function NotificationSettings({ lang, signedIn }: { lang: Lang; s
   const [perm, setPerm] = useState(notificationPermission());
   const [friends, setFriends] = useState(friendNotificationsEnabled());
 
-  const enable = async () => setPerm(await requestNotifications());
-  const toggleFriends = () => { const next = !friends; setFriends(next); setFriendNotifications(next); };
+  const enable = async () => {
+    setPerm(await requestNotifications());
+    window.dispatchEvent(new Event(PUSH_SYNC_EVENT));
+  };
+  const toggleFriends = () => { const next = !friends; setFriends(next); setFriendNotifications(next); window.dispatchEvent(new Event(PUSH_SYNC_EVENT)); };
 
   const status =
     perm === "unsupported" ? s("ntUnsupported") : perm === "denied" ? s("ntDenied") : perm === "granted" ? s("ntOn") : s("ntSub");
@@ -38,7 +42,7 @@ export default function NotificationSettings({ lang, signedIn }: { lang: Lang; s
           </button>
         </div>
       )}
-      <p className="mt-3 text-[11.5px] leading-relaxed text-[var(--ink-faint)]">{s("ntNote")}</p>
+      <p className="mt-3 text-[11.5px] leading-relaxed text-[var(--ink-faint)]">{pushSupported() && signedIn ? s("ntNotePush") : s("ntNote")}</p>
     </div>
   );
 }
