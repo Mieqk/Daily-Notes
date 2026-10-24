@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
+import '@fontsource-variable/golos-text';
+import '@fontsource-variable/unbounded';
 import './index.css';
 import { AuthProvider } from './contexts/AuthContext.tsx';
 

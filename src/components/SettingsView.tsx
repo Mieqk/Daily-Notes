@@ -22,6 +22,7 @@ import {
 } from "../icons";
 import { useAuth } from "../contexts/AuthContext";
 import { isLocalMode } from "../lib/sync";
+import { createPortal } from "react-dom";
 import AuthScreen from "./AuthScreen";
 
 interface SettingsViewProps {
@@ -111,18 +112,22 @@ export default function SettingsView(props: SettingsViewProps) {
   const localMode = isLocalMode();
   const [showAuthModal, setShowAuthModal] = useState(false);
   
-  // Scroll to top when auth modal opens
+  // Пока открыто окно входа: блокируем прокрутку страницы, Esc закрывает
   useEffect(() => {
-    if (showAuthModal) {
-      window.scrollTo({ top: 0, behavior: 'auto' });
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    if (!showAuthModal) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setShowAuthModal(false); };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = '';
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
     };
   }, [showAuthModal]);
+
+  // Вошли в аккаунт — окно больше не нужно
+  useEffect(() => {
+    if (user) setShowAuthModal(false);
+  }, [user]);
   
   const {
     theme,
@@ -198,7 +203,7 @@ export default function SettingsView(props: SettingsViewProps) {
                     <span className="text-[13px] font-bold">{th.name[lang]}</span>
                     {active && <CheckIcon className="animate-checkpop h-3.5 w-3.5 text-[var(--accent)]" />}
                   </span>
-                  <span className="block text-[10.5px] text-[var(--ink-faint)]">{th.desc[lang]}</span>
+                  <span className="block text-[11px] text-[var(--ink-faint)]">{th.desc[lang]}</span>
                 </button>
               );
             })}
@@ -572,34 +577,28 @@ export default function SettingsView(props: SettingsViewProps) {
         </div>
       )}
 
-      {/* Auth Modal for local mode users - full screen */}
-      {showAuthModal && (
+      {/* Вход из локального режима: портал в body, иначе transform у <main> ломает fixed */}
+      {showAuthModal && createPortal(
         <div
-          className="animate-fadein fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-0 backdrop-blur-[3px]"
+          className="animate-fadein fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-[3px] sm:items-center"
           onMouseDown={() => setShowAuthModal(false)}
+          role="dialog"
+          aria-modal="true"
         >
-          <div
-            className="animate-rise relative h-full w-full max-w-none overflow-y-auto sm:h-auto sm:max-w-md"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <div className="flex min-h-full items-center justify-center p-4">
-              <div className="w-full animate-rise rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-8 shadow-2xl">
-                {/* Close button */}
-                <button
-                  onClick={() => setShowAuthModal(false)}
-                  className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-[var(--panel-2)] text-[var(--ink-soft)] transition-colors hover:bg-[var(--hover)] hover:text-[var(--ink)]"
-                  aria-label="Закрыть"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-                
-                <AuthScreen onContinueLocally={() => setShowAuthModal(false)} theme={theme} onTheme={onTheme} />
-              </div>
-            </div>
+          <div className="relative my-auto w-full max-w-md" onMouseDown={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute right-3 top-3 z-20 grid h-9 w-9 place-items-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/30"
+              aria-label="Закрыть"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <AuthScreen lang={props.lang} embedded onContinueLocally={() => setShowAuthModal(false)} theme={theme} onTheme={onTheme} />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

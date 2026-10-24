@@ -134,7 +134,7 @@
     margin: 0;
     background: var(--bg);
     color: var(--ink);
-    font-family: "Golos Text", "Segoe UI", system-ui, sans-serif;
+    font-family: "Golos Text Variable", "Segoe UI", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -166,7 +166,7 @@
 }
 
 .font-display {
-  font-family: "Unbounded", "Golos Text", sans-serif;
+  font-family: "Unbounded Variable", "Golos Text Variable", sans-serif;
 }
 
 /* ============ Ambient backgrounds ============ */

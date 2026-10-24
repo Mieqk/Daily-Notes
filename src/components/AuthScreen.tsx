@@ -1,17 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Eye, EyeOff, Mail, LockIcon, UserPlus, LogIn, Key, ArrowLeftIcon, Wifi, WifiOff } from '../icons';
+import { AlertIcon, CheckIcon, Eye, EyeOff, Mail, LockIcon, UserPlus, LogIn, Key, ArrowLeftIcon, Wifi, WifiOff } from '../icons';
 import type { ThemeId } from '../themes';
 import { THEMES } from '../themes';
+import type { Lang } from '../i18n';
+import { makeUI } from '../ui-strings';
 
 interface AuthScreenProps {
   onContinueLocally: () => void;
   theme: ThemeId;
   onTheme: (t: ThemeId) => void;
+  /** внутри модального окна: без собственного фона и высоты на весь экран */
+  embedded?: boolean;
+  lang: Lang;
 }
 
-export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthScreenProps) {
+export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded = false, lang }: AuthScreenProps) {
+  const u = makeUI(lang);
   const { signUp, signIn, resetPassword } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -29,7 +35,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
 
   const handleGoogleSignIn = async () => {
     if (!supabase) {
-      setError('Синхронизация не настроена');
+      setError(u("syncOff"));
       return;
     }
     setError(null);
@@ -51,19 +57,19 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
     setLoading(true);
 
     if (!email) {
-      setError('Введите email');
+      setError(u("enterEmail"));
       setLoading(false);
       return;
     }
 
     if (!isResetMode && !password) {
-      setError('Введите пароль');
+      setError(u("enterPassword"));
       setLoading(false);
       return;
     }
 
     if (!isResetMode && password.length < 6) {
-      setError('Пароль должен быть не менее 6 символов');
+      setError(u("pwShort"));
       setLoading(false);
       return;
     }
@@ -72,9 +78,9 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
       const { error } = await signIn(email, password);
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          setError('Неверный email или пароль');
+          setError(u("badCreds"));
         } else if (error.message.includes('Email not confirmed')) {
-          setError('Подтвердите email перед входом');
+          setError(u("confirmEmail"));
         } else {
           setError(error.message);
         }
@@ -84,21 +90,21 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
       if (error) {
         setError(error.message);
       } else {
-        setSuccessMessage('Инструкции по сбросу пароля отправлены на почту!');
+        setSuccessMessage(u("resetSent"));
         setIsResetMode(false);
       }
     } else {
       const { error } = await signUp(email, password);
       if (error) {
         if (error.message.includes('User already registered')) {
-          setError('Этот email уже зарегистрирован');
+          setError(u("emailTaken"));
         } else if (error.message.includes('Invalid email')) {
-          setError('Некорректный email');
+          setError(u("badEmail"));
         } else {
           setError(error.message);
         }
       } else {
-        setSuccessMessage('Проверьте почту для подтверждения регистрации!');
+        setSuccessMessage(u("checkMail"));
       }
     }
 
@@ -106,7 +112,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] p-4">
+    <div className={embedded ? "" : "flex min-h-screen items-center justify-center bg-[var(--bg)] p-4"}>
       <div className="w-full max-w-md animate-rise overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--panel)] shadow-2xl">
         <div
           className="relative flex flex-col items-center justify-center py-8"
@@ -132,10 +138,10 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
             </h1>
             <p className="mt-1 text-sm text-white/80">
               {isResetMode
-                ? 'Восстановление доступа'
+                ? u("titleReset")
                 : isLogin
-                  ? 'С возвращением!'
-                  : 'Создайте аккаунт'}
+                  ? u("titleLogin")
+                  : u("titleSignup")}
             </p>
           </div>
         </div>
@@ -143,7 +149,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
         <div className="p-8">
           <div className="mb-6">
             <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
-              Тема оформления
+              {u("theme")}
             </p>
             <div className="flex justify-center gap-3">
               {THEMES.map((th) => (
@@ -171,14 +177,14 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
 
           {error && (
             <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 animate-rise">
-              <span className="flex-shrink-0">⚠️</span>
+              <AlertIcon className="h-4 w-4 flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {successMessage && (
             <div className="mb-6 flex items-start gap-3 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400 animate-rise">
-              <span className="flex-shrink-0">✅</span>
+              <CheckIcon className="h-4 w-4 flex-shrink-0" />
               <span>{successMessage}</span>
             </div>
           )}
@@ -207,7 +213,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
               <div>
                 <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
                   <LockIcon className="h-4 w-4" />
-                  Пароль
+                  {u("password")}
                 </label>
                 <div className="relative">
                   <input
@@ -225,7 +231,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
                     onClick={() => setShowPassword(!showPassword)}
                     disabled={loading}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--ink-faint)] transition-colors hover:text-[var(--ink-soft)] disabled:opacity-50"
-                    aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                    aria-label={showPassword ? u("hidePw") : u("showPw")}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
@@ -243,7 +249,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
                     disabled={loading}
                     className="h-4 w-4 rounded border-[var(--line)] accent-[var(--accent)]"
                   />
-                  <span className="text-xs text-[var(--ink-soft)]">Запомнить меня</span>
+                  <span className="text-xs text-[var(--ink-soft)]">{u("remember")}</span>
                 </label>
                 <button
                   type="button"
@@ -256,7 +262,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
                   disabled={loading}
                   className="text-xs font-medium text-[var(--ink-soft)] underline decoration-[var(--accent)] underline-offset-4 transition-colors hover:text-[var(--accent)] disabled:opacity-50"
                 >
-                  Забыли пароль?
+                  {u("forgot")}
                 </button>
               </div>
             )}
@@ -273,22 +279,22 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
               {loading ? (
                 <>
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
-                  Загрузка...
+                  {u("loading")}
                 </>
               ) : isResetMode ? (
                 <>
                   <Mail className="h-5 w-5" />
-                  Отправить инструкции
+                  {u("sendInstr")}
                 </>
               ) : isLogin ? (
                 <>
                   <LogIn className="h-5 w-5" />
-                  Войти
+                  {u("signIn")}
                 </>
               ) : (
                 <>
                   <UserPlus className="h-5 w-5" />
-                  Зарегистрироваться
+                  {u("signUp")}
                 </>
               )}
             </button>
@@ -306,7 +312,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
               <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"/>
               <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/>
             </svg>
-            Войти через Google
+            {u("google")}
           </button>
 
           <div className="mt-6 text-center">
@@ -321,11 +327,11 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
                 className="group inline-flex items-center gap-2 text-sm font-semibold text-[var(--ink-soft)] transition-colors hover:text-[var(--accent)] disabled:opacity-50"
               >
                 <ArrowLeftIcon className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-                Назад ко входу
+                {u("backToLogin")}
               </button>
             ) : (
               <p className="text-sm text-[var(--ink-soft)]">
-                {isLogin ? 'Нет аккаунта?' : 'Уже есть аккаунт?'}
+                {isLogin ? u("noAccount") : u("haveAccount")}
                 <button
                   onClick={() => {
                     setIsLogin(!isLogin);
@@ -335,7 +341,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
                   disabled={loading}
                   className="ml-2 font-semibold underline decoration-[var(--accent)] underline-offset-4 transition-colors hover:text-[var(--accent)]"
                 >
-                  {isLogin ? 'Создать' : 'Войти'}
+                  {isLogin ? u("create") : u("signIn")}
                 </button>
               </p>
             )}
@@ -343,7 +349,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
 
           <div className="my-8 flex items-center gap-3">
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--line)] to-transparent" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-faint)]">или</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-faint)]">{u("or")}</span>
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--line)] to-transparent" />
           </div>
 
@@ -352,12 +358,12 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
             className="group flex w-full items-center justify-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] py-4 text-sm font-semibold text-[var(--ink-soft)] transition-all hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 hover:text-[var(--accent-deep)] active:scale-[0.98]"
           >
             <WifiOff className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
-            Продолжить без аккаунта
+            {u("continueLocal")}
           </button>
 
           <p className="mt-3 text-center text-xs text-[var(--ink-faint)]">
             <Wifi className="mr-1 inline h-3 w-3" />
-            Данные будут храниться локально в этом браузере
+            {u("localNote")}
           </p>
         </div>
       </div>

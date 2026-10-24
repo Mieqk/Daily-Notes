@@ -2,8 +2,8 @@ import { useState } from "react";
 import type { Lang, TKey } from "../i18n";
 import { localeOf } from "../i18n";
 import type { SleepData } from "../store";
-import { fromISO, shiftISO, todayISO } from "../store";
-import { ArrowLeftIcon, ArrowRightIcon, SleepIcon } from "../icons";
+import { fromISO, shiftISO, todayISO, useStored } from "../store";
+import { ArrowLeftIcon, ArrowRightIcon, MoonIcon, SunIcon } from "../icons";
 
 interface SleepViewProps {
   sleep: Record<string, SleepData>;
@@ -12,14 +12,14 @@ interface SleepViewProps {
   setSleep: (iso: string, data: SleepData | null) => void;
 }
 
-const EXTRA: Record<string, { note: string; notePh: string; awake: string; auto: string; history: string; unit: string }> = {
-  ru: { note: "Блокнот о сне", notePh: "Сны, мысли перед сном, что мешало уснуть…", awake: "Просыпаний", auto: "считается само", history: "История по дням", unit: "ч" },
-  en: { note: "Sleep notebook", notePh: "Dreams, thoughts before bed…", awake: "Wake-ups", auto: "auto", history: "Day-by-day history", unit: "h" },
-  be: { note: "Блокнот пра сон", notePh: "Сны, думкі перад сном…", awake: "Пробуджэнняў", auto: "аўта", history: "Гісторыя па днях", unit: "г" },
-  uk: { note: "Нотатник про сон", notePh: "Сни, думки перед сном…", awake: "Пробуджень", auto: "авто", history: "Історія по днях", unit: "год" },
-  de: { note: "Schlaf-Notizbuch", notePh: "Träume, Gedanken vor dem Schlaf…", awake: "Aufwachen", auto: "auto", history: "Verlauf nach Tagen", unit: "Std" },
-  fr: { note: "Carnet de sommeil", notePh: "Rêves, pensées avant de dormir…", awake: "Réveils", auto: "auto", history: "Historique par jour", unit: "h" },
-  es: { note: "Cuaderno de sueño", notePh: "Sueños, pensamientos antes de dormir…", awake: "Despertares", auto: "auto", history: "Historial por días", unit: "h" },
+const EXTRA: Record<string, { note: string; notePh: string; awake: string; auto: string; history: string; unit: string; goal: string }> = {
+  ru: { note: "Блокнот о сне", notePh: "Сны, мысли перед сном, что мешало уснуть…", awake: "Просыпаний", auto: "считается само", history: "История по дням", unit: "ч", goal: "Цель" },
+  en: { note: "Sleep notebook", notePh: "Dreams, thoughts before bed…", awake: "Wake-ups", auto: "auto", history: "Day-by-day history", unit: "h", goal: "Goal" },
+  be: { note: "Блокнот пра сон", notePh: "Сны, думкі перад сном…", awake: "Пробуджэнняў", auto: "аўта", history: "Гісторыя па днях", unit: "г", goal: "Мэта" },
+  uk: { note: "Нотатник про сон", notePh: "Сни, думки перед сном…", awake: "Пробуджень", auto: "авто", history: "Історія по днях", unit: "год", goal: "Мета" },
+  de: { note: "Schlaf-Notizbuch", notePh: "Träume, Gedanken vor dem Schlaf…", awake: "Aufwachen", auto: "auto", history: "Verlauf nach Tagen", unit: "Std", goal: "Ziel" },
+  fr: { note: "Carnet de sommeil", notePh: "Rêves, pensées avant de dormir…", awake: "Réveils", auto: "auto", history: "Historique par jour", unit: "h", goal: "Objectif" },
+  es: { note: "Cuaderno de sueño", notePh: "Sueños, pensamientos antes de dormir…", awake: "Despertares", auto: "auto", history: "Historial por días", unit: "h", goal: "Meta" },
 };
 
 function calcHours(bedtime?: string, waketime?: string): number | null {
@@ -46,6 +46,7 @@ function autoQuality(hours: number, awakenings: number): number {
 export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) {
   const today = todayISO();
   const [editDate, setEditDate] = useState(today);
+  const [goal, setGoal] = useStored<number>("dn.sleepGoal", 8);
   const locale = localeOf(lang);
   const L = EXTRA[lang] ?? EXTRA.en;
   const card = "rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4";
@@ -82,145 +83,187 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
     .filter((x) => x.d && (x.d.hours > 0 || Boolean(x.d.bedtime)))
     .slice(0, 10);
 
+  /* ---------- таймлайн ночи: ось 18:00 → 12:00 ---------- */
+  const toMin = (hm?: string) => {
+    if (!hm) return null;
+    const [h, m] = hm.split(":").map(Number);
+    return Number.isNaN(h) ? null : h * 60 + m;
+  };
+  const AXIS_START = 18 * 60;
+  const AXIS_SPAN = 18 * 60;
+  const bedMin = toMin(cur.bedtime);
+  const wakeMin = toMin(cur.waketime);
+  let tl: { left: number; width: number } | null = null;
+  if (bedMin !== null && wakeMin !== null) {
+    let b = bedMin < AXIS_START ? bedMin + 1440 : bedMin;
+    let w = wakeMin < AXIS_START ? wakeMin + 1440 : wakeMin;
+    if (w <= b) w = b + 1;
+    b = Math.max(AXIS_START, Math.min(AXIS_START + AXIS_SPAN, b));
+    w = Math.max(AXIS_START, Math.min(AXIS_START + AXIS_SPAN, w));
+    tl = { left: ((b - AXIS_START) / AXIS_SPAN) * 100, width: Math.max(1.5, ((w - b) / AXIS_SPAN) * 100) };
+  }
+  const TICKS = ["18", "21", "00", "03", "06", "09", "12"];
+
+  /* ---------- неделя: 7 столбцов, пустые дни тоже видны ---------- */
+  const weekCols = Array.from({ length: 7 }, (_, i) => {
+    const iso = shiftISO(today, i - 6);
+    return { iso, d: sleep[iso] };
+  });
+  const isToday = editDate === today;
+  const dateLabel = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" }).format(fromISO(editDate));
+  const weekdayLabel = new Intl.DateTimeFormat(locale, { weekday: "long" }).format(fromISO(editDate));
+  const label = "block text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]";
+  const input = "mt-1.5 h-11 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-sm outline-none transition-colors focus:border-[var(--accent)]";
+  const iconBtn = "grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] transition-all duration-150 hover:border-[var(--ink-faint)] hover:text-[var(--ink)] active:scale-90";
+
   return (
-    <div className="mx-auto max-w-6xl">
-      {/* Быстрые кнопки */}
-      <div className={`${card} mb-5 animate-rise`} style={{ boxShadow: "var(--shadow-sm)" }}>
-        <div className="mb-3">
-          <h3 className="text-[15px] font-bold">{t("todayBadge")}</h3>
-          <p className="text-xs text-[var(--ink-faint)]">{t("sleepRecentSub")}</p>
+    <div className="mx-auto max-w-5xl">
+      {/* Выбор дня */}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setEditDate(shiftISO(editDate, -1))} className={iconBtn} aria-label="previous day"><ArrowLeftIcon className="h-4 w-4" /></button>
+          <button onClick={() => setEditDate(shiftISO(editDate, 1))} disabled={isToday} className={`${iconBtn} ${isToday ? "cursor-not-allowed opacity-40" : ""}`} aria-label="next day"><ArrowRightIcon className="h-4 w-4" /></button>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <button onClick={() => { setEditDate(today); update({ bedtime: nowHM() }); }} className="flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-[13px] font-semibold text-[var(--accent-ink)] transition-all duration-200 hover:opacity-90 active:scale-95">
-            <span>🌙</span>{t("sleepFellAsleep")} — {nowHM()}
-          </button>
-          <button onClick={() => { setEditDate(today); update({ waketime: nowHM() }); }} className="flex items-center gap-2 rounded-lg bg-[var(--accent-deep)] px-4 py-2.5 text-[13px] font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-95">
-            <span>☀️</span>{t("sleepWokeUp")} — {nowHM()}
-          </button>
+        <div className="min-w-0">
+          <div className="font-display truncate text-lg font-bold capitalize leading-tight">{weekdayLabel}</div>
+          <div className="text-xs text-[var(--ink-soft)]">{dateLabel}</div>
         </div>
+        {!isToday && (
+          <button onClick={() => setEditDate(today)} className="ml-auto h-9 rounded-full border border-[var(--accent)] px-4 text-[12.5px] font-semibold text-[var(--accent-deep)] transition-all duration-150 hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] active:scale-95">{t("btnToday")}</button>
+        )}
       </div>
 
-      {/* Редактор дня */}
-      <div className={`${card} mb-5 animate-rise`} style={{ boxShadow: "var(--shadow-sm)" }}>
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-[15px] font-bold">{t("sleepTitle")}</h3>
-            <p className="text-xs text-[var(--ink-faint)]">{t("sleepSub")}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setEditDate(shiftISO(editDate, -1))} className="grid h-9 w-9 place-items-center rounded-lg border border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] active:scale-95"><ArrowLeftIcon className="h-4 w-4" /></button>
-            <span className="min-w-[120px] text-center text-sm font-semibold capitalize">
-              {new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" }).format(fromISO(editDate))}
-            </span>
-            <button onClick={() => setEditDate(shiftISO(editDate, 1))} disabled={editDate === today} className={`grid h-9 w-9 place-items-center rounded-lg border border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] active:scale-95 ${editDate === today ? "cursor-not-allowed opacity-40" : ""}`}><ArrowRightIcon className="h-4 w-4" /></button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div>
-            <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepBedtime")}</label>
-            <input type="time" value={cur.bedtime || ""} onChange={(e) => update({ bedtime: e.target.value })} className="mt-1 h-10 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]" />
-          </div>
-          <div>
-            <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepWakeTime")}</label>
-            <input type="time" value={cur.waketime || ""} onChange={(e) => update({ waketime: e.target.value })} className="mt-1 h-10 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]" />
-          </div>
-          <div>
-            <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("sleepHours")} · {L.auto}</label>
-            <div className="mt-1 flex h-10 items-center rounded-lg border border-[var(--line)] bg-[var(--hover)] px-3 text-sm font-bold">{cur.hours ? cur.hours.toFixed(1) : "—"}</div>
-          </div>
-          <div>
-            <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{L.awake}</label>
-            <input type="number" min="0" max="10" step="1" value={cur.awakenings || 0} onChange={(e) => update({ awakenings: parseInt(e.target.value) || 0 })} className="mt-1 h-10 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-sm outline-none focus:border-[var(--accent)]" />
-          </div>
-        </div>
-
-        <div className="mt-3 flex items-center gap-2.5 rounded-lg bg-[var(--hover)] px-3 py-2.5">
-          <span className="text-[12px] font-semibold text-[var(--ink-soft)]">{t("sleepQuality")} · {L.auto}:</span>
-          <span className="text-[13px] font-bold text-[var(--accent-deep)]">{cur.quality > 0 ? qualityLabel(cur.quality) : "—"}</span>
-        </div>
-
-        <div className="mt-4">
-          <label className="block text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">🌙 {L.note}</label>
-          <textarea value={cur.note || ""} onChange={(e) => update({ note: e.target.value })} placeholder={L.notePh} rows={3} className="mt-1 w-full resize-y rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-sm outline-none focus:border-[var(--accent)]" />
-        </div>
-      </div>
-
-      {/* Карточки */}
-      <div className="mb-5 grid grid-cols-3 gap-3">
-        <div className={`${card} animate-rise`} style={{ boxShadow: "var(--shadow-sm)" }}>
-          <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)]">{t("sleepHours")}</div>
-          <div className="font-display mt-2 text-[22px] font-bold leading-none">{avgHours !== null ? avgHours.toFixed(1) : "—"}</div>
-        </div>
-        <div className={`${card} animate-rise`} style={{ boxShadow: "var(--shadow-sm)" }}>
-          <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)]">{t("sleepQuality")}</div>
-          <div className="font-display mt-2 text-[22px] font-bold leading-none text-[var(--accent-deep)]">{avgQuality !== null ? qualityLabel(Math.round(avgQuality)) : "—"}</div>
-        </div>
-        <div className={`${card} animate-rise`} style={{ boxShadow: "var(--shadow-sm)" }}>
-          <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)]">{L.awake}</div>
-          <div className="font-display mt-2 text-[22px] font-bold leading-none">{avgAwake !== null ? avgAwake.toFixed(1) : "—"}</div>
-        </div>
-      </div>
-
-      {week.length === 0 ? (
-        <div className={`${card} animate-rise flex flex-col items-center gap-3 py-16 text-center`}>
-          <SleepIcon className="h-10 w-10 text-[var(--ink-faint)]" />
-          <p className="text-sm text-[var(--ink-faint)]">{t("sleepNoData")}</p>
-        </div>
-      ) : (
-        <>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className={`${card} animate-rise`} style={{ boxShadow: "var(--shadow-sm)" }}>
-              <h3 className="mb-3 text-[15px] font-bold">{t("sleepHours")}</h3>
-              <div className="space-y-2">
-                {week.map((x) => (
-                  <div key={x.iso} className="flex items-center gap-3">
-                    <span className="w-16 text-xs text-[var(--ink-faint)]">{new Intl.DateTimeFormat(locale, { weekday: "short" }).format(fromISO(x.iso))}</span>
-                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--hover)]">
-                      <div className="h-full rounded-full bg-[var(--accent)] transition-all duration-300" style={{ width: `${Math.min(100, ((x.d!.hours || 0) / 12) * 100)}%` }} />
-                    </div>
-                    <span className="w-12 text-right text-sm font-semibold">{(x.d!.hours || 0).toFixed(1)}</span>
-                  </div>
-                ))}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+        {/* Ночь: итог + ввод */}
+        <div className={`${card} animate-rise flex flex-col gap-5 !p-5`} style={{ boxShadow: "var(--shadow-sm)" }}>
+          <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
+            <div>
+              <div className={label}>{t("sleepHours")}</div>
+              <div className="font-display mt-1 text-[40px] font-bold leading-none tabular-nums">
+                {cur.hours ? cur.hours.toFixed(1) : "—"}
+                {cur.hours ? <span className="ml-1.5 text-[16px] font-semibold text-[var(--ink-soft)]">{L.unit}</span> : null}
               </div>
             </div>
-            <div className={`${card} animate-rise`} style={{ boxShadow: "var(--shadow-sm)" }}>
-              <h3 className="mb-3 text-[15px] font-bold">{t("sleepQuality")}</h3>
-              <div className="space-y-2">
-                {week.filter((x) => x.d!.quality > 0).map((x) => (
-                  <div key={x.iso} className="flex items-center gap-3">
-                    <span className="w-16 text-xs text-[var(--ink-faint)]">{new Intl.DateTimeFormat(locale, { weekday: "short" }).format(fromISO(x.iso))}</span>
-                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--hover)]">
-                      <div className="h-full rounded-full bg-[var(--accent-deep)] transition-all duration-300" style={{ width: `${Math.min(100, (x.d!.quality / 5) * 100)}%` }} />
-                    </div>
-                    <span className="w-20 text-right text-sm font-semibold">{qualityLabel(x.d!.quality)}</span>
-                  </div>
+            <div className="min-w-[150px]">
+              <div className={label}>{t("sleepQuality")}</div>
+              <div className="mt-2 flex gap-1" aria-hidden="true">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <span key={n} className={`h-2 flex-1 rounded-full transition-colors duration-300 ${n <= cur.quality ? "bg-[var(--accent)]" : "bg-[var(--hover)]"}`} />
                 ))}
               </div>
+              <div className="mt-1.5 text-[13px] font-bold text-[var(--accent-deep)]">{cur.quality > 0 ? qualityLabel(cur.quality) : "—"}</div>
             </div>
           </div>
 
-          <div className={`${card} animate-rise mt-4`} style={{ boxShadow: "var(--shadow-sm)" }}>
-            <h3 className="mb-3 text-[15px] font-bold">{L.history}</h3>
-            <div className="space-y-2">
-              {history.length === 0 && <p className="text-sm text-[var(--ink-faint)]">—</p>}
-              {history.map(({ iso, d }) => (
-                <div key={iso} className="flex items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
-                  <span className="w-28 shrink-0 text-[12px] font-semibold capitalize text-[var(--ink-soft)]">
-                    {new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" }).format(fromISO(iso))}
-                  </span>
-                  <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--hover)]">
-                    <div className="h-full rounded-full bg-[var(--accent)] transition-all duration-300" style={{ width: `${Math.min(100, ((d!.hours || 0) / 12) * 100)}%` }} />
-                  </div>
-                  <span className="w-16 shrink-0 text-right text-[13px] font-bold">{(d!.hours || 0).toFixed(1)} {L.unit}</span>
-                  <span className="hidden w-24 shrink-0 text-right text-[11px] text-[var(--ink-faint)] sm:block">
-                    {d!.quality > 0 ? qualityLabel(d!.quality) : "—"}
-                  </span>
-                </div>
+          {/* Ось ночи */}
+          <div>
+            <div className="relative h-8 rounded-lg bg-[var(--hover)]">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <span key={n} className="absolute top-0 h-full w-px bg-[var(--line)]" style={{ left: `${(n / 6) * 100}%` }} />
               ))}
+              {tl && (
+                <span className="absolute top-1 h-6 rounded-md bg-[var(--accent)] transition-all duration-300" style={{ left: `${tl.left}%`, width: `${tl.width}%` }} />
+              )}
+            </div>
+            <div className="mt-1.5 flex justify-between text-[11px] tabular-nums text-[var(--ink-faint)]" aria-hidden="true">
+              {TICKS.map((x) => <span key={x}>{x}</span>)}
             </div>
           </div>
-        </>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div>
+              <label className={label}>{t("sleepBedtime")}</label>
+              <input type="time" value={cur.bedtime || ""} onChange={(e) => update({ bedtime: e.target.value })} className={input} />
+              {isToday && (
+                <button onClick={() => update({ bedtime: nowHM() })} className="mt-1.5 flex h-9 items-center gap-1.5 rounded-lg px-1 text-[12px] font-semibold text-[var(--accent-deep)] transition-all hover:underline active:scale-95"><MoonIcon className="h-4 w-4" />{t("sleepFellAsleep")} {nowHM()}</button>
+              )}
+            </div>
+            <div>
+              <label className={label}>{t("sleepWakeTime")}</label>
+              <input type="time" value={cur.waketime || ""} onChange={(e) => update({ waketime: e.target.value })} className={input} />
+              {isToday && (
+                <button onClick={() => update({ waketime: nowHM() })} className="mt-1.5 flex h-9 items-center gap-1.5 rounded-lg px-1 text-[12px] font-semibold text-[var(--accent-deep)] transition-all hover:underline active:scale-95"><SunIcon className="h-4 w-4" />{t("sleepWokeUp")} {nowHM()}</button>
+              )}
+            </div>
+            <div>
+              <label className={label}>{L.awake}</label>
+              <div className="mt-1.5 flex h-11 items-center overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel-2)]">
+                <button onClick={() => update({ awakenings: Math.max(0, (cur.awakenings || 0) - 1) })} className="h-full w-11 text-lg font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--hover)] active:scale-90" aria-label="−">−</button>
+                <span className="flex-1 text-center text-sm font-bold tabular-nums">{cur.awakenings || 0}</span>
+                <button onClick={() => update({ awakenings: Math.min(10, (cur.awakenings || 0) + 1) })} className="h-full w-11 text-lg font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--hover)] active:scale-90" aria-label="+">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className={label}>{L.note}</label>
+            <textarea value={cur.note || ""} onChange={(e) => update({ note: e.target.value })} placeholder={L.notePh} rows={3} className="mt-1.5 w-full resize-y rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5 text-sm leading-relaxed outline-none transition-colors focus:border-[var(--accent)]" />
+          </div>
+        </div>
+
+        {/* Неделя */}
+        <div className={`${card} animate-rise flex flex-col gap-4 !p-5`} style={{ boxShadow: "var(--shadow-sm)" }}>
+          <div>
+            <h3 className="text-[15px] font-bold">{t("sleepHours")}</h3>
+            <p className="text-xs text-[var(--ink-soft)]">{avgHours !== null ? `${avgHours.toFixed(1)} ${L.unit} · ${avgQuality !== null ? qualityLabel(Math.round(avgQuality)) : ""}` : t("sleepNoData")}</p>
+          </div>
+          <div className="relative flex h-40 items-end gap-2">
+            <span className="absolute left-0 right-0 border-t border-dashed border-[var(--line)]" style={{ bottom: `${(goal / 12) * 100}%` }} aria-hidden="true" />
+            {weekCols.map(({ iso, d }) => {
+              const h = d?.hours || 0;
+              const active = iso === editDate;
+              return (
+                <button key={iso} onClick={() => setEditDate(iso)} className="group flex h-full flex-1 flex-col items-center justify-end gap-1.5" aria-label={iso}>
+                  <span className="text-[11px] font-semibold tabular-nums text-[var(--ink-soft)]">{h > 0 ? h.toFixed(1) : ""}</span>
+                  <span className={`w-full rounded-md transition-all duration-300 ${h > 0 ? (active ? "bg-[var(--accent-deep)]" : "bg-[var(--accent)] group-hover:bg-[var(--accent-deep)]") : "bg-[var(--hover)]"}`} style={{ height: h > 0 ? `${Math.min(100, (h / 12) * 100) * 0.78}%` : "6px" }} />
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex gap-2">
+            {weekCols.map(({ iso }) => (
+              <span key={iso} className={`flex-1 text-center text-[11px] font-semibold capitalize ${iso === editDate ? "text-[var(--accent-deep)]" : "text-[var(--ink-faint)]"}`}>
+                {new Intl.DateTimeFormat(locale, { weekday: "short" }).format(fromISO(iso))}
+              </span>
+            ))}
+          </div>
+          <div className="mt-auto flex flex-col gap-2.5 border-t border-[var(--line)] pt-3 text-[13px]">
+            <div className="flex items-center justify-between">
+              <span className="text-[var(--ink-soft)]">{L.awake}</span>
+              <span className="font-bold tabular-nums">{avgAwake !== null ? avgAwake.toFixed(1) : "—"}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[var(--ink-soft)]">{L.goal}</span>
+              <span className="flex items-center overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel-2)]">
+                <button onClick={() => setGoal(Math.max(5, goal - 0.5))} className="h-9 w-9 text-base font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--hover)] active:scale-90" aria-label="−">−</button>
+                <span className="w-16 text-center font-bold tabular-nums">{goal.toFixed(1)} {L.unit}</span>
+                <button onClick={() => setGoal(Math.min(11, goal + 0.5))} className="h-9 w-9 text-base font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--hover)] active:scale-90" aria-label="+">+</button>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {history.length > 0 && (
+        <div className={`${card} animate-rise mt-5`} style={{ boxShadow: "var(--shadow-sm)" }}>
+          <h3 className="mb-3 text-[15px] font-bold">{L.history}</h3>
+          <div className="space-y-2">
+            {history.map(({ iso, d }) => (
+              <button key={iso} onClick={() => setEditDate(iso)} className="flex w-full items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5 text-left transition-colors hover:border-[var(--accent)]">
+                <span className="w-28 shrink-0 text-[12px] font-semibold capitalize text-[var(--ink-soft)]">
+                  {new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" }).format(fromISO(iso))}
+                </span>
+                <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--hover)]">
+                  <div className="h-full rounded-full bg-[var(--accent)] transition-all duration-300" style={{ width: `${Math.min(100, ((d!.hours || 0) / 12) * 100)}%` }} />
+                </div>
+                <span className="w-16 shrink-0 text-right text-[13px] font-bold">{(d!.hours || 0).toFixed(1)} {L.unit}</span>
+                <span className="hidden w-24 shrink-0 text-right text-[12px] text-[var(--ink-soft)] sm:block">
+                  {d!.quality > 0 ? qualityLabel(d!.quality) : "—"}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

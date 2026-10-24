@@ -193,10 +193,10 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
       {/* ===== Добавить друга ===== */}
       <div className={`${card} mb-5 animate-rise p-4`} style={{ boxShadow: "var(--shadow-sm)" }}>
         <div className="mb-3 flex items-center justify-between gap-2 rounded-lg bg-[var(--hover)] px-3 py-2">
-          <span className="text-[11px] font-semibold text-[var(--ink-faint)]">{t("myCode")}</span>
+          <span className="text-[12px] font-semibold text-[var(--ink-soft)]">{t("myCode")}</span>
           <button onClick={copyCode} className="flex items-center gap-2 font-mono text-[13px] font-bold tracking-[0.18em] text-[var(--accent-deep)] active:scale-95">
             {me?.friend_code ?? "…"}
-            <span className="text-[10.5px] font-semibold tracking-normal text-[var(--ink-faint)]">{copied ? t("copied") : t("copy")}</span>
+            <span className="text-[12px] font-semibold tracking-normal text-[var(--ink-soft)]">{copied ? t("copied") : t("copy")}</span>
           </button>
         </div>
         <h3 className="mb-3 text-[15px] font-bold">➕ {t("addFriend")}</h3>

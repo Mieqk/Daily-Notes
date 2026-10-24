@@ -194,6 +194,8 @@ const ru = {
   localModeText: "Вы работаете в локальном режиме. Данные хранятся только в этом браузере.",
   localModeHint: "Войдите в аккаунт для синхронизации между устройствами",
   loginBtn: "Войти для синхронизации",
+  friendsGuestTitle: "Друзья доступны с аккаунтом",
+  friendsGuestBody: "Войдите, чтобы получить код друга, добавлять друзей и видеть их статусы. Ваши записи останутся на устройстве.",
 };
 
 export type TKey = keyof typeof ru;
@@ -392,6 +394,8 @@ const en: Record<TKey, string> = {
   localModeText: "You are in local mode. Data is stored only in this browser.",
   localModeHint: "Sign in to sync between devices",
   loginBtn: "Sign in to sync",
+  friendsGuestTitle: "Friends need an account",
+  friendsGuestBody: "Sign in to get your friend code, add friends and see their statuses. Your notes stay on this device.",
 };
 
 const be: Record<TKey, string> = {
@@ -588,6 +592,8 @@ const be: Record<TKey, string> = {
   localModeText: "Вы працуеце ў лакальным рэжыме. Дадзеныя захоўваюцца толькі ў гэтым браўзеры.",
   localModeHint: "Увайдзіце ў акаўнт для сінхранізацыі паміж прыладамі",
   loginBtn: "Увайсці для сінхранізацыі",
+  friendsGuestTitle: "Сябры даступныя з акаўнтам",
+  friendsGuestBody: "Увайдзіце, каб атрымаць код сябра, дадаваць сяброў і бачыць іх статусы. Вашыя запісы застануцца на прыладзе.",
 };
 
 const uk: Record<TKey, string> = {
@@ -784,6 +790,8 @@ const uk: Record<TKey, string> = {
   localModeText: "Ви працюєте в локальному режимі. Дані зберігаються лише в цьому браузері.",
   localModeHint: "Увійдіть в акаунт для синхронізації між пристроями",
   loginBtn: "Увійти для синхронізації",
+  friendsGuestTitle: "Друзі доступні з акаунтом",
+  friendsGuestBody: "Увійдіть, щоб отримати код друга, додавати друзів і бачити їхні статуси. Ваші записи залишаться на пристрої.",
 };
 
 const de: Record<TKey, string> = {
@@ -980,6 +988,8 @@ const de: Record<TKey, string> = {
   localModeText: "Du arbeitest im lokalen Modus. Die Daten werden nur in diesem Browser gespeichert.",
   localModeHint: "Melde dich an, um zwischen Geräten zu synchronisieren",
   loginBtn: "Zum Synchronisieren anmelden",
+  friendsGuestTitle: "Freunde brauchen ein Konto",
+  friendsGuestBody: "Melde dich an, um deinen Freundescode zu erhalten, Freunde hinzuzufügen und ihre Status zu sehen. Deine Einträge bleiben auf diesem Gerät.",
 };
 
 const fr: Record<TKey, string> = {
@@ -1176,6 +1186,8 @@ const fr: Record<TKey, string> = {
   localModeText: "Vous êtes en mode local. Les données sont stockées uniquement dans ce navigateur.",
   localModeHint: "Connectez-vous pour synchroniser entre appareils",
   loginBtn: "Se connecter pour synchroniser",
+  friendsGuestTitle: "Les amis nécessitent un compte",
+  friendsGuestBody: "Connecte-toi pour obtenir ton code ami, ajouter des amis et voir leurs statuts. Tes notes restent sur cet appareil.",
 };
 
 const es: Record<TKey, string> = {
@@ -1372,6 +1384,8 @@ const es: Record<TKey, string> = {
   localModeText: "Estás en modo local. Los datos se guardan solo en este navegador.",
   localModeHint: "Inicia sesión para sincronizar entre dispositivos",
   loginBtn: "Iniciar sesión para sincronizar",
+  friendsGuestTitle: "Los amigos requieren una cuenta",
+  friendsGuestBody: "Inicia sesión para obtener tu código de amigo, añadir amigos y ver sus estados. Tus notas se quedan en este dispositivo.",
 };
 
 export const MOODS: Record<Lang, string[]> = {
