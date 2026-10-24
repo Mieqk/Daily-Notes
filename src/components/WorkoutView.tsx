@@ -45,6 +45,7 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [rest, setRest] = useState(0);
+  const [restLen, setRestLen] = useStored<number>("dn.restLen", 90);
   const [askConsent, setAskConsent] = useState(false);
 
   useEffect(() => {
@@ -86,7 +87,7 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
     setName("");
   };
 
-  const setField = (exId: string, sid: string, patch: Partial<WSet>) => { if (patch.done) setRest(90); updateEx(exId, (e) => ({ ...e, sets: e.sets.map((s) => (s.id === sid ? { ...s, ...patch } : s)) })); };
+  const setField = (exId: string, sid: string, patch: Partial<WSet>) => { if (patch.done) setRest(restLen); updateEx(exId, (e) => ({ ...e, sets: e.sets.map((s) => (s.id === sid ? { ...s, ...patch } : s)) })); };
   const addSet = (exId: string) => updateEx(exId, (e) => {
     const last = e.sets[e.sets.length - 1];
     return { ...e, sets: [...e.sets, { id: uid(), kg: last?.kg ?? 0, reps: last?.reps ?? 10, done: false }] };
@@ -146,9 +147,15 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
       {day.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] text-[var(--ink-soft)]">
           <span><b className="text-[var(--ink)]">{day.length}</b> {l.exercises.toLowerCase()} · <b className="text-[var(--ink)]">{doneSets.length}</b> {l.setsDone.toLowerCase()} · <b className="text-[var(--ink)]">{Math.round(volume)}</b> {l.kg}</span>
+          <span className="flex items-center gap-1">
+            <span className="mr-1 text-[12px]">{l.rest}</span>
+            {[60, 90, 120].map((s) => (
+              <button key={s} onClick={() => { setRestLen(s); setRest(s); }} className={`rounded-full px-2.5 py-1 text-[12px] font-semibold ${restLen === s ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "border border-[var(--line)] hover:border-[var(--accent)]"}`}>{s}</button>
+            ))}
+          </span>
           {rest > 0 && (
             <span className="flex items-center gap-2 rounded-full bg-[var(--panel)] px-3 py-1 font-semibold" role="timer">
-              {l.rest} <span className="tabular-nums text-[var(--ink)]">{Math.floor(rest / 60)}:{String(rest % 60).padStart(2, "0")}</span>
+              <span className="tabular-nums text-[var(--ink)]">{Math.floor(rest / 60)}:{String(rest % 60).padStart(2, "0")}</span>
               <button onClick={() => setRest(0)} aria-label={l.stop} className="text-[var(--ink-faint)] hover:text-[var(--ink)]">×</button>
             </span>
           )}

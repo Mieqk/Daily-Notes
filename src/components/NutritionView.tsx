@@ -289,6 +289,19 @@ export default function NutritionView({ lang }: { lang: Lang }) {
             {l.goal}
             <input className={inputCls} inputMode="numeric" value={goal || ""} onChange={(e) => setGoal(Math.min(10000, Math.max(0, Math.round(toNum(e.target.value) || 0))))} />
           </label>
+          {foods.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <span className="text-[13px] font-bold">{l.quick}</span>
+              <ul className="flex flex-col">
+                {foods.map((f) => (
+                  <li key={f.id} className="flex items-center justify-between border-b border-[var(--line)] py-2 text-[13px]">
+                    <span className="truncate">{f.name} <span className="text-[var(--ink-faint)]">· {f.grams} {l.g} · {Math.round((f.kcal * f.grams) / 100)} {l.kcal}</span></span>
+                    <button onClick={() => setFoods(foods.filter((x) => x.id !== f.id))} aria-label="×" className="px-1 text-[var(--ink-faint)] hover:text-red-400">×</button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="flex flex-col gap-2">
             <span className="text-[13px] font-bold">{l.ioTitle}</span>
             <p className="text-[12px] leading-relaxed text-[var(--ink-soft)]">{l.ioHint}</p>
