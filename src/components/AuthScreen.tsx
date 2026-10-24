@@ -9,9 +9,11 @@ interface AuthScreenProps {
   onContinueLocally: () => void;
   theme: ThemeId;
   onTheme: (t: ThemeId) => void;
+  /** внутри модального окна: без собственного фона и высоты на весь экран */
+  embedded?: boolean;
 }
 
-export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthScreenProps) {
+export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded = false }: AuthScreenProps) {
   const { signUp, signIn, resetPassword } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -106,7 +108,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme }: AuthSc
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] p-4">
+    <div className={embedded ? "" : "flex min-h-screen items-center justify-center bg-[var(--bg)] p-4"}>
       <div className="w-full max-w-md animate-rise overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--panel)] shadow-2xl">
         <div
           className="relative flex flex-col items-center justify-center py-8"
