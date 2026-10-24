@@ -2,8 +2,8 @@ import { useState } from "react";
 import type { Lang, TKey } from "../i18n";
 import { localeOf } from "../i18n";
 import type { SleepData } from "../store";
-import { fromISO, shiftISO, todayISO } from "../store";
-import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
+import { fromISO, shiftISO, todayISO, useStored } from "../store";
+import { ArrowLeftIcon, ArrowRightIcon, MoonIcon, SunIcon } from "../icons";
 
 interface SleepViewProps {
   sleep: Record<string, SleepData>;
@@ -12,14 +12,14 @@ interface SleepViewProps {
   setSleep: (iso: string, data: SleepData | null) => void;
 }
 
-const EXTRA: Record<string, { note: string; notePh: string; awake: string; auto: string; history: string; unit: string }> = {
-  ru: { note: "Блокнот о сне", notePh: "Сны, мысли перед сном, что мешало уснуть…", awake: "Просыпаний", auto: "считается само", history: "История по дням", unit: "ч" },
-  en: { note: "Sleep notebook", notePh: "Dreams, thoughts before bed…", awake: "Wake-ups", auto: "auto", history: "Day-by-day history", unit: "h" },
-  be: { note: "Блокнот пра сон", notePh: "Сны, думкі перад сном…", awake: "Пробуджэнняў", auto: "аўта", history: "Гісторыя па днях", unit: "г" },
-  uk: { note: "Нотатник про сон", notePh: "Сни, думки перед сном…", awake: "Пробуджень", auto: "авто", history: "Історія по днях", unit: "год" },
-  de: { note: "Schlaf-Notizbuch", notePh: "Träume, Gedanken vor dem Schlaf…", awake: "Aufwachen", auto: "auto", history: "Verlauf nach Tagen", unit: "Std" },
-  fr: { note: "Carnet de sommeil", notePh: "Rêves, pensées avant de dormir…", awake: "Réveils", auto: "auto", history: "Historique par jour", unit: "h" },
-  es: { note: "Cuaderno de sueño", notePh: "Sueños, pensamientos antes de dormir…", awake: "Despertares", auto: "auto", history: "Historial por días", unit: "h" },
+const EXTRA: Record<string, { note: string; notePh: string; awake: string; auto: string; history: string; unit: string; goal: string }> = {
+  ru: { note: "Блокнот о сне", notePh: "Сны, мысли перед сном, что мешало уснуть…", awake: "Просыпаний", auto: "считается само", history: "История по дням", unit: "ч", goal: "Цель" },
+  en: { note: "Sleep notebook", notePh: "Dreams, thoughts before bed…", awake: "Wake-ups", auto: "auto", history: "Day-by-day history", unit: "h", goal: "Goal" },
+  be: { note: "Блокнот пра сон", notePh: "Сны, думкі перад сном…", awake: "Пробуджэнняў", auto: "аўта", history: "Гісторыя па днях", unit: "г", goal: "Мэта" },
+  uk: { note: "Нотатник про сон", notePh: "Сни, думки перед сном…", awake: "Пробуджень", auto: "авто", history: "Історія по днях", unit: "год", goal: "Мета" },
+  de: { note: "Schlaf-Notizbuch", notePh: "Träume, Gedanken vor dem Schlaf…", awake: "Aufwachen", auto: "auto", history: "Verlauf nach Tagen", unit: "Std", goal: "Ziel" },
+  fr: { note: "Carnet de sommeil", notePh: "Rêves, pensées avant de dormir…", awake: "Réveils", auto: "auto", history: "Historique par jour", unit: "h", goal: "Objectif" },
+  es: { note: "Cuaderno de sueño", notePh: "Sueños, pensamientos antes de dormir…", awake: "Despertares", auto: "auto", history: "Historial por días", unit: "h", goal: "Meta" },
 };
 
 function calcHours(bedtime?: string, waketime?: string): number | null {
@@ -46,6 +46,7 @@ function autoQuality(hours: number, awakenings: number): number {
 export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) {
   const today = todayISO();
   const [editDate, setEditDate] = useState(today);
+  const [goal, setGoal] = useStored<number>("dn.sleepGoal", 8);
   const locale = localeOf(lang);
   const L = EXTRA[lang] ?? EXTRA.en;
   const card = "rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4";
@@ -174,14 +175,14 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
               <label className={label}>{t("sleepBedtime")}</label>
               <input type="time" value={cur.bedtime || ""} onChange={(e) => update({ bedtime: e.target.value })} className={input} />
               {isToday && (
-                <button onClick={() => update({ bedtime: nowHM() })} className="mt-1.5 flex h-9 items-center gap-1.5 rounded-lg px-1 text-[12px] font-semibold text-[var(--accent-deep)] transition-all hover:underline active:scale-95">🌙 {t("sleepFellAsleep")} {nowHM()}</button>
+                <button onClick={() => update({ bedtime: nowHM() })} className="mt-1.5 flex h-9 items-center gap-1.5 rounded-lg px-1 text-[12px] font-semibold text-[var(--accent-deep)] transition-all hover:underline active:scale-95"><MoonIcon className="h-4 w-4" />{t("sleepFellAsleep")} {nowHM()}</button>
               )}
             </div>
             <div>
               <label className={label}>{t("sleepWakeTime")}</label>
               <input type="time" value={cur.waketime || ""} onChange={(e) => update({ waketime: e.target.value })} className={input} />
               {isToday && (
-                <button onClick={() => update({ waketime: nowHM() })} className="mt-1.5 flex h-9 items-center gap-1.5 rounded-lg px-1 text-[12px] font-semibold text-[var(--accent-deep)] transition-all hover:underline active:scale-95">☀️ {t("sleepWokeUp")} {nowHM()}</button>
+                <button onClick={() => update({ waketime: nowHM() })} className="mt-1.5 flex h-9 items-center gap-1.5 rounded-lg px-1 text-[12px] font-semibold text-[var(--accent-deep)] transition-all hover:underline active:scale-95"><SunIcon className="h-4 w-4" />{t("sleepWokeUp")} {nowHM()}</button>
               )}
             </div>
             <div>
@@ -207,7 +208,7 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
             <p className="text-xs text-[var(--ink-soft)]">{avgHours !== null ? `${avgHours.toFixed(1)} ${L.unit} · ${avgQuality !== null ? qualityLabel(Math.round(avgQuality)) : ""}` : t("sleepNoData")}</p>
           </div>
           <div className="relative flex h-40 items-end gap-2">
-            <span className="absolute left-0 right-0 border-t border-dashed border-[var(--line)]" style={{ bottom: `${(8 / 12) * 100}%` }} aria-hidden="true" />
+            <span className="absolute left-0 right-0 border-t border-dashed border-[var(--line)]" style={{ bottom: `${(goal / 12) * 100}%` }} aria-hidden="true" />
             {weekCols.map(({ iso, d }) => {
               const h = d?.hours || 0;
               const active = iso === editDate;
@@ -226,9 +227,19 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
               </span>
             ))}
           </div>
-          <div className="mt-auto flex items-center justify-between border-t border-[var(--line)] pt-3 text-[13px]">
-            <span className="text-[var(--ink-soft)]">{L.awake}</span>
-            <span className="font-bold tabular-nums">{avgAwake !== null ? avgAwake.toFixed(1) : "—"}</span>
+          <div className="mt-auto flex flex-col gap-2.5 border-t border-[var(--line)] pt-3 text-[13px]">
+            <div className="flex items-center justify-between">
+              <span className="text-[var(--ink-soft)]">{L.awake}</span>
+              <span className="font-bold tabular-nums">{avgAwake !== null ? avgAwake.toFixed(1) : "—"}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[var(--ink-soft)]">{L.goal}</span>
+              <span className="flex items-center overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel-2)]">
+                <button onClick={() => setGoal(Math.max(5, goal - 0.5))} className="h-9 w-9 text-base font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--hover)] active:scale-90" aria-label="−">−</button>
+                <span className="w-16 text-center font-bold tabular-nums">{goal.toFixed(1)} {L.unit}</span>
+                <button onClick={() => setGoal(Math.min(11, goal + 0.5))} className="h-9 w-9 text-base font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--hover)] active:scale-90" aria-label="+">+</button>
+              </span>
+            </div>
           </div>
         </div>
       </div>

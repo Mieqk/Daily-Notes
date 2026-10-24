@@ -1,3 +1,4 @@
+import { DiceIcon } from "../icons";
 import { useEffect, useState } from "react";
 import type { Lang } from "../i18n";
 import { todayISO } from "../store";
@@ -92,7 +93,7 @@ export default function FactOfDay({ lang }: { lang: Lang }) {
           aria-label={labels.btn}
           className="ml-auto flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[12px] font-semibold text-[var(--ink-soft)] transition-all duration-150 hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95"
         >
-          🎲 <span className="hidden sm:inline">{labels.btn}</span>
+          <DiceIcon className="h-4 w-4" /> <span className="hidden sm:inline">{labels.btn}</span>
         </button>
       </div>
       {loading ? (

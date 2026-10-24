@@ -203,7 +203,7 @@ export default function SettingsView(props: SettingsViewProps) {
                     <span className="text-[13px] font-bold">{th.name[lang]}</span>
                     {active && <CheckIcon className="animate-checkpop h-3.5 w-3.5 text-[var(--accent)]" />}
                   </span>
-                  <span className="block text-[10.5px] text-[var(--ink-faint)]">{th.desc[lang]}</span>
+                  <span className="block text-[11px] text-[var(--ink-faint)]">{th.desc[lang]}</span>
                 </button>
               );
             })}
@@ -595,7 +595,7 @@ export default function SettingsView(props: SettingsViewProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <AuthScreen embedded onContinueLocally={() => setShowAuthModal(false)} theme={theme} onTheme={onTheme} />
+            <AuthScreen lang={props.lang} embedded onContinueLocally={() => setShowAuthModal(false)} theme={theme} onTheme={onTheme} />
           </div>
         </div>,
         document.body,

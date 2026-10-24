@@ -296,7 +296,7 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
             className={`${card} animate-rise transition-transform duration-200 hover:-translate-y-0.5`}
             style={{ animationDelay: `${i * 50}ms`, boxShadow: "var(--shadow-sm)" }}
           >
-            <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)]">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)]">
               {c.label}
             </div>
             <div className="font-display mt-2 text-[22px] font-bold leading-none">{c.value}</div>
@@ -426,7 +426,7 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
                 <h3 className="text-[15px] font-bold">{t("heatTitle")}</h3>
                 <p className="text-xs text-[var(--ink-faint)]">{t("heatSub")}</p>
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">
                 <span className="h-2.5 w-2.5 rounded-[3px] bg-[var(--hover)]" />
                 {[25, 50, 75, 100].map((p) => (
                   <span

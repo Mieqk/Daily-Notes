@@ -134,7 +134,7 @@ function MiniCalendar({
         {weekdays.map((w) => (
           <span
             key={w}
-            className="grid h-5 place-items-center text-[10px] font-bold uppercase tracking-wide text-[var(--ink-faint)]"
+            className="grid h-5 place-items-center text-[11px] font-bold uppercase tracking-wide text-[var(--ink-faint)]"
           >
             {w}
           </span>
@@ -410,7 +410,7 @@ export default function Sidebar({
             />
           ))}
         </div>
-        <div className="mt-1.5 hidden text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)] lg:block">
+        <div className="mt-1.5 hidden text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)] lg:block">
           {t("weekLabel")}
         </div>
       </div>

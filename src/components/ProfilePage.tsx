@@ -4,7 +4,7 @@ import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { prepareImage } from "../lib/images";
-import { ArrowLeftIcon } from "../icons";
+import { ArrowLeftIcon, FlameIcon, NotebookIcon } from "../icons";
 
 interface ProfilePageProps {
   viewerId: string;
@@ -187,7 +187,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
 
   const statusPill = (pr: Profile | null, big?: boolean) =>
     pr?.status_emoji || pr?.status_text ? (
-      <span className={`inline-flex max-w-full items-center gap-1.5 truncate rounded-full bg-[var(--accent-soft)] font-semibold text-[var(--accent-deep)] ${big ? "px-3 py-1 text-[12.5px]" : "px-2 py-0.5 text-[10.5px]"}`}>
+      <span className={`inline-flex max-w-full items-center gap-1.5 truncate rounded-full bg-[var(--accent-soft)] font-semibold text-[var(--accent-deep)] ${big ? "px-3 py-1 text-[12.5px]" : "px-2 py-0.5 text-[11px]"}`}>
         {pr.status_emoji && <span className="shrink-0">{pr.status_emoji}</span>}
         {pr.status_text && <span className="truncate">{pr.status_text}</span>}
       </span>
@@ -276,7 +276,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 {statusPill(p)}
                 {badges.map((b) => (
-                  <span key={b.icon} title={b.label} className="flex items-center gap-1 rounded-full bg-[var(--hover)] px-2 py-0.5 text-[10.5px] font-semibold text-[var(--ink-soft)]">
+                  <span key={b.icon} title={b.label} className="flex items-center gap-1 rounded-full bg-[var(--hover)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink-soft)]">
                     <span>{b.icon}</span>{b.label}
                   </span>
                 ))}
@@ -288,7 +288,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
             {/* Редактор аватара (только свой) */}
             {isOwn && avatarEdit && (
               <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("emojiPick")}</div>
+                <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("emojiPick")}</div>
                 <div className="grid grid-cols-6 gap-1">
                   {AVATARS.map((a) => (
                     <button
@@ -324,7 +324,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
             {/* Статус (только свой) */}
             {isOwn && (
               <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-                <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">📡 {t("statusTitle")}</div>
+                <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("statusTitle")}</div>
                 <div className="flex flex-wrap gap-1.5">
                   {PRESETS.map((pr) => {
                     const active = p.status_emoji === pr.e && p.status_text === t(pr.k);
@@ -380,7 +380,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
                     className="w-full resize-none rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]"
                   />
                   <div className="mt-1 flex items-center justify-between">
-                    <span className="text-[10.5px] tabular-nums text-[var(--ink-faint)]">{bioDraft.length}/{BIO_MAX}</span>
+                    <span className="text-[11px] tabular-nums text-[var(--ink-faint)]">{bioDraft.length}/{BIO_MAX}</span>
                     <span className="flex gap-1.5">
                       <button onClick={() => setBioEdit(false)} className="h-8 rounded-lg border border-[var(--line)] px-3 text-[11.5px] font-semibold text-[var(--ink-faint)] transition-colors hover:bg-[var(--hover)]">
                         {t("cancel")}
@@ -416,8 +416,8 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
                     </button>
                   </div>
                   <div className="flex items-center gap-5 text-[14px] font-semibold">
-                    <span>🔥 {streak} {t("streak")}</span>
-                    <span>📝 {notesCount} {t("notes")}</span>
+                    <span className="flex items-center gap-1.5"><FlameIcon className="h-4 w-4 text-[var(--accent)]" />{streak} {t("streak")}</span>
+                    <span className="flex items-center gap-1.5"><NotebookIcon className="h-4 w-4 text-[var(--accent)]" />{notesCount} {t("notes")}</span>
                   </div>
                 </>
               ) : (

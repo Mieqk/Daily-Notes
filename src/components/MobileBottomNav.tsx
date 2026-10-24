@@ -38,7 +38,7 @@ export default function MobileBottomNav({ tab, onTab, t }: MobileBottomNavProps)
               style={active ? { boxShadow: "var(--shadow-sm)" } : undefined}
             >
               <Icon className="h-5 w-5" />
-              <span className="max-w-full truncate text-[10.5px] font-medium tracking-tight">{label}</span>
+              <span className={`max-w-full truncate text-[11px] font-medium tracking-tight ${active ? "" : "max-[379px]:hidden"}`}>{label}</span>
             </button>
           );
         })}

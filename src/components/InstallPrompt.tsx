@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import type { Lang } from '../i18n';
+import { makeUI } from '../ui-strings';
 
-const InstallPrompt: React.FC = () => {
+const InstallPrompt: React.FC<{ lang: Lang }> = ({ lang }) => {
+  const u = makeUI(lang);
   const [showPrompt, setShowPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
@@ -76,10 +79,10 @@ const InstallPrompt: React.FC = () => {
     >
       <div style={{ flex: 1 }}>
         <p style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>
-          Установить Daily Note
+          {u('installTitle')}
         </p>
         <p style={{ margin: '4px 0 0', fontSize: '12px', opacity: 0.9 }}>
-          Быстрый доступ к вашему дневнику
+          {u('installSub')}
         </p>
       </div>
       <button
@@ -96,7 +99,7 @@ const InstallPrompt: React.FC = () => {
           whiteSpace: 'nowrap',
         }}
       >
-        Установить
+        {u('install')}
       </button>
       <button
         onClick={handleClose}
@@ -109,7 +112,7 @@ const InstallPrompt: React.FC = () => {
           padding: '4px 8px',
           opacity: 0.8,
         }}
-        aria-label="Закрыть"
+        aria-label={u('close')}
       >
         ×
       </button>

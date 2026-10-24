@@ -1,3 +1,4 @@
+import { FlameIcon, NotebookIcon } from "../icons";
 import { useEffect, useState } from "react";
 import type { Lang } from "../i18n";
 import { supabase } from "../lib/supabase";
@@ -146,10 +147,10 @@ export default function AccountMenu({ userId, lang, streak, notesCount, hasPin, 
 
             {/* Сводка */}
             <div className="mt-4 rounded-lg bg-[var(--hover)] px-3 py-2.5">
-              <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)]">📊 {t("info")}</div>
+              <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)]">{t("info")}</div>
               <div className="flex items-center gap-4 text-[13px] font-semibold">
-                <span>🔥 {streak} {t("streak")}</span>
-                <span>📝 {notesCount} {t("notes")}</span>
+                <span className="flex items-center gap-1.5"><FlameIcon className="h-4 w-4" />{streak} {t("streak")}</span>
+                <span className="flex items-center gap-1.5"><NotebookIcon className="h-4 w-4" />{notesCount} {t("notes")}</span>
               </div>
             </div>
 

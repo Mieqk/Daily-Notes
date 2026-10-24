@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import type { Lang, TKey } from "./i18n";
 import { STRINGS, localeOf } from "./i18n";
+import { makeUI } from "./ui-strings";
 import type { ThemeId } from "./themes";
 import type { BgId, Tab, Task, SleepData, WritingFontId } from "./store";
 import { buildMarkdown, downloadText, hashPin, shiftISO, toISO, todayISO, useNow, useStored } from "./store";
@@ -42,6 +43,7 @@ export default function App() {
   const [tab, setTab] = useStored<Tab>("dn.tab", "daily");
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
   const [lang, setLang] = useStored<Lang>("dn.lang", "ru");
+  const u = makeUI(lang);
   const [fontScale, setFontScale] = useStored<number>("dn.font", 1);
   const [notes, setNotes] = useStored<Record<string, string>>("dn.notes", {});
   const [tasks, setTasks] = useStored<Record<string, Task[]>>("dn.tasks", {});
@@ -122,7 +124,7 @@ export default function App() {
         } else {
           remoteSnapshot.current = { notes: {}, tasks: {}, moods: {}, tags: {}, photos: {}, sleep: {} };
           initialLoadDone.current = true;
-          showToast('Не удалось загрузить данные с сервера');
+          showToast(u('loadFail'));
         }
       };
 
@@ -297,14 +299,14 @@ export default function App() {
   const clock = now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const dateChip = new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" }).format(now);
 
-  if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-[var(--bg)]"><div className="animate-pulse text-[var(--ink-faint)]">Загрузка...</div></div>;
-  if (showAuth) return <AuthScreen onContinueLocally={() => { setLocalMode(true); setShowAuth(false); }} theme={theme} onTheme={handleThemeChange} />;
+  if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-[var(--bg)]"><div className="animate-pulse text-[var(--ink-faint)]">{makeUI(lang)('loading')}</div></div>;
+  if (showAuth) return <AuthScreen lang={lang} onContinueLocally={() => { setLocalMode(true); setShowAuth(false); }} theme={theme} onTheme={handleThemeChange} />;
 
   const syncBadge = userId ? (
-    syncStatus === 'syncing' ? <span className="hidden items-center gap-1.5 rounded-full border sm:flex border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />Синхронизация...</span> :
-    syncStatus === 'error' ? <span className="hidden items-center gap-1.5 rounded-full border sm:flex border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-semibold text-red-400">Ошибка</span> :
-    <span className="hidden items-center gap-1.5 rounded-full border sm:flex border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]"><span className="h-1.5 w-1.5 rounded-full bg-green-500" />Синхронизировано</span>
-  ) : <span className="hidden items-center gap-1.5 rounded-full border sm:flex border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[10px] font-semibold text-[var(--ink-soft)]"><span className="h-1.5 w-1.5 rounded-full bg-[var(--ink-faint)]" />Локально</span>;
+    syncStatus === 'syncing' ? <span className="hidden items-center gap-1.5 rounded-full border sm:flex border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-soft)]"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />Синхронизация...</span> :
+    syncStatus === 'error' ? <span className="hidden items-center gap-1.5 rounded-full border sm:flex border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[11px] font-semibold text-red-400">{u('syncError')}</span> :
+    <span className="hidden items-center gap-1.5 rounded-full border sm:flex border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-soft)]"><span className="h-1.5 w-1.5 rounded-full bg-green-500" />Синхронизировано</span>
+  ) : <span className="hidden items-center gap-1.5 rounded-full border sm:flex border-[var(--line)] bg-[var(--panel)] px-2.5 py-1 text-[11px] font-semibold text-[var(--ink-soft)]"><span className="h-1.5 w-1.5 rounded-full bg-[var(--ink-faint)]" />Локально</span>;
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden overscroll-none bg-[var(--bg)] text-[var(--ink)] md:flex-row">
@@ -361,7 +363,7 @@ export default function App() {
         </div>
       )}
       <MobileBottomNav tab={tab} onTab={setTab} t={t} />
-      <InstallPrompt />
+      <InstallPrompt lang={lang} />
     </div>
   );
 }
