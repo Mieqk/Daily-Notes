@@ -112,9 +112,10 @@ export default async function handler(req, res) {
   const out = await generateText(key, prompt, {
     temperature: 0.6,
     maxOutputTokens: 4096,
+    thinkingConfig: { thinkingBudget: 0 },
     responseMimeType: "application/json",
     responseSchema: SCHEMAS[mode],
-  }, diag);
+  }, diag, { timeoutMs: 20_000, deadlineMs: 40_000 });
   if (!out) return res.status(500).json({ error: "ai failed", detail: diag.join(" | ").slice(0, 400) });
 
   const parsed = parseReply(out.text, mode);

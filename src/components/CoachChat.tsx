@@ -43,7 +43,7 @@ interface Props {
 
 export default function CoachChat({ mode, lang, context, onApply }: Props) {
   const l = (L[mode][lang] ?? L[mode].en);
-  const [on, setOn] = useStored<boolean>(mode === "food" ? "dn.aiFood" : "dn.aiWorkout", false);
+  const [on, setOn] = useStored<boolean>(mode === "food" ? "dn.coachFood" : "dn.coachWorkout", false);
   const [msgs, setMsgs] = useStored<Msg[]>(`dn.coach.${mode}`, []);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -61,16 +61,21 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
     setBusy(true);
     setError(null);
     try {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 45_000);
       const r = await fetch("/api/coach", {
+        signal: ctl.signal,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lang, mode, context, messages: next.slice(-14).map((m) => ({ role: m.role, text: m.text })) }),
       });
+      clearTimeout(timer);
       const d = await r.json().catch(() => ({}));
       if (!r.ok || typeof d?.reply !== "string") throw Object.assign(new Error("bad"), { detail: d?.detail || `HTTP ${r.status}` });
       setMsgs([...next, { id: uid(), role: "assistant" as const, text: d.reply, items: Array.isArray(d.items) && d.items.length ? d.items : undefined }].slice(-40));
     } catch (e) {
-      setError({ msg: l.err, detail: (e as { detail?: string }).detail });
+      const err = e as { detail?: string; name?: string };
+      setError({ msg: l.err, detail: err.name === "AbortError" ? "timeout" : err.detail });
     } finally {
       setBusy(false);
     }
