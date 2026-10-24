@@ -20,20 +20,28 @@ async function listFlashModels(key, version) {
   }
 }
 
+// Новее — раньше, полные модели раньше lite; неизвестные имена в конец
+const rank = (name) => {
+  const m = /^gemini-(\d+(?:\.\d+)?)-flash(-lite)?(?:-\d+)?$/.exec(name);
+  return m ? parseFloat(m[1]) * 100 - (m[2] ? 1000 : 0) : -Infinity;
+};
+const deadModels = new Set(); // модели, ответившие 404 (отключены): пропускаем до перезапуска функции
+
 // diag — необязательный массив: сюда попадают причины отказов моделей (без ключа и данных пользователя).
 // opts.timeoutMs — предел на один запрос к модели, opts.deadlineMs — предел на всю попытку со сменой моделей.
 export async function generateText(key, prompt, generationConfig = {}, diag = [], opts = {}) {
   const errors = diag;
   const started = Date.now();
   const { timeoutMs = 25_000, deadlineMs = 50_000 } = opts;
-  const PREFERRED = ["gemini-3.6-flash", "gemini-flash-latest"];
   let version = "v1beta";
   let dynamic = await listFlashModels(key, version);
   if (!dynamic.length) {
     version = "v1";
     dynamic = await listFlashModels(key, version);
   }
-  const models = [...PREFERRED, ...dynamic.filter((m) => !PREFERRED.includes(m))].slice(0, 4);
+  const sorted = [...dynamic].sort((a, b) => rank(b) - rank(a)).filter((m) => !deadModels.has(m));
+  const fallback = ["gemini-3.8-flash", "gemini-3.6-flash"].filter((m) => !deadModels.has(m));
+  const models = [...(sorted.length ? sorted.slice(0, 3) : fallback), "gemini-flash-latest"].filter((m, i, a) => a.indexOf(m) === i);
 
   const call = async (model, config) => {
     const r = await fetch(`${BASE}/${version}/models/${model}:generateContent`, {
@@ -58,6 +66,7 @@ export async function generateText(key, prompt, generationConfig = {}, diag = []
         ({ r, data } = await call(model, rest));
       }
       if (!r.ok) {
+        if (r.status === 404 && model !== "gemini-flash-latest") deadModels.add(model);
         errors.push(`${model}: HTTP ${r.status} — ${data?.error?.message || "unknown"}`);
         continue;
       }

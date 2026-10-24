@@ -88,7 +88,14 @@ export default async function handler(req, res) {
   const context = clean(body.context, 900);
   const messages = (Array.isArray(body.messages) ? body.messages : [])
     .slice(-14)
-    .map((m) => ({ role: m?.role === "assistant" ? "Assistant" : "User", text: clean(m?.text, 600) }))
+    .map((m) => {
+      const role = m?.role === "assistant" ? "Assistant" : "User";
+      // что помощник уже предлагал: без этого он повторяет прежние упражнения и блюда
+      const proposed = role === "Assistant" && Array.isArray(m?.items)
+        ? m.items.slice(0, 12).map((x) => clean(x?.name, 60)).filter(Boolean).join("; ")
+        : "";
+      return { role, text: clean(m?.text, 600) + (proposed ? ` [items you already proposed: ${proposed}]` : "") };
+    })
     .filter((m) => m.text);
   if (!messages.length || messages[messages.length - 1].role !== "User") return res.status(400).json({ error: "empty" });
 
@@ -103,6 +110,7 @@ export default async function handler(req, res) {
   const prompt =
     `${persona} Talk like a helpful human coach: warm, direct, short (usually 2 to 5 sentences), no headings or markdown. Ask one clarifying question when you really need it (goal, level, equipment, time, injuries). ` +
     `Do not diagnose or give medical advice; for pain, injury or health conditions suggest seeing a professional. Never invent facts about the user. Always reply in ${LANG_NAMES[lang]}.\n` +
+    `Move the conversation forward: never repeat or merely reword something you already said or proposed earlier in this conversation (check the "items you already proposed" notes). If the user asks for something new, different or harder, propose genuinely different ${mode === "food" ? "foods or meals" : "exercises, structure or training method"}. Do not end every message with a question; ask only when the answer would change your advice.\n` +
     `${itemsRule}\n` +
     `Reply with ONLY a JSON object {"reply": string, "items": array}.\n` +
     (context ? `Today's summary from the app: ${context}\n` : "") +
@@ -110,7 +118,7 @@ export default async function handler(req, res) {
 
   const diag = [];
   const out = await generateText(key, prompt, {
-    temperature: 0.6,
+    temperature: 0.9,
     maxOutputTokens: 4096,
     thinkingConfig: { thinkingBudget: 0 },
     responseMimeType: "application/json",

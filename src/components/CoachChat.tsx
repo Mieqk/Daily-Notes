@@ -67,7 +67,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
         signal: ctl.signal,
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lang, mode, context, messages: next.slice(-14).map((m) => ({ role: m.role, text: m.text })) }),
+        body: JSON.stringify({ lang, mode, context, messages: next.slice(-14).map((m) => ({ role: m.role, text: m.text, items: m.items?.map((it) => ({ name: it.name })) })) }),
       });
       clearTimeout(timer);
       const d = await r.json().catch(() => ({}));
