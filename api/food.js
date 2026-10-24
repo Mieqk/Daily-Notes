@@ -20,7 +20,7 @@ function tooMany(ip) {
 const LANG_NAMES = { ru: "Russian", en: "English", be: "Belarusian", uk: "Ukrainian", de: "German", fr: "French", es: "Spanish" };
 
 const num = (v, min, max, digits = 1) => {
-  const n = typeof v === "string" ? Number(v.replace(",", ".")) : v;
+  const n = typeof v === "string" ? parseFloat(v.replace(",", ".")) : v;
   if (typeof n !== "number" || !Number.isFinite(n)) return null;
   const f = 10 ** digits;
   return Math.round(Math.max(min, Math.min(max, n)) * f) / f;
@@ -77,11 +77,26 @@ export default async function handler(req, res) {
     `If the text is not about food, reply [].\n` +
     `User text: ${JSON.stringify(text)}`;
 
-  const out = await generateText(key, prompt, { temperature: 0.2, maxOutputTokens: 800 });
+  const out = await generateText(key, prompt, {
+    temperature: 0.2,
+    maxOutputTokens: 2048,
+    responseMimeType: "application/json",
+    responseSchema: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: { name: { type: "STRING" }, grams: { type: "NUMBER" }, kcal: { type: "NUMBER" }, protein: { type: "NUMBER" }, fat: { type: "NUMBER" }, carbs: { type: "NUMBER" } },
+        required: ["name", "grams", "kcal", "protein", "fat", "carbs"],
+      },
+    },
+  });
   if (!out) return res.status(500).json({ error: "ai failed" });
 
   const items = parseItems(out.text);
-  if (!items.length) return res.status(422).json({ error: "nothing recognised" });
+  if (!items.length) {
+    console.error("food: unparseable model reply", out.model, out.text.slice(0, 300));
+    return res.status(422).json({ error: "nothing recognised" });
+  }
 
   res.setHeader("Cache-Control", "no-store");
   return res.json({ items, model: out.model });

@@ -9,14 +9,14 @@ interface Food extends Per100 { id: string; name: string; grams: number }
 interface Entry { id: string; name: string; grams: number; per100: Per100 }
 
 const L: Record<string, {
-  today: string; goal: string; kcal: string; p: string; f: string; c: string; left: string; over: string;
+  today: string; more: string; calc: string; goal: string; kcal: string; p: string; f: string; c: string; left: string; over: string;
   quick: string; quickEmpty: string; add: string; newFood: string; name: string; per100: string; portion: string; save: string; cancel: string;
   logTitle: string; logEmpty: string; g: string;
   aiTitle: string; aiHint: string; aiWarn: string; aiEnable: string; aiDisable: string; aiPh: string; aiRun: string; aiLoading: string; aiErr: string; aiNote: string;
   ioTitle: string; ioHint: string; copyPrompt: string; copied: string; export: string; importPh: string; importBtn: string; imported: string; importErr: string; prompt: string;
 }> = {
   ru: {
-    today: "Сегодня", goal: "Цель, ккал", kcal: "ккал", p: "Белки", f: "Жиры", c: "Углеводы", left: "Осталось", over: "Перебор",
+    today: "Сегодня", more: "Ещё", calc: "Посчитать", goal: "Цель, ккал", kcal: "ккал", p: "Белки", f: "Жиры", c: "Углеводы", left: "Осталось", over: "Перебор",
     quick: "Мои продукты и блюда", quickEmpty: "Пока пусто. Добавьте продукт или блюдо один раз, дальше он вносится в день одним нажатием.", add: "Нажмите, чтобы добавить в день", newFood: "Новый продукт или блюдо", name: "Название", per100: "На 100 г", portion: "Обычная порция, г", save: "Сохранить", cancel: "Отмена",
     logTitle: "Съедено", logEmpty: "Ничего не добавлено. Нажмите на продукт выше или опишите еду для ИИ.", g: "г",
     aiTitle: "Добавить с помощью ИИ", aiHint: "Опишите, что съели, и ИИ посчитает КБЖУ.", aiWarn: "В Google Gemini уйдёт только текст, который вы здесь введёте. Записи дневника и личные данные не отправляются. Функция выключена, пока вы её не включите.", aiEnable: "Включить и разрешить отправку", aiDisable: "Выключить", aiPh: "Например: куриная грудка 150 г, гречка 200 г, яблоко", aiRun: "Посчитать и добавить", aiLoading: "ИИ считает…", aiErr: "Не получилось распознать. Попробуйте описать иначе.", aiNote: "Значения приблизительные. Добавленное можно поправить по граммам.",
@@ -24,7 +24,7 @@ const L: Record<string, {
     prompt: "Ты калькулятор питания. Я пришлю список еды. Ответь ТОЛЬКО JSON-массивом без пояснений и без markdown. Для каждого продукта или блюда объект: {\"name\": \"название\", \"kcal\": ккал на 100 г, \"protein\": белки г на 100 г, \"fat\": жиры г на 100 г, \"carbs\": углеводы г на 100 г, \"grams\": обычная порция в граммах}. Мой список еды:\n",
   },
   en: {
-    today: "Today", goal: "Goal, kcal", kcal: "kcal", p: "Protein", f: "Fat", c: "Carbs", left: "Left", over: "Over",
+    today: "Today", more: "More", calc: "Calculate", goal: "Goal, kcal", kcal: "kcal", p: "Protein", f: "Fat", c: "Carbs", left: "Left", over: "Over",
     quick: "My foods and dishes", quickEmpty: "Nothing yet. Add a food or dish once, then log it in one tap.", add: "Tap to add to the day", newFood: "New food or dish", name: "Name", per100: "Per 100 g", portion: "Usual portion, g", save: "Save", cancel: "Cancel",
     logTitle: "Eaten", logEmpty: "Nothing logged. Tap a food above or describe your meal to the AI.", g: "g",
     aiTitle: "Add with AI", aiHint: "Describe what you ate and the AI works out the macros.", aiWarn: "Only the text you type here is sent to Google Gemini. Your diary entries and personal data are never sent. This stays off until you turn it on.", aiEnable: "Turn on and allow sending", aiDisable: "Turn off", aiPh: "E.g. chicken breast 150 g, buckwheat 200 g, an apple", aiRun: "Calculate and add", aiLoading: "AI is calculating…", aiErr: "Couldn't recognise that. Try describing it differently.", aiNote: "Values are approximate. You can adjust grams afterwards.",
@@ -32,7 +32,7 @@ const L: Record<string, {
     prompt: "You are a nutrition calculator. I will send a list of foods. Reply with ONLY a JSON array, no explanations and no markdown. For each food or dish one object: {\"name\": \"name\", \"kcal\": kcal per 100 g, \"protein\": protein g per 100 g, \"fat\": fat g per 100 g, \"carbs\": carbs g per 100 g, \"grams\": usual portion in grams}. My food list:\n",
   },
   be: {
-    today: "Сёння", goal: "Мэта, ккал", kcal: "ккал", p: "Бялкі", f: "Тлушчы", c: "Вуглявады", left: "Засталося", over: "Перабор",
+    today: "Сёння", more: "Яшчэ", calc: "Падлічыць", goal: "Мэта, ккал", kcal: "ккал", p: "Бялкі", f: "Тлушчы", c: "Вуглявады", left: "Засталося", over: "Перабор",
     quick: "Мае прадукты і стравы", quickEmpty: "Пакуль пуста. Дадайце прадукт або страву адзін раз, далей яна ўносіцца ў дзень адным націскам.", add: "Націсніце, каб дадаць у дзень", newFood: "Новы прадукт або страва", name: "Назва", per100: "На 100 г", portion: "Звычайная порцыя, г", save: "Захаваць", cancel: "Скасаваць",
     logTitle: "З'едзена", logEmpty: "Нічога не дададзена. Націсніце на прадукт вышэй або апішыце ежу для ШІ.", g: "г",
     aiTitle: "Дадаць з дапамогай ШІ", aiHint: "Апішыце, што з'елі, і ШІ падлічыць КБЖУ.", aiWarn: "У Google Gemini пойдзе толькі тэкст, які вы тут увядзяце. Запісы дзённіка і асабістыя даныя не адпраўляюцца. Функцыя выключана, пакуль вы яе не ўключыце.", aiEnable: "Уключыць і дазволіць адпраўку", aiDisable: "Выключыць", aiPh: "Напрыклад: куриная грудка 150 г, грэчка 200 г, яблык", aiRun: "Падлічыць і дадаць", aiLoading: "ШІ лічыць…", aiErr: "Не атрымалася распазнаць. Паспрабуйце апісаць інакш.", aiNote: "Значэнні прыблізныя. Дададзенае можна паправіць па грамах.",
@@ -40,7 +40,7 @@ const L: Record<string, {
     prompt: "Ты калькулятар харчавання. Я дашлю спіс ежы. Адкажы ТОЛЬКІ JSON-масівам без тлумачэнняў і без markdown. Для кожнага прадукту або стравы аб'ект: {\"name\": \"назва\", \"kcal\": ккал на 100 г, \"protein\": бялкі г на 100 г, \"fat\": тлушчы г на 100 г, \"carbs\": вуглявады г на 100 г, \"grams\": звычайная порцыя ў грамах}. Мой спіс ежы:\n",
   },
   uk: {
-    today: "Сьогодні", goal: "Мета, ккал", kcal: "ккал", p: "Білки", f: "Жири", c: "Вуглеводи", left: "Залишилось", over: "Перебір",
+    today: "Сьогодні", more: "Ще", calc: "Порахувати", goal: "Мета, ккал", kcal: "ккал", p: "Білки", f: "Жири", c: "Вуглеводи", left: "Залишилось", over: "Перебір",
     quick: "Мої продукти й страви", quickEmpty: "Поки порожньо. Додайте продукт або страву один раз, далі вона вноситься в день одним дотиком.", add: "Торкніться, щоб додати в день", newFood: "Новий продукт або страва", name: "Назва", per100: "На 100 г", portion: "Звична порція, г", save: "Зберегти", cancel: "Скасувати",
     logTitle: "З'їдено", logEmpty: "Нічого не додано. Торкніться продукту вище або опишіть їжу для ШІ.", g: "г",
     aiTitle: "Додати за допомогою ШІ", aiHint: "Опишіть, що з'їли, і ШІ порахує КБЖВ.", aiWarn: "До Google Gemini піде лише текст, який ви тут введете. Записи щоденника й особисті дані не надсилаються. Функція вимкнена, доки ви її не ввімкнете.", aiEnable: "Увімкнути й дозволити надсилання", aiDisable: "Вимкнути", aiPh: "Наприклад: куряча грудка 150 г, гречка 200 г, яблуко", aiRun: "Порахувати й додати", aiLoading: "ШІ рахує…", aiErr: "Не вдалося розпізнати. Спробуйте описати інакше.", aiNote: "Значення приблизні. Додане можна поправити за грамами.",
@@ -48,7 +48,7 @@ const L: Record<string, {
     prompt: "Ти калькулятор харчування. Я надішлю список їжі. Відповідай ЛИШЕ JSON-масивом без пояснень і без markdown. Для кожного продукту чи страви об'єкт: {\"name\": \"назва\", \"kcal\": ккал на 100 г, \"protein\": білки г на 100 г, \"fat\": жири г на 100 г, \"carbs\": вуглеводи г на 100 г, \"grams\": звична порція в грамах}. Мій список їжі:\n",
   },
   de: {
-    today: "Heute", goal: "Ziel, kcal", kcal: "kcal", p: "Eiweiß", f: "Fett", c: "Kohlenhydrate", left: "Übrig", over: "Drüber",
+    today: "Heute", more: "Mehr", calc: "Berechnen", goal: "Ziel, kcal", kcal: "kcal", p: "Eiweiß", f: "Fett", c: "Kohlenhydrate", left: "Übrig", over: "Drüber",
     quick: "Meine Lebensmittel und Gerichte", quickEmpty: "Noch leer. Legen Sie ein Lebensmittel oder Gericht einmal an, danach tragen Sie es mit einem Tipp ein.", add: "Tippen, um zum Tag hinzuzufügen", newFood: "Neues Lebensmittel oder Gericht", name: "Name", per100: "Pro 100 g", portion: "Übliche Portion, g", save: "Speichern", cancel: "Abbrechen",
     logTitle: "Gegessen", logEmpty: "Nichts eingetragen. Tippen Sie oben auf ein Lebensmittel oder beschreiben Sie Ihr Essen der KI.", g: "g",
     aiTitle: "Mit KI hinzufügen", aiHint: "Beschreiben Sie, was Sie gegessen haben, und die KI berechnet die Makros.", aiWarn: "Nur der hier eingegebene Text wird an Google Gemini gesendet. Tagebucheinträge und persönliche Daten werden nie gesendet. Die Funktion bleibt aus, bis Sie sie einschalten.", aiEnable: "Einschalten und Senden erlauben", aiDisable: "Ausschalten", aiPh: "Z. B.: Hähnchenbrust 150 g, Buchweizen 200 g, ein Apfel", aiRun: "Berechnen und hinzufügen", aiLoading: "KI rechnet…", aiErr: "Das konnte nicht erkannt werden. Beschreiben Sie es anders.", aiNote: "Die Werte sind ungefähr. Die Gramm lassen sich danach anpassen.",
@@ -56,7 +56,7 @@ const L: Record<string, {
     prompt: "Du bist ein Ernährungsrechner. Ich sende eine Liste von Lebensmitteln. Antworte NUR mit einem JSON-Array, ohne Erklärungen und ohne Markdown. Pro Lebensmittel oder Gericht ein Objekt: {\"name\": \"Name\", \"kcal\": kcal pro 100 g, \"protein\": Eiweiß g pro 100 g, \"fat\": Fett g pro 100 g, \"carbs\": Kohlenhydrate g pro 100 g, \"grams\": übliche Portion in Gramm}. Meine Liste:\n",
   },
   fr: {
-    today: "Aujourd’hui", goal: "Objectif, kcal", kcal: "kcal", p: "Protéines", f: "Lipides", c: "Glucides", left: "Reste", over: "En trop",
+    today: "Aujourd’hui", more: "Plus", calc: "Calculer", goal: "Objectif, kcal", kcal: "kcal", p: "Protéines", f: "Lipides", c: "Glucides", left: "Reste", over: "En trop",
     quick: "Mes aliments et plats", quickEmpty: "Rien pour l’instant. Ajoute un aliment ou un plat une fois, puis saisis-le en un geste.", add: "Touche pour ajouter à la journée", newFood: "Nouvel aliment ou plat", name: "Nom", per100: "Pour 100 g", portion: "Portion habituelle, g", save: "Enregistrer", cancel: "Annuler",
     logTitle: "Mangé", logEmpty: "Rien d’ajouté. Touche un aliment ci-dessus ou décris ton repas à l’IA.", g: "g",
     aiTitle: "Ajouter avec l’IA", aiHint: "Décris ce que tu as mangé et l’IA calcule les macros.", aiWarn: "Seul le texte saisi ici est envoyé à Google Gemini. Tes notes de journal et tes données personnelles ne sont jamais envoyées. La fonction reste désactivée tant que tu ne l’actives pas.", aiEnable: "Activer et autoriser l’envoi", aiDisable: "Désactiver", aiPh: "Ex. : poulet 150 g, sarrasin 200 g, une pomme", aiRun: "Calculer et ajouter", aiLoading: "L’IA calcule…", aiErr: "Impossible de reconnaître cela. Essaie de le décrire autrement.", aiNote: "Valeurs approximatives. Tu peux ajuster les grammes ensuite.",
@@ -64,7 +64,7 @@ const L: Record<string, {
     prompt: "Tu es un calculateur de nutrition. Je t’envoie une liste d’aliments. Réponds UNIQUEMENT par un tableau JSON, sans explication ni markdown. Pour chaque aliment ou plat un objet : {\"name\": \"nom\", \"kcal\": kcal pour 100 g, \"protein\": protéines g pour 100 g, \"fat\": lipides g pour 100 g, \"carbs\": glucides g pour 100 g, \"grams\": portion habituelle en grammes}. Ma liste :\n",
   },
   es: {
-    today: "Hoy", goal: "Meta, kcal", kcal: "kcal", p: "Proteínas", f: "Grasas", c: "Carbohidratos", left: "Quedan", over: "Exceso",
+    today: "Hoy", more: "Más", calc: "Calcular", goal: "Meta, kcal", kcal: "kcal", p: "Proteínas", f: "Grasas", c: "Carbohidratos", left: "Quedan", over: "Exceso",
     quick: "Mis alimentos y platos", quickEmpty: "Aún no hay nada. Añade un alimento o plato una vez y luego regístralo con un toque.", add: "Toca para añadir al día", newFood: "Nuevo alimento o plato", name: "Nombre", per100: "Por 100 g", portion: "Porción habitual, g", save: "Guardar", cancel: "Cancelar",
     logTitle: "Comido", logEmpty: "Nada registrado. Toca un alimento de arriba o describe tu comida a la IA.", g: "g",
     aiTitle: "Añadir con IA", aiHint: "Describe lo que comiste y la IA calcula los macros.", aiWarn: "A Google Gemini solo se envía el texto que escribas aquí. Nunca se envían tus entradas del diario ni datos personales. Se mantiene desactivado hasta que lo actives.", aiEnable: "Activar y permitir el envío", aiDisable: "Desactivar", aiPh: "Ej.: pechuga de pollo 150 g, trigo sarraceno 200 g, una manzana", aiRun: "Calcular y añadir", aiLoading: "La IA está calculando…", aiErr: "No se pudo reconocer. Prueba a describirlo de otra forma.", aiNote: "Los valores son aproximados. Después puedes ajustar los gramos.",
@@ -107,7 +107,7 @@ function parseFoodJson(text: string): Food[] {
 
 const inputCls = "h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-[13px] text-[var(--ink)] outline-none focus:border-[var(--accent)]";
 const btnCls = "flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[12px] font-semibold text-[var(--ink-soft)] transition-all duration-150 hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95 disabled:opacity-60";
-const cardCls = "mb-5 flex flex-col gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4";
+const primaryCls = "flex h-11 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] px-4 text-[13px] font-bold text-[var(--accent-ink)] transition-all duration-150 active:scale-95 disabled:opacity-50";
 
 export default function NutritionView({ lang }: { lang: Lang }) {
   const l = L[lang] ?? L.en;
@@ -121,6 +121,7 @@ export default function NutritionView({ lang }: { lang: Lang }) {
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [askConsent, setAskConsent] = useState(false);
   const [importText, setImportText] = useState("");
 
   const entries = log[date] ?? [];
@@ -153,9 +154,10 @@ export default function NutritionView({ lang }: { lang: Lang }) {
     setAdding(false);
   };
 
-  const runAi = async () => {
+  const runAi = async (consented = false) => {
     const text = aiText.trim();
     if (!text) return;
+    if (!aiOn && consented !== true) { setAskConsent(true); return; }
     setAiLoading(true);
     setMsg(null);
     try {
@@ -199,12 +201,6 @@ export default function NutritionView({ lang }: { lang: Lang }) {
   };
 
   const dateLabel = date === todayISO() ? l.today : new Intl.DateTimeFormat(localeOf(lang), { weekday: "short", day: "numeric", month: "short" }).format(fromISO(date));
-  const macro = (label: string, v: number) => (
-    <div className="flex-1 rounded-lg bg-[var(--panel-2)] px-3 py-2 text-center">
-      <div className="text-[15px] font-bold">{round1(v)}</div>
-      <div className="text-[11px] text-[var(--ink-faint)]">{label}</div>
-    </div>
-  );
   const field = (key: keyof typeof form, label: string, numeric = true) => (
     <label className="flex flex-col gap-1 text-[11px] font-semibold text-[var(--ink-faint)]">
       {label}
@@ -213,115 +209,112 @@ export default function NutritionView({ lang }: { lang: Lang }) {
   );
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="mx-auto flex max-w-xl flex-col gap-6">
+      <div className="flex items-center justify-between">
         <button onClick={() => setDate(shiftISO(date, -1))} className={btnCls} aria-label="‹"><ArrowLeftIcon className="h-4 w-4" /></button>
         <span className="text-[15px] font-bold">{dateLabel}</span>
         <button onClick={() => setDate(shiftISO(date, 1))} className={btnCls} aria-label="›"><ArrowRightIcon className="h-4 w-4" /></button>
       </div>
 
-      <div className={cardCls} style={{ boxShadow: "var(--shadow-sm)" }}>
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <div className="text-[28px] font-extrabold leading-none">{total.kcal}<span className="ml-1 text-[13px] font-semibold text-[var(--ink-faint)]">/ {safeGoal} {l.kcal}</span></div>
-            <div className={`mt-1 text-[12px] font-semibold ${diff < 0 ? "text-red-400" : "text-[var(--ink-soft)]"}`}>{diff < 0 ? `${l.over}: ${-diff}` : `${l.left}: ${diff}`} {l.kcal}</div>
+      <section className="flex flex-col gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5" style={{ boxShadow: "var(--shadow-sm)" }}>
+        <div className="flex items-baseline justify-between gap-3">
+          <div className="text-[32px] font-extrabold leading-none">{total.kcal}<span className="ml-1.5 text-[13px] font-semibold text-[var(--ink-faint)]">/ {safeGoal} {l.kcal}</span></div>
+          <div className={`text-[12px] font-semibold ${diff < 0 ? "text-red-400" : "text-[var(--ink-soft)]"}`}>{diff < 0 ? `${l.over}: ${-diff}` : `${l.left}: ${diff}`}</div>
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-[var(--panel-2)]"><div className="h-full rounded-full bg-[var(--accent)] transition-all" style={{ width: `${pct}%` }} /></div>
+        <div className="flex justify-between text-[13px]">
+          {([[l.p, total.p], [l.f, total.f], [l.c, total.c]] as const).map(([label, v]) => (
+            <span key={label}><b>{round1(v)}</b> <span className="text-[var(--ink-faint)]">{label}</span></span>
+          ))}
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <input className={`${inputCls} !h-11`} value={aiText} maxLength={400} placeholder={l.aiPh} onChange={(e) => setAiText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") runAi(); }} />
+          <button onClick={() => runAi()} disabled={aiLoading || !aiText.trim()} className={primaryCls}>{aiLoading ? "…" : l.calc}</button>
+        </div>
+        {askConsent && !aiOn && (
+          <div className="flex flex-col gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel)] p-3">
+            <p className="text-[12px] leading-relaxed text-[var(--ink-soft)]">{l.aiWarn}</p>
+            <button onClick={() => { setAiOn(true); setAskConsent(false); runAi(true); }} className={`${primaryCls} self-start`}>{l.aiEnable}</button>
           </div>
-          <label className="flex w-28 flex-col gap-1 text-[11px] font-semibold text-[var(--ink-faint)]">
+        )}
+        {msg && <p className="text-[12.5px] font-semibold text-[var(--ink-soft)]" role="status">{msg}</p>}
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2">
+          {foods.map((f) => (
+            <button key={f.id} onClick={() => addFood(f)} title={`${f.grams} ${l.g} · ${Math.round((f.kcal * f.grams) / 100)} ${l.kcal}`} className="rounded-full border border-[var(--line)] bg-[var(--panel)] px-3 py-1.5 text-[12.5px] font-semibold hover:border-[var(--accent)] active:scale-95">+ {f.name}</button>
+          ))}
+          <button onClick={() => setAdding(!adding)} className="rounded-full border border-dashed border-[var(--line)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--ink-faint)] hover:text-[var(--ink)]">{adding ? "−" : "+"} {l.newFood}</button>
+        </div>
+        {foods.length === 0 && !adding && <p className="text-[12px] text-[var(--ink-faint)]">{l.quickEmpty}</p>}
+        {adding && (
+          <div className="flex flex-col gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel)] p-3">
+            {field("name", l.name, false)}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              {field("kcal", l.kcal)}{field("p", l.p)}{field("f", l.f)}{field("c", l.c)}{field("grams", l.portion)}
+            </div>
+            <div className="text-[11px] text-[var(--ink-faint)]">{l.per100}</div>
+            <button onClick={saveForm} className={`${primaryCls} self-start`}>{l.save}</button>
+          </div>
+        )}
+      </section>
+
+      {entries.length > 0 && (
+        <ul className="flex flex-col">
+          {entries.map((e) => {
+            const x = calc(e);
+            return (
+              <li key={e.id} className="flex items-center gap-3 border-b border-[var(--line)] py-2.5">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[14px] font-semibold">{e.name}</div>
+                  <div className="text-[11.5px] text-[var(--ink-faint)]">{x.kcal} {l.kcal} · {l.p[0]} {x.p} · {l.f[0]} {x.f} · {l.c[0]} {x.c}</div>
+                </div>
+                <input className={`${inputCls} !w-20 text-right`} inputMode="decimal" value={e.grams || ""} onChange={(ev) => setGrams(e.id, ev.target.value)} aria-label={l.g} />
+                <span className="text-[12px] text-[var(--ink-faint)]">{l.g}</span>
+                <button onClick={() => setDay(entries.filter((y) => y.id !== e.id))} aria-label="×" className="px-1 text-[var(--ink-faint)] hover:text-red-400">×</button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <details className="group rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4">
+        <summary className="cursor-pointer select-none text-[13px] font-semibold text-[var(--ink-soft)]">{l.more}</summary>
+        <div className="mt-4 flex flex-col gap-4">
+          <label className="flex w-32 flex-col gap-1 text-[11px] font-semibold text-[var(--ink-faint)]">
             {l.goal}
             <input className={inputCls} inputMode="numeric" value={goal || ""} onChange={(e) => setGoal(Math.min(10000, Math.max(0, Math.round(toNum(e.target.value) || 0))))} />
           </label>
-        </div>
-        <div className="h-2 overflow-hidden rounded-full bg-[var(--panel-2)]"><div className="h-full rounded-full bg-[var(--accent)] transition-all" style={{ width: `${pct}%` }} /></div>
-        <div className="flex gap-2">{macro(l.p, total.p)}{macro(l.f, total.f)}{macro(l.c, total.c)}</div>
-      </div>
-
-      <div className={cardCls} style={{ boxShadow: "var(--shadow-sm)" }}>
-        <div className="flex items-center gap-2">
-          <span className="text-[14.5px] font-bold">{l.quick}</span>
-          <button onClick={() => setAdding(!adding)} className={`${btnCls} ml-auto`}>+ {l.newFood}</button>
-        </div>
-        {adding && (
-          <div className="flex flex-col gap-2 rounded-lg border border-[var(--line)] p-3">
-            {field("name", l.name, false)}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-              {field("kcal", `${l.kcal}`)}{field("p", l.p)}{field("f", l.f)}{field("c", l.c)}{field("grams", l.portion)}
+          {foods.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <span className="text-[13px] font-bold">{l.quick}</span>
+              <ul className="flex flex-col">
+                {foods.map((f) => (
+                  <li key={f.id} className="flex items-center justify-between border-b border-[var(--line)] py-2 text-[13px]">
+                    <span className="truncate">{f.name} <span className="text-[var(--ink-faint)]">· {f.grams} {l.g} · {Math.round((f.kcal * f.grams) / 100)} {l.kcal}</span></span>
+                    <button onClick={() => setFoods(foods.filter((x) => x.id !== f.id))} aria-label="×" className="px-1 text-[var(--ink-faint)] hover:text-red-400">×</button>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="text-[11px] text-[var(--ink-faint)]">{l.per100}</div>
-            <div className="flex gap-2">
-              <button onClick={saveForm} className={btnCls}>{l.save}</button>
-              <button onClick={() => setAdding(false)} className={btnCls}>{l.cancel}</button>
+          )}
+          <div className="flex flex-col gap-2">
+            <span className="text-[13px] font-bold">{l.ioTitle}</span>
+            <p className="text-[12px] leading-relaxed text-[var(--ink-soft)]">{l.ioHint}</p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => copy(l.prompt)} className={btnCls}>{l.copyPrompt}</button>
+              <button onClick={() => copy(JSON.stringify(foods.map((f) => ({ name: f.name, kcal: f.kcal, protein: f.p, fat: f.f, carbs: f.c, grams: f.grams })), null, 2))} className={btnCls} disabled={!foods.length}>{l.export}</button>
             </div>
+            <textarea className={`${inputCls} !h-20 py-2 font-mono`} value={importText} onChange={(e) => setImportText(e.target.value)} placeholder={l.importPh} />
+            <button onClick={doImport} disabled={!importText.trim()} className={`${btnCls} self-start`}>{l.importBtn}</button>
           </div>
-        )}
-        {foods.length === 0 ? (
-          <p className="text-[12.5px] text-[var(--ink-faint)]">{l.quickEmpty}</p>
-        ) : (
-          <div className="flex flex-wrap gap-2" title={l.add}>
-            {foods.map((f) => (
-              <span key={f.id} className="flex items-center overflow-hidden rounded-full border border-[var(--line)] bg-[var(--panel-2)] text-[12.5px] font-semibold">
-                <button onClick={() => addFood(f)} className="px-3 py-1.5 hover:bg-[var(--hover)]" title={`${f.grams} ${l.g} · ${Math.round((f.kcal * f.grams) / 100)} ${l.kcal}`}>{f.name}</button>
-                <button onClick={() => setFoods(foods.filter((x) => x.id !== f.id))} aria-label="×" className="px-2 py-1.5 text-[var(--ink-faint)] hover:text-red-400">×</button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className={cardCls} style={{ boxShadow: "var(--shadow-sm)" }}>
-        <span className="text-[14.5px] font-bold">{l.logTitle}</span>
-        {entries.length === 0 ? (
-          <p className="text-[12.5px] text-[var(--ink-faint)]">{l.logEmpty}</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {entries.map((e) => {
-              const x = calc(e);
-              return (
-                <li key={e.id} className="flex items-center gap-3 rounded-lg bg-[var(--panel-2)] px-3 py-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13.5px] font-semibold">{e.name}</div>
-                    <div className="text-[11.5px] text-[var(--ink-faint)]">{x.kcal} {l.kcal} · {l.p[0]} {x.p} · {l.f[0]} {x.f} · {l.c[0]} {x.c}</div>
-                  </div>
-                  <input className={`${inputCls} !w-20 text-right`} inputMode="decimal" value={e.grams || ""} onChange={(ev) => setGrams(e.id, ev.target.value)} aria-label={l.g} />
-                  <span className="text-[12px] text-[var(--ink-faint)]">{l.g}</span>
-                  <button onClick={() => setDay(entries.filter((y) => y.id !== e.id))} aria-label="×" className="px-1 text-[var(--ink-faint)] hover:text-red-400">×</button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-
-      <div className={cardCls} style={{ boxShadow: "var(--shadow-sm)" }}>
-        <div className="flex items-center gap-2">
-          <span className="text-[14.5px] font-bold">{l.aiTitle}</span>
-          {aiOn && <button onClick={() => setAiOn(false)} className="ml-auto text-[12px] font-semibold text-[var(--ink-faint)] hover:text-[var(--ink)]">{l.aiDisable}</button>}
+          {aiOn && <button onClick={() => setAiOn(false)} className="self-start text-[12px] font-semibold text-[var(--ink-faint)] hover:text-[var(--ink)]">{l.aiDisable}: {l.aiTitle}</button>}
         </div>
-        {!aiOn ? (
-          <>
-            <p className="text-[12.5px] leading-relaxed text-[var(--ink-soft)]">{l.aiHint} {l.aiWarn}</p>
-            <button onClick={() => setAiOn(true)} className={`${btnCls} self-start`}>{l.aiEnable}</button>
-          </>
-        ) : (
-          <>
-            <textarea className={`${inputCls} !h-20 py-2`} value={aiText} onChange={(e) => setAiText(e.target.value.slice(0, 400))} placeholder={l.aiPh} />
-            <button onClick={runAi} disabled={aiLoading || !aiText.trim()} className={`${btnCls} self-start`}>{aiLoading ? l.aiLoading : l.aiRun}</button>
-            <p className="text-[11.5px] text-[var(--ink-faint)]">{l.aiNote}</p>
-          </>
-        )}
-      </div>
-
-      <div className={cardCls} style={{ boxShadow: "var(--shadow-sm)" }}>
-        <span className="text-[14.5px] font-bold">{l.ioTitle}</span>
-        <p className="text-[12.5px] leading-relaxed text-[var(--ink-soft)]">{l.ioHint}</p>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={() => copy(l.prompt)} className={btnCls}>{l.copyPrompt}</button>
-          <button onClick={() => copy(JSON.stringify(foods.map((f) => ({ name: f.name, kcal: f.kcal, protein: f.p, fat: f.f, carbs: f.c, grams: f.grams })), null, 2))} className={btnCls} disabled={!foods.length}>{l.export}</button>
-        </div>
-        <textarea className={`${inputCls} !h-24 py-2 font-mono`} value={importText} onChange={(e) => setImportText(e.target.value)} placeholder={l.importPh} />
-        <button onClick={doImport} disabled={!importText.trim()} className={`${btnCls} self-start`}>{l.importBtn}</button>
-      </div>
-
-      {msg && <div className="mb-4 text-[12.5px] font-semibold text-[var(--ink-soft)]" role="status">{msg}</div>}
+      </details>
     </div>
   );
 }

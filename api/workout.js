@@ -19,8 +19,9 @@ function tooMany(ip) {
 
 const LANG_NAMES = { ru: "Russian", en: "English", be: "Belarusian", uk: "Ukrainian", de: "German", fr: "French", es: "Spanish" };
 
+// Модель иногда отвечает строкой вроде "8-12" или "30 сек": берём первое число
 const num = (v, min, max) => {
-  const n = typeof v === "string" ? Number(v.replace(",", ".")) : v;
+  const n = typeof v === "string" ? parseFloat(v.replace(",", ".")) : v;
   if (typeof n !== "number" || !Number.isFinite(n)) return null;
   return Math.round(Math.max(min, Math.min(max, n)));
 };
@@ -72,11 +73,26 @@ export default async function handler(req, res) {
     `(kg is always 0: the user fills in their own weights; for timed exercises like a plank use reps as seconds). If the request is not about training, reply [].\n` +
     `User request: ${JSON.stringify(text)}`;
 
-  const out = await generateText(key, prompt, { temperature: 0.5, maxOutputTokens: 800 });
+  const out = await generateText(key, prompt, {
+    temperature: 0.5,
+    maxOutputTokens: 2048,
+    responseMimeType: "application/json",
+    responseSchema: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: { name: { type: "STRING" }, sets: { type: "INTEGER" }, reps: { type: "INTEGER" }, kg: { type: "INTEGER" } },
+        required: ["name", "sets", "reps"],
+      },
+    },
+  });
   if (!out) return res.status(500).json({ error: "ai failed" });
 
   const items = parseItems(out.text);
-  if (!items.length) return res.status(422).json({ error: "nothing recognised" });
+  if (!items.length) {
+    console.error("workout: unparseable model reply", out.model, out.text.slice(0, 300));
+    return res.status(422).json({ error: "nothing recognised" });
+  }
 
   res.setHeader("Cache-Control", "no-store");
   return res.json({ items, model: out.model });
