@@ -15,6 +15,7 @@ import type { Lang, TKey } from "../i18n";
 import { MOODS, localeOf, WEEKDAYS_SHORT } from "../i18n";
 import type { Task, SleepData } from "../store";
 import { countWords, downloadText, fromISO, shiftISO, todayISO } from "../store";
+import AiInsights from "./AiInsights";
 import { DownloadIcon, FlameIcon, MoodVisual, PrinterIcon, StatsIcon } from "../icons";
 
 interface StatsViewProps {
@@ -52,7 +53,7 @@ const MOUTHS = [
   "M7.8 13.4 Q12 18.4 16.2 13.4",
 ];
 
-export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: StatsViewProps) {
+export default function StatsView({ notes, tasks, moods, sleep, moodEmoji, lang, t }: StatsViewProps) {
   const [range, setRange] = useState<7 | 30>(7);
   const locale = localeOf(lang);
   const today = todayISO();
@@ -337,6 +338,8 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
         ))}
       </div>
       )}
+
+      {hasAnyData && <AiInsights notes={notes} tasks={tasks} moods={moods} sleep={sleep} range={range} lang={lang} />}
 
       {!hasData ? (
         <div className={`${card} animate-rise flex flex-col items-center gap-3 py-16 text-center`}>
