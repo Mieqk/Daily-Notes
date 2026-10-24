@@ -1,0 +1,12 @@
+{
+  "appId": "io.vercel.dailynotes",
+  "appName": "Daily Note",
+  "webDir": "dist",
+  "server": {
+    "url": "https://daily-notes-io.vercel.app",
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#f5f5f0"
+  }
+}

@@ -1,0 +1,99 @@
+# Собирает Android APK (обёртка Capacitor над сайтом) и публикует его в GitHub Releases.
+# Запуск: git tag v1.0.0 && git push origin v1.0.0 (или вручную через Actions → Run workflow).
+# Секреты репозитория для подписи (если их нет, соберётся отладочный APK):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+# Подробности — в README, раздел «Android APK».
+name: Android APK
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Версия для ручного запуска, например 1.0.0"
+        required: false
+        default: "0.0.0"
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      CAP_VERSION: "7"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+      - name: Build web assets
+        run: npm run build
+
+      - name: Add Capacitor and Android project
+        run: |
+          npm install --no-save "@capacitor/core@$CAP_VERSION" "@capacitor/cli@$CAP_VERSION" "@capacitor/android@$CAP_VERSION"
+          npx cap add android
+          npx cap sync android
+
+      - name: Set version
+        id: ver
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then V="${GITHUB_REF_NAME#v}"; else V="${{ inputs.version }}"; fi
+          V="${V:-0.0.0}"
+          echo "name=$V" >> "$GITHUB_OUTPUT"
+          sed -i "s/versionCode 1/versionCode ${GITHUB_RUN_NUMBER}/; s/versionName \"1.0\"/versionName \"$V\"/" android/app/build.gradle
+          grep -n "versionCode\|versionName" android/app/build.gradle
+
+      - name: Build APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Sign APK
+        id: sign
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          OUT="Daily-Note-${{ steps.ver.outputs.name }}.apk"
+          UNSIGNED=$(ls android/app/build/outputs/apk/release/*.apk | head -n1)
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n1)
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            "$BT/zipalign" -f -p 4 "$UNSIGNED" "$RUNNER_TEMP/aligned.apk"
+            "$BT/apksigner" sign --ks "$RUNNER_TEMP/release.jks" --ks-pass env:KEYSTORE_PASS \
+              --ks-key-alias "$KEY_ALIAS" --key-pass env:KEY_PASS --out "$OUT" "$RUNNER_TEMP/aligned.apk"
+            "$BT/apksigner" verify "$OUT"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Секреты подписи не заданы — собираю отладочный APK (подписан debug-ключом)."
+            (cd android && ./gradlew assembleDebug --no-daemon)
+            cp android/app/build/outputs/apk/debug/app-debug.apk "$OUT"
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "file=$OUT" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: ${{ steps.sign.outputs.file }}
+
+      - name: Publish release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.sign.outputs.file }}
+          generate_release_notes: true
+          body: |
+            Android APK (обёртка Capacitor над https://daily-notes-io.vercel.app).
+            ${{ steps.sign.outputs.signed == 'true' && 'Подписан release-ключом.' || 'Подписан debug-ключом (секреты подписи не заданы).' }}
