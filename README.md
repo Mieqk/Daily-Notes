@@ -211,6 +211,21 @@ Daily Note распространяется как **PWA (Progressive Web App)**
 3. Выберите **«Добавить на главный экран»** или **«Установить приложение»**
 4. Подтвердите установку
 
+### 📦 Android APK
+
+APK собирает GitHub Actions (`.github/workflows/android-apk.yml`) и кладёт в раздел **Releases**. Это обёртка [Capacitor](https://capacitorjs.com/), которая открывает https://daily-notes-io.vercel.app (`capacitor.config.json`): приложение обновляется вместе с сайтом, а `/api/*` и пуши работают как в вебе. Минус: нужен интернет. Папка `android/` не хранится в репозитории, а создаётся при сборке.
+
+**Выпуск:** `git tag v1.0.0 && git push origin v1.0.0` (или Actions → *Android APK* → *Run workflow*). Готовый `Daily-Note-1.0.0.apk` появится в Releases.
+
+**Подпись.** Без секретов соберётся отладочный APK (годится для проверки). Для релизного ключа:
+
+1. Создайте keystore (храните его в надёжном месте, потеряв ключ, обновить приложение будет нельзя):
+   `keytool -genkeypair -v -keystore release.jks -alias dailynote -keyalg RSA -keysize 2048 -validity 10000`
+2. Закодируйте: `base64 -w0 release.jks` (на macOS: `base64 -i release.jks`).
+3. В репозитории: Settings → Secrets and variables → Actions → добавьте секреты `ANDROID_KEYSTORE_BASE64` (вывод шага 2), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (`dailynote`), `ANDROID_KEY_PASSWORD`.
+
+Файл `release.jks` и пароли не коммитьте. Установка: скачайте APK на телефон и разрешите установку из неизвестных источников.
+
 ### 💻 Компьютер (Chrome / Edge)
 
 1. Откройте ссылку в Chrome или Edge
@@ -291,7 +306,7 @@ Daily Note распространяется как **PWA (Progressive Web App)**
 - [✅] Пуш-уведомления: напоминание, благодарности и SOS приходят и при закрытом приложении (web-push, см. «Фоновые пуши» ниже; нужна настройка ключей и расписания)
 - [ ] Биометрический вход (Face ID / отпечаток)
 - [ ] Доступ к камере из приложения
-- [ ] Android APK через GitHub Releases
+- [📋] Android APK через GitHub Releases (пайплайн добавлен, но ещё не запускался и не проверен на устройстве; см. «Android APK»)
 - [ ] iOS через App Store / TestFlight
 
 ### 🧠 Продвинутые аналитические фичи
