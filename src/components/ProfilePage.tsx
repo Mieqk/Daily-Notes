@@ -236,7 +236,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
               <button
                 onClick={() => bannerInput.current?.click()}
                 disabled={busy !== null}
-                className="absolute right-3 top-3 flex h-8 items-center rounded-lg border border-[var(--line)] bg-[var(--panel)]/80 px-2.5 text-[11px] font-semibold backdrop-blur transition-all hover:bg-[var(--panel)] active:scale-95"
+                className="absolute right-3 top-3 flex h-9 items-center rounded-lg border border-[var(--line)] bg-[var(--panel)]/90 px-3 text-[12px] font-semibold backdrop-blur transition-all hover:bg-[var(--panel)] active:scale-95"
               >
                 {busy === "banner" ? t("uploading") : t("bannerChange")}
               </button>
@@ -324,7 +324,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
             {/* Статус (только свой) */}
             {isOwn && (
               <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">📡 {t("statusTitle")}</div>
+                <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">📡 {t("statusTitle")}</div>
                 <div className="flex flex-wrap gap-1.5">
                   {PRESETS.map((pr) => {
                     const active = p.status_emoji === pr.e && p.status_text === t(pr.k);
@@ -335,6 +335,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
                         className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-all active:scale-95 ${
                           active ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "bg-[var(--hover)] text-[var(--ink-soft)] hover:bg-[var(--accent-soft)]"
                         }`}
+                        aria-pressed={active}
                       >
                         <span>{pr.e}</span>{t(pr.k)}
                       </button>
@@ -408,10 +409,10 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
               {isOwn ? (
                 <>
                   <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-dashed border-[var(--accent)] bg-[var(--accent-soft)] px-3 py-2.5">
-                    <span className="text-[11px] font-semibold text-[var(--ink-faint)]">{t("code")}</span>
-                    <button onClick={copyCode} className="flex items-center gap-2 font-mono text-[15px] font-bold tracking-[0.2em] text-[var(--accent-deep)] active:scale-95">
+                    <span className="text-[12px] font-semibold text-[var(--ink-soft)]">{t("code")}</span>
+                    <button onClick={copyCode} className="flex items-center gap-2 min-h-[44px] font-mono text-[20px] font-bold tracking-[0.2em] text-[var(--accent-deep)] active:scale-95">
                       {p.friend_code ?? "…"}
-                      <span className="text-[11px] font-semibold tracking-normal">{copied ? t("copied") : t("copy")}</span>
+                      <span className="text-[12px] font-semibold tracking-normal">{copied ? t("copied") : t("copy")}</span>
                     </button>
                   </div>
                   <div className="flex items-center gap-5 text-[14px] font-semibold">

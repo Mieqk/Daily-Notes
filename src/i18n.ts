@@ -84,6 +84,8 @@ const ru = {
   corrWithTasks: "В дни с выполненными задачами настроение в среднем",
   corrWithout: "а в дни без —",
   corrNoData: "Недостаточно данных за выбранный период",
+  statsEmptyTitle: "Пока нет данных",
+  statsEmptyBody: "Сделайте первую запись или отметьте настроение — здесь появятся графики и серия.",
   heatTitle: "Тепловая карта продуктивности",
   heatSub: "последние 16 недель: текст и закрытые задачи",
 
@@ -280,6 +282,8 @@ const en: Record<TKey, string> = {
   corrWithTasks: "On days with tasks done the average mood is",
   corrWithout: "on days without —",
   corrNoData: "Not enough data for the selected period",
+  statsEmptyTitle: "No data yet",
+  statsEmptyBody: "Write your first entry or pick a mood — charts and your streak will appear here.",
   heatTitle: "Productivity heatmap",
   heatSub: "last 16 weeks: writing & closed tasks",
 
@@ -474,6 +478,8 @@ const be: Record<TKey, string> = {
   corrWithTasks: "У дні з выкананымі задачамі настрой у сярэднім",
   corrWithout: "а ў дні без —",
   corrNoData: "Недастаткова дадзеных за абраны перыяд",
+  statsEmptyTitle: "Пакуль няма дадзеных",
+  statsEmptyBody: "Зрабіце першы запіс або адзначце настрой — тут з’явяцца графікі і серыя.",
   heatTitle: "Цеплавая карта прадуктыўнасці",
   heatSub: "апошнія 16 тыдняў: тэкст і закрытыя задачы",
 
@@ -668,6 +674,8 @@ const uk: Record<TKey, string> = {
   corrWithTasks: "У дні з виконаними завданнями настрій у середньому",
   corrWithout: "а в дні без —",
   corrNoData: "Недостатньо даних за обраний період",
+  statsEmptyTitle: "Поки немає даних",
+  statsEmptyBody: "Зробіть перший запис або позначте настрій — тут з’являться графіки та серія.",
   heatTitle: "Теплова карта продуктивності",
   heatSub: "останні 16 тижнів: текст і закриті завдання",
 
@@ -862,6 +870,8 @@ const de: Record<TKey, string> = {
   corrWithTasks: "An Tagen mit erledigten Aufgaben ist die durchschnittliche Stimmung",
   corrWithout: "an Tagen ohne —",
   corrNoData: "Nicht genug Daten für den ausgewählten Zeitraum",
+  statsEmptyTitle: "Noch keine Daten",
+  statsEmptyBody: "Schreibe deinen ersten Eintrag oder wähle eine Stimmung – hier erscheinen Diagramme und deine Serie.",
   heatTitle: "Produktivitäts-Heatmap",
   heatSub: "letzte 16 Wochen: Schreiben & abgeschlossene Aufgaben",
 
@@ -1056,6 +1066,8 @@ const fr: Record<TKey, string> = {
   corrWithTasks: "Les jours avec tâches terminées l'humeur moyenne est",
   corrWithout: "les jours sans —",
   corrNoData: "Pas assez de données pour la période sélectionnée",
+  statsEmptyTitle: "Pas encore de données",
+  statsEmptyBody: "Écris ta première note ou choisis une humeur : graphiques et série apparaîtront ici.",
   heatTitle: "Carte thermique de productivité",
   heatSub: "16 dernières semaines : écriture & tâches fermées",
 
@@ -1250,6 +1262,8 @@ const es: Record<TKey, string> = {
   corrWithTasks: "Los días con tareas completadas el estado de ánimo promedio es",
   corrWithout: "los días sin —",
   corrNoData: "No hay suficientes datos para el período seleccionado",
+  statsEmptyTitle: "Aún no hay datos",
+  statsEmptyBody: "Escribe tu primera entrada o elige un estado de ánimo: aquí aparecerán los gráficos y tu racha.",
   heatTitle: "Mapa de calor de productividad",
   heatSub: "últimas 16 semanas: escritura y tareas cerradas",
 

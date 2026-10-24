@@ -242,13 +242,13 @@ useSwipe({
         {isToday && (<span className="ml-auto flex h-8 items-center gap-1.5 rounded-full bg-[var(--accent-soft)] px-3.5 text-[12px] font-bold text-[var(--accent-deep)]"><span className="animate-livedot h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />{t("todayBadge")}</span>)}
       </div>
 
-      <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3.5" style={{ boxShadow: "var(--shadow-sm)" }}>
+      <div className="mb-5 flex flex-wrap items-center gap-3">
         <span className="px-1 text-[12.5px] font-semibold text-[var(--ink-soft)]">{t("mood")}</span>
         <div className="flex flex-wrap gap-2">
           {MOODS[lang].map((label, i) => {
             const active = moods[date] === i;
             return (
-              <button key={label} title={label} onClick={() => { setMoods((m) => ({ ...m, [date]: i })); bumpStatus(); }} className={`flex h-11 items-center gap-2 rounded-xl border px-3 transition-all duration-200 active:scale-90 ${active ? "scale-105 border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "border-transparent text-[var(--ink-faint)] hover:bg-[var(--hover)] hover:text-[var(--ink)]"}`} style={active ? { boxShadow: "var(--shadow-sm)" } : undefined}>
+              <button key={label} title={label} aria-pressed={active} onClick={() => { setMoods((m) => ({ ...m, [date]: i })); bumpStatus(); }} className={`flex h-11 items-center gap-2 rounded-xl border px-3 transition-all duration-200 active:scale-90 ${active ? "scale-105 border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "border-transparent text-[var(--ink-faint)] hover:bg-[var(--hover)] hover:text-[var(--ink)]"}`} style={active ? { boxShadow: "var(--shadow-sm)" } : undefined}>
                 <span className="flex h-6 w-6 items-center justify-center text-[20px] leading-none">{moodEmoji[i] || <MoodVisual level={i} emoji="" className="h-6 w-6" />}</span>
                 <span className={`text-[13px] font-semibold ${active ? "" : "hidden sm:inline"}`}>{label}</span>
               </button>
@@ -257,21 +257,6 @@ useSwipe({
         </div>
       </div>
 
-      <div className="mb-5 flex flex-wrap items-center gap-2">
-        <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)]">{t("templates")}</span>
-        {TEMPLATES.map((tpl, idx) => {
-          const Icon = TPL_ICONS[idx];
-          const applied = appliedTpl === tpl.id;
-          return (
-            <button key={tpl.id} onClick={() => applyTemplate(idx)} className={`flex h-9 items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold transition-all duration-200 active:scale-95 ${applied ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-ink)]" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] hover:-translate-y-0.5 hover:border-[var(--accent)] hover:text-[var(--accent-deep)]"}`}>
-              {applied ? <CheckIcon className="animate-checkpop h-4 w-4" /> : <Icon className="h-4 w-4" />}
-              {tpl.name[lang]}
-            </button>
-          );
-        })}
-      </div>
-
-      <FactOfDay lang={lang} />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
         <div className="flex min-w-0 flex-col gap-5">
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)]" style={{ boxShadow: "var(--shadow-sm)" }}>
@@ -304,6 +289,20 @@ useSwipe({
               </span>
             </div>
           </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)]">{t("templates")}</span>
+          {TEMPLATES.map((tpl, idx) => {
+            const Icon = TPL_ICONS[idx];
+            const applied = appliedTpl === tpl.id;
+            return (
+              <button key={tpl.id} onClick={() => applyTemplate(idx)} className={`flex h-9 items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold transition-all duration-200 active:scale-95 ${applied ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-ink)]" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] hover:-translate-y-0.5 hover:border-[var(--accent)] hover:text-[var(--accent-deep)]"}`}>
+                {applied ? <CheckIcon className="animate-checkpop h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                {tpl.name[lang]}
+              </button>
+            );
+          })}
+        </div>
 
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
             <div className="mb-2.5 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)]"><TagIcon className="h-4 w-4" />{t("tagsLbl")}</div>
@@ -358,6 +357,8 @@ useSwipe({
               ))}
             </ul>
           </div>
+
+          <FactOfDay lang={lang} />
 
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
             <div className="flex items-center gap-3">

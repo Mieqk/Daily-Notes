@@ -81,32 +81,28 @@ export default function FactOfDay({ lang }: { lang: Lang }) {
   };
 
   return (
-    <div className="mb-5 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--accent-soft)] text-[18px]">💡</span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[13.5px] font-bold">{labels.title}</span>
-            <span className="rounded-full bg-[var(--hover)] px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-faint)]">
-              {fromAi ? `🤖 ${labels.ai}` : `📚 ${labels.book}`}
-            </span>
-          </div>
-          <p className="truncate text-[11px] text-[var(--ink-faint)]">{labels.sub}</p>
-        </div>
+    <div className="flex flex-col gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
+      <div className="flex items-center gap-2">
+        <span className="text-[14.5px] font-bold">{labels.title}</span>
+        <span className="rounded-full bg-[var(--hover)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink-faint)]">
+          {fromAi ? labels.ai : labels.book}
+        </span>
         <button
           onClick={shuffle}
-          className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[12px] font-semibold text-[var(--ink-soft)] transition-all duration-150 hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95"
+          aria-label={labels.btn}
+          className="ml-auto flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[12px] font-semibold text-[var(--ink-soft)] transition-all duration-150 hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95"
         >
           🎲 <span className="hidden sm:inline">{labels.btn}</span>
         </button>
       </div>
-      <div className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-4 py-3">
-        {loading ? (
-          <p className="animate-pulse text-[13.5px] text-[var(--ink-faint)]">{labels.loading}</p>
-        ) : (
-          <p className="text-[13.5px] leading-relaxed text-[var(--ink)]">{text}</p>
-        )}
-      </div>
+      {loading ? (
+        <div className="flex flex-col gap-2" role="status" aria-label={labels.loading}>
+          <div className="h-3.5 w-full animate-pulse rounded bg-[var(--hover)]" />
+          <div className="h-3.5 w-2/3 animate-pulse rounded bg-[var(--hover)]" />
+        </div>
+      ) : (
+        <p className="text-[13.5px] leading-relaxed text-[var(--ink-soft)]">{text}</p>
+      )}
     </div>
   );
 }
