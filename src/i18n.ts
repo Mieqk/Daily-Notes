@@ -166,6 +166,9 @@ const ru = {
 
   sleepTitle: "Сон",
   sleepSub: "отслеживание качества сна",
+  tabFood: "Питание",
+  foodTitle: "Питание",
+  foodSub: "учёт еды и КБЖУ",
   sleepHours: "Часов сна",
   sleepQuality: "Качество сна",
   sleepDeep: "Глубокий",
@@ -366,6 +369,9 @@ const en: Record<TKey, string> = {
 
   sleepTitle: "Sleep",
   sleepSub: "sleep quality tracking",
+  tabFood: "Food",
+  foodTitle: "Nutrition",
+  foodSub: "food and macros tracker",
   sleepHours: "Hours of sleep",
   sleepQuality: "Sleep quality",
   sleepDeep: "Deep",
@@ -564,6 +570,9 @@ const be: Record<TKey, string> = {
 
   sleepTitle: "Сон",
   sleepSub: "адсочванне якасці сну",
+  tabFood: "Харчаванне",
+  foodTitle: "Харчаванне",
+  foodSub: "улік ежы і КБЖУ",
   sleepHours: "Гадзін сну",
   sleepQuality: "Якасць сну",
   sleepDeep: "Глыбокі",
@@ -762,6 +771,9 @@ const uk: Record<TKey, string> = {
 
   sleepTitle: "Сон",
   sleepSub: "відстеження якості сну",
+  tabFood: "Харчування",
+  foodTitle: "Харчування",
+  foodSub: "облік їжі та КБЖВ",
   sleepHours: "Годин сну",
   sleepQuality: "Якість сну",
   sleepDeep: "Глибокий",
@@ -960,6 +972,9 @@ const de: Record<TKey, string> = {
 
   sleepTitle: "Schlaf",
   sleepSub: "Schlafqualitätsverfolgung",
+  tabFood: "Essen",
+  foodTitle: "Ernährung",
+  foodSub: "Essen und Makros erfassen",
   sleepHours: "Stunden Schlaf",
   sleepQuality: "Schlafqualität",
   sleepDeep: "Tief",
@@ -1158,6 +1173,9 @@ const fr: Record<TKey, string> = {
 
   sleepTitle: "Sommeil",
   sleepSub: "suivi de la qualité du sommeil",
+  tabFood: "Repas",
+  foodTitle: "Alimentation",
+  foodSub: "suivi des repas et macros",
   sleepHours: "Heures de sommeil",
   sleepQuality: "Qualité du sommeil",
   sleepDeep: "Profond",
@@ -1356,6 +1374,9 @@ const es: Record<TKey, string> = {
 
   sleepTitle: "Sueño",
   sleepSub: "seguimiento de la calidad del sueño",
+  tabFood: "Comidas",
+  foodTitle: "Alimentación",
+  foodSub: "registro de comidas y macros",
   sleepHours: "Horas de sueño",
   sleepQuality: "Calidad del sueño",
   sleepDeep: "Profundo",

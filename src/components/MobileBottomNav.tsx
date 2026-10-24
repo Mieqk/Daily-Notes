@@ -1,4 +1,4 @@
-import { CalendarIcon, StatsIcon, NotebookIcon, SleepIcon, GearIcon, UsersIcon } from "../icons";
+import { CalendarIcon, StatsIcon, NotebookIcon, SleepIcon, FoodIcon, GearIcon, UsersIcon } from "../icons";
 import type { Tab } from "../store";
 import type { TKey } from "../i18n";
 
@@ -12,6 +12,7 @@ const TABS = [
   { id: "daily" as Tab, icon: CalendarIcon, key: "tabDaily" as TKey },
   { id: "stats" as Tab, icon: StatsIcon, key: "tabStats" as TKey },
   { id: "sleep" as Tab, icon: SleepIcon, key: "tabSleep" as TKey },
+  { id: "food" as Tab, icon: FoodIcon, key: "tabFood" as TKey },
   { id: "notes" as Tab, icon: NotebookIcon, key: "tabNotes" as TKey },
   { id: "friends" as Tab, icon: UsersIcon, key: "tabFriends" as TKey },
   { id: "settings" as Tab, icon: GearIcon, key: "tabSettings" as TKey },

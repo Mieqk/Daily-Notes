@@ -17,6 +17,7 @@ import NotesView from "./components/NotesView";
 import SettingsView from "./components/SettingsView";
 import LockScreen from "./components/LockScreen";
 import SleepView from "./components/SleepView";
+import NutritionView from "./components/NutritionView";
 import InstallPrompt from "./components/InstallPrompt";
 import NewPasswordScreen from "./components/NewPasswordScreen";
 import AuthScreen from "./components/AuthScreen";
@@ -337,6 +338,7 @@ export default function App() {
     stats: { title: t("statsTitle"), sub: t("statsSub") },
     notes: { title: t("notesTitle"), sub: t("notesSub") },
     sleep: { title: t("sleepTitle"), sub: t("sleepSub") },
+    food: { title: t("foodTitle"), sub: t("foodSub") },
     friends: { title: t("friendsTitle"), sub: t("friendsSub") },
     settings: { title: t("settingsTitle"), sub: t("settingsSub") },
   };
@@ -388,6 +390,7 @@ export default function App() {
           {tab === "daily" && <DailyView capsules={capsules} setCapsules={setCapsules} date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} lang={lang} t={t} showToast={showToast} />}
           {tab === "stats" && <Suspense fallback={<div className="grid h-64 place-items-center text-sm text-[var(--ink-faint)]"><span className="animate-livedot h-2.5 w-2.5 rounded-full bg-[var(--accent)]" /></div>}><StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} /></Suspense>}
           {tab === "sleep" && <SleepView sleep={sleep} lang={lang} t={t} setSleep={(iso, data) => setSleep((prev) => { const next = { ...prev }; if (data) next[iso] = data; else delete next[iso]; return next; })} />}
+          {tab === "food" && <NutritionView lang={lang} />}
           {tab === "notes" && <NotesView capsules={capsules} notes={notes} tasks={tasks} moods={moods} tags={tags} photos={photos} moodEmoji={moodEmoji} writingFont={writingFont} onOpen={openDate} lang={lang} t={t} />}
           {tab === "friends" && !userId && (
             <div className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-6 py-12 text-center" style={{ boxShadow: "var(--shadow-sm)" }}>
