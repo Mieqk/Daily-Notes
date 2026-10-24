@@ -15,6 +15,7 @@ const ru = {
   chDay: "День {n} из {total}", chFinished: "Челлендж завершён", chMembers: "Участники", chLeave: "Выйти", chDelete: "Удалить",
   chConfirm: "Точно?", chNeedFriend: "Выберите хотя бы одного друга",
   loading: "Загрузка…", error: "Не получилось, попробуйте ещё раз",
+  spTitle: "Sleep Party", spHint: "Делитесь ночами с другом: серия растёт, когда оба записали сон", spEmpty: "Позовите друга на Sleep Party: вы видите часы и оценку сна друг друга, а заметки остаются при вас.", spAdd: "Новая вечеринка", spStart: "Начать", spWith: "С {name}", spShare: "Поделиться сегодняшней ночью", spShared: "Ночь опубликована", spUnshare: "Скрыть", spNoSleep: "Сначала запишите сон на вкладке «Сон»", spYou: "Вы", spStreak: "Серия вместе: {n}", spSynced: "Легли почти вместе 💤", spBetter: "{name} спал(а) дольше на {h} ч", spLonger: "Вы спали дольше на {h} ч", spEqual: "Спали поровну", spWaiting: "Ждём ночь от {name}", spNights: "Последние ночи", spEnd: "Закончить", spConfirm: "Точно закончить?", spHours: "ч",
   ntTitle: "Уведомления", ntSub: "Напоминание о записи и вести от друзей",
   ntEnable: "Включить уведомления", ntOn: "Уведомления включены", ntDenied: "Уведомления запрещены в настройках браузера",
   ntUnsupported: "Этот браузер не поддерживает уведомления", ntTest: "Проверить",
@@ -39,6 +40,7 @@ const en: Strings = {
   chDay: "Day {n} of {total}", chFinished: "Challenge finished", chMembers: "Members", chLeave: "Leave", chDelete: "Delete",
   chConfirm: "Sure?", chNeedFriend: "Pick at least one friend",
   loading: "Loading…", error: "Something went wrong, please try again",
+  spTitle: "Sleep Party", spHint: "Share nights with a friend: the streak grows when you both log sleep", spEmpty: "Invite a friend to a Sleep Party: you see each other's hours and rating, while your notes stay private.", spAdd: "New party", spStart: "Start", spWith: "With {name}", spShare: "Share tonight's sleep", spShared: "Night shared", spUnshare: "Hide", spNoSleep: "Log your sleep on the Sleep tab first", spYou: "You", spStreak: "Streak together: {n}", spSynced: "Went to bed almost together 💤", spBetter: "{name} slept {h} h longer", spLonger: "You slept {h} h longer", spEqual: "Slept the same", spWaiting: "Waiting for {name}'s night", spNights: "Recent nights", spEnd: "End", spConfirm: "Really end it?", spHours: "h",
   ntTitle: "Notifications", ntSub: "Entry reminder and news from friends",
   ntEnable: "Enable notifications", ntOn: "Notifications are on", ntDenied: "Notifications are blocked in browser settings",
   ntUnsupported: "This browser does not support notifications", ntTest: "Test",
@@ -62,12 +64,14 @@ const be: Strings = {
   chDay: "Дзень {n} з {total}", chFinished: "Чэлендж завершаны", chMembers: "Удзельнікі", chLeave: "Выйсці", chDelete: "Выдаліць",
   chConfirm: "Дакладна?", chNeedFriend: "Абярыце хаця б аднаго сябра",
   loading: "Загрузка…", error: "Не атрымалася, паспрабуйце яшчэ раз",
+  spTitle: "Sleep Party", spHint: "Дзяліцеся начамі з сябрам: серыя расце, калі абодва занатавалі сон", spEmpty: "Паклічце сябра на Sleep Party: вы бачыце гадзіны і ацэнку сну адно аднаго, а нататкі застаюцца пры вас.", spAdd: "Новая вечарына", spStart: "Пачаць", spWith: "З {name}", spShare: "Падзяліцца сённяшняй ноччу", spShared: "Ноч апублікавана", spUnshare: "Схаваць", spNoSleep: "Спачатку занатуйце сон на ўкладцы «Сон»", spYou: "Вы", spStreak: "Серыя разам: {n}", spSynced: "Леглі амаль разам 💤", spBetter: "{name} спаў(ла) даўжэй на {h} г", spLonger: "Вы спалі даўжэй на {h} г", spEqual: "Спалі роўна", spWaiting: "Чакаем ноч ад {name}", spNights: "Апошнія ночы", spEnd: "Скончыць", spConfirm: "Дакладна скончыць?", spHours: "г",
   ntTitle: "Апавяшчэнні", ntSub: "Напамін пра запіс і весткі ад сяброў, пакуль праграма адкрыта",
   ntEnable: "Уключыць апавяшчэнні", ntOn: "Апавяшчэнні ўключаны", ntDenied: "Апавяшчэнні забаронены ў наладах браўзера",
   ntUnsupported: "Гэты браўзер не падтрымлівае апавяшчэнні", ntTest: "Праверыць",
   ntReminder: "Час зазірнуць у дзённік", ntReminderBody: "Як прайшоў дзень? Запішыце пару радкоў.",
   ntThanks: "Вам сказалі дзякуй", ntSos: "Сябар просіць падтрымкі", ntFriends: "Паведамленні ад сяброў",
   ntNote: "Фонавыя пушы пры закрытай праграме запатрабуюць сервера; цяпер апавяшчэнні працуюць, пакуль укладка або PWA адкрыта.",
+  ntNotePush: "Апавяшчэнні прыходзяць і пры закрытай праграме. Адключыць іх можна ў наладах браўзера або прылады.",
 };
 
 const uk: Strings = {
@@ -84,12 +88,14 @@ const uk: Strings = {
   chDay: "День {n} з {total}", chFinished: "Челендж завершено", chMembers: "Учасники", chLeave: "Вийти", chDelete: "Видалити",
   chConfirm: "Точно?", chNeedFriend: "Оберіть хоча б одного друга",
   loading: "Завантаження…", error: "Не вдалося, спробуйте ще раз",
+  spTitle: "Sleep Party", spHint: "Діліться ночами з другом: серія росте, коли обоє записали сон", spEmpty: "Запросіть друга на Sleep Party: ви бачите години й оцінку сну одне одного, а нотатки лишаються при вас.", spAdd: "Нова вечірка", spStart: "Почати", spWith: "З {name}", spShare: "Поділитися сьогоднішньою ніччю", spShared: "Ніч опубліковано", spUnshare: "Сховати", spNoSleep: "Спочатку запишіть сон на вкладці «Сон»", spYou: "Ви", spStreak: "Серія разом: {n}", spSynced: "Лягли майже разом 💤", spBetter: "{name} спав(ла) довше на {h} год", spLonger: "Ви спали довше на {h} год", spEqual: "Спали порівну", spWaiting: "Чекаємо ніч від {name}", spNights: "Останні ночі", spEnd: "Закінчити", spConfirm: "Точно закінчити?", spHours: "год",
   ntTitle: "Сповіщення", ntSub: "Нагадування про запис і новини від друзів, поки застосунок відкрито",
   ntEnable: "Увімкнути сповіщення", ntOn: "Сповіщення увімкнено", ntDenied: "Сповіщення заборонено в налаштуваннях браузера",
   ntUnsupported: "Цей браузер не підтримує сповіщення", ntTest: "Перевірити",
   ntReminder: "Час зазирнути в щоденник", ntReminderBody: "Як минув день? Запишіть кілька рядків.",
   ntThanks: "Вам сказали дякую", ntSos: "Друг просить підтримки", ntFriends: "Повідомлення від друзів",
   ntNote: "Фонові пуші при закритому застосунку потребуватимуть сервера; зараз сповіщення працюють, поки вкладка або PWA відкриті.",
+  ntNotePush: "Сповіщення надходять і при закритому застосунку. Вимкнути їх можна в налаштуваннях браузера або пристрою.",
 };
 
 const de: Strings = {
@@ -106,12 +112,14 @@ const de: Strings = {
   chDay: "Tag {n} von {total}", chFinished: "Challenge abgeschlossen", chMembers: "Teilnehmer", chLeave: "Verlassen", chDelete: "Löschen",
   chConfirm: "Sicher?", chNeedFriend: "Wähle mindestens einen Freund",
   loading: "Wird geladen…", error: "Etwas ist schiefgelaufen, bitte versuche es noch einmal",
+  spTitle: "Sleep Party", spHint: "Teile Nächte mit einem Freund: Die Serie wächst, wenn ihr beide euren Schlaf einträgt", spEmpty: "Lade einen Freund zur Sleep Party ein: Ihr seht gegenseitig Stunden und Bewertung, Notizen bleiben privat.", spAdd: "Neue Party", spStart: "Starten", spWith: "Mit {name}", spShare: "Heutige Nacht teilen", spShared: "Nacht geteilt", spUnshare: "Ausblenden", spNoSleep: "Trage zuerst deinen Schlaf im Tab „Schlaf“ ein", spYou: "Du", spStreak: "Serie zusammen: {n}", spSynced: "Fast gleichzeitig ins Bett 💤", spBetter: "{name} schlief {h} Std länger", spLonger: "Du hast {h} Std länger geschlafen", spEqual: "Gleich lang geschlafen", spWaiting: "Warten auf die Nacht von {name}", spNights: "Letzte Nächte", spEnd: "Beenden", spConfirm: "Wirklich beenden?", spHours: "Std",
   ntTitle: "Benachrichtigungen", ntSub: "Erinnerung an den Eintrag und Neuigkeiten von Freunden, solange die App geöffnet ist",
   ntEnable: "Benachrichtigungen aktivieren", ntOn: "Benachrichtigungen sind aktiviert", ntDenied: "Benachrichtigungen sind in den Browsereinstellungen blockiert",
   ntUnsupported: "Dieser Browser unterstützt keine Benachrichtigungen", ntTest: "Testen",
   ntReminder: "Zeit, ins Tagebuch zu schauen", ntReminderBody: "Wie war dein Tag? Schreib ein paar Zeilen.",
   ntThanks: "Jemand hat dir gedankt", ntSos: "Ein Freund bittet um Unterstützung", ntFriends: "Nachrichten von Freunden",
   ntNote: "Hintergrund-Push bei geschlossener App braucht einen Server; derzeit funktionieren Benachrichtigungen, solange der Tab oder die PWA geöffnet ist.",
+  ntNotePush: "Benachrichtigungen kommen auch bei geschlossener App an. Du kannst sie in den Browser- oder Geräteeinstellungen ausschalten.",
 };
 
 const fr: Strings = {
@@ -128,12 +136,14 @@ const fr: Strings = {
   chDay: "Jour {n} sur {total}", chFinished: "Défi terminé", chMembers: "Participants", chLeave: "Quitter", chDelete: "Supprimer",
   chConfirm: "Sûr ?", chNeedFriend: "Choisissez au moins un ami",
   loading: "Chargement…", error: "Une erreur est survenue, veuillez réessayer",
+  spTitle: "Sleep Party", spHint: "Partagez vos nuits avec un ami : la série grandit quand vous notez tous les deux votre sommeil", spEmpty: "Invitez un ami à une Sleep Party : vous voyez vos heures et notes de sommeil, vos notes restent privées.", spAdd: "Nouvelle party", spStart: "Commencer", spWith: "Avec {name}", spShare: "Partager la nuit", spShared: "Nuit partagée", spUnshare: "Masquer", spNoSleep: "Notez d'abord votre sommeil dans l'onglet Sommeil", spYou: "Vous", spStreak: "Série ensemble : {n}", spSynced: "Couchés presque en même temps 💤", spBetter: "{name} a dormi {h} h de plus", spLonger: "Vous avez dormi {h} h de plus", spEqual: "Même durée de sommeil", spWaiting: "En attente de la nuit de {name}", spNights: "Dernières nuits", spEnd: "Terminer", spConfirm: "Vraiment terminer ?", spHours: "h",
   ntTitle: "Notifications", ntSub: "Rappel d'écriture et nouvelles des amis tant que l'application est ouverte",
   ntEnable: "Activer les notifications", ntOn: "Les notifications sont activées", ntDenied: "Les notifications sont bloquées dans les réglages du navigateur",
   ntUnsupported: "Ce navigateur ne prend pas en charge les notifications", ntTest: "Tester",
   ntReminder: "C'est l'heure d'ouvrir votre journal", ntReminderBody: "Comment s'est passée votre journée ? Écrivez quelques lignes.",
   ntThanks: "Quelqu'un vous a remercié", ntSos: "Un ami demande du soutien", ntFriends: "Messages d'amis",
   ntNote: "Les notifications push en arrière-plan, application fermée, nécessitent un serveur ; pour l'instant, les notifications fonctionnent tant que l'onglet ou la PWA est ouvert.",
+  ntNotePush: "Les notifications arrivent aussi lorsque l'application est fermée. Vous pouvez les désactiver dans les réglages du navigateur ou de l'appareil.",
 };
 
 const es: Strings = {
@@ -150,12 +160,14 @@ const es: Strings = {
   chDay: "Día {n} de {total}", chFinished: "Reto terminado", chMembers: "Participantes", chLeave: "Salir", chDelete: "Eliminar",
   chConfirm: "¿Seguro?", chNeedFriend: "Elige al menos un amigo",
   loading: "Cargando…", error: "Algo salió mal, inténtalo de nuevo",
+  spTitle: "Sleep Party", spHint: "Comparte noches con un amigo: la racha crece cuando ambos registran su sueño", spEmpty: "Invita a un amigo a una Sleep Party: veis las horas y la valoración del otro, las notas siguen privadas.", spAdd: "Nueva fiesta", spStart: "Empezar", spWith: "Con {name}", spShare: "Compartir la noche de hoy", spShared: "Noche compartida", spUnshare: "Ocultar", spNoSleep: "Primero registra tu sueño en la pestaña Sueño", spYou: "Tú", spStreak: "Racha juntos: {n}", spSynced: "Os acostasteis casi a la vez 💤", spBetter: "{name} durmió {h} h más", spLonger: "Dormiste {h} h más", spEqual: "Dormisteis lo mismo", spWaiting: "Esperando la noche de {name}", spNights: "Últimas noches", spEnd: "Terminar", spConfirm: "¿Terminar de verdad?", spHours: "h",
   ntTitle: "Notificaciones", ntSub: "Recordatorio para escribir y novedades de amigos mientras la app está abierta",
   ntEnable: "Activar notificaciones", ntOn: "Las notificaciones están activadas", ntDenied: "Las notificaciones están bloqueadas en los ajustes del navegador",
   ntUnsupported: "Este navegador no admite notificaciones", ntTest: "Probar",
   ntReminder: "Es hora de abrir tu diario", ntReminderBody: "¿Cómo fue tu día? Escribe unas líneas.",
   ntThanks: "Alguien te dio las gracias", ntSos: "Un amigo pide apoyo", ntFriends: "Mensajes de amigos",
   ntNote: "Las notificaciones push en segundo plano, con la app cerrada, requerirán un servidor; por ahora funcionan mientras la pestaña o la PWA estén abiertas.",
+  ntNotePush: "Las notificaciones llegan también con la app cerrada. Puedes desactivarlas en los ajustes del navegador o del dispositivo.",
 };
 
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };

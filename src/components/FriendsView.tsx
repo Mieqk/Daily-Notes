@@ -10,6 +10,8 @@ import SosPanel from "./SosPanel";
 import SharedMemories from "./SharedMemories";
 import BuddyHabits from "./BuddyHabits";
 import Challenges from "./Challenges";
+import SleepParty from "./SleepParty";
+import type { SleepData } from "../store";
 import FriendsSection, { GroupLabel, EmptyState } from "./FriendsSection";
 import { makeUI } from "../ui-strings";
 
@@ -18,6 +20,7 @@ interface FriendsViewProps {
   lang: Lang;
   streak: number;
   notesCount: number;
+  sleep: Record<string, SleepData>;
 }
 
 interface Profile {
@@ -126,7 +129,7 @@ function genCode(): string {
   return s;
 }
 
-export default function FriendsView({ userId, lang }: FriendsViewProps) {
+export default function FriendsView({ userId, lang, sleep }: FriendsViewProps) {
   const t = (k: string) => (L[lang] ?? L.en)[k] ?? L.en[k];
   const card = "rounded-xl border border-[var(--line)] bg-[var(--panel)]";
 
@@ -400,6 +403,7 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
       <GroupLabel>{t("gTogether")}</GroupLabel>
       <BuddyHabits userId={userId} lang={lang} friends={friendOpts} />
       <Challenges userId={userId} lang={lang} friends={friendOpts} myName={me?.display_name || "—"} />
+      <SleepParty userId={userId} lang={lang} friends={friendOpts} sleep={sleep} />
       <SharedMemories userId={userId} lang={lang} friends={friendOpts} />
 
       <GroupLabel>{t("gCare")}</GroupLabel>
