@@ -3,6 +3,7 @@ import type { Lang } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { fetchProfiles } from "../lib/profiles";
 import { makeUI } from "../ui-strings";
+import FriendsSection from "./FriendsSection";
 
 interface Signal { id: string; user_id: string; message: string | null; created_at: string; resolved_at: string | null }
 interface Support { signal_id: string; user_id: string }
@@ -73,8 +74,7 @@ export default function SosPanel({ userId, lang }: { userId: string; lang: Lang 
   const mySupporters = mine ? support.filter((x) => x.signal_id === mine.id) : [];
 
   return (
-    <div className="mb-5 animate-rise rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <h3 className="text-[15px] font-bold">{u("sosTitle")}</h3>
+    <FriendsSection icon="🫂" title={u("sosTitle")}>
 
       {others.map((s) => {
         const already = support.some((x) => x.signal_id === s.id && x.user_id === userId);
@@ -123,6 +123,6 @@ export default function SosPanel({ userId, lang }: { userId: string; lang: Lang 
           <button onClick={() => setComposing(true)} className={`${btn} border border-[var(--line)] bg-[var(--panel-2)] hover:border-[var(--accent)] hover:text-[var(--accent-deep)]`}>{u("sosBtn")}</button>
         </div>
       )}
-    </div>
+    </FriendsSection>
   );
 }

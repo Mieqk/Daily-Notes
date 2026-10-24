@@ -5,6 +5,7 @@ import { fetchProfiles } from "../lib/profiles";
 import { questionText } from "../lib/questions";
 import { shiftISO, todayISO } from "../store";
 import { makeUI } from "../ui-strings";
+import FriendsSection, { EmptyState } from "./FriendsSection";
 
 interface Row { user_id: string; date: string; question_idx: number; answer: string; created_at: string }
 interface Person { id: string; display_name: string | null; avatar: string | null; avatar_url: string | null }
@@ -45,10 +46,9 @@ export default function FriendsAnswers({ userId, lang }: { userId: string; lang:
     );
 
   return (
-    <div className="mb-5 animate-rise rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <h3 className="mb-3 text-[15px] font-bold">{u("qFriendsTitle")}</h3>
+    <FriendsSection icon="💬" title={u("qFriendsTitle")}>
       {rows.length === 0 ? (
-        <p className="text-[13px] text-[var(--ink-soft)]">{u("qFriendsEmpty")}</p>
+        <EmptyState icon="💬">{u("qFriendsEmpty")}</EmptyState>
       ) : (
         <ul className="flex flex-col gap-3">
           {rows.map((r) => {
@@ -70,6 +70,6 @@ export default function FriendsAnswers({ userId, lang }: { userId: string; lang:
           })}
         </ul>
       )}
-    </div>
+    </FriendsSection>
   );
 }

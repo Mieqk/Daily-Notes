@@ -9,6 +9,7 @@ import SosPanel from "./SosPanel";
 import SharedMemories from "./SharedMemories";
 import BuddyHabits from "./BuddyHabits";
 import Challenges from "./Challenges";
+import FriendsSection, { GroupLabel, EmptyState } from "./FriendsSection";
 import { makeUI } from "../ui-strings";
 
 interface FriendsViewProps {
@@ -47,6 +48,7 @@ const L: Record<string, Record<string, string>> = {
     noReqs: "Нет входящих запросов", notFound: "Не найдено. Проверь код",
     selfErr: "Нельзя добавить самого себя", already: "Вы уже друзья или запрос отправлен",
     remove: "Удалить", removeSure: "Точно удалить?",
+    addHint: "Введи код друга или поделись своим", gConnect: "Друзья", gTogether: "Вместе", gCare: "Забота и поддержка",
   },
   en: {
     myCode: "My friend code", copy: "Copy", copied: "Copied!",
@@ -57,6 +59,7 @@ const L: Record<string, Record<string, string>> = {
     noReqs: "No incoming requests", notFound: "Not found. Check the code",
     selfErr: "You cannot add yourself", already: "Already friends or request sent",
     remove: "Remove", removeSure: "Really remove?",
+    addHint: "Enter a friend's code or share yours", gConnect: "Friends", gTogether: "Together", gCare: "Care & support",
   },
 };
 
@@ -230,44 +233,49 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
         </div>
       )}
 
+      <GroupLabel>{t("gConnect")}</GroupLabel>
+
       {/* ===== Добавить друга ===== */}
-      <div className={`${card} mb-5 animate-rise p-4`} style={{ boxShadow: "var(--shadow-sm)" }}>
-        <div className="mb-3 flex items-center justify-between gap-2 rounded-lg bg-[var(--hover)] px-3 py-2">
+      <FriendsSection icon="➕" title={t("addFriend")} hint={t("addHint")}>
+        <button
+          onClick={copyCode}
+          aria-label={t("copy")}
+          className="mb-3 flex w-full items-center justify-between gap-2 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-3.5 py-2.5 text-left active:scale-[0.99]"
+        >
           <span className="text-[12px] font-semibold text-[var(--ink-soft)]">{t("myCode")}</span>
-          <button onClick={copyCode} className="flex items-center gap-2 font-mono text-[13px] font-bold tracking-[0.18em] text-[var(--accent-deep)] active:scale-95">
-            {me?.friend_code ?? "…"}
-            <span className="text-[12px] font-semibold tracking-normal text-[var(--ink-soft)]">{copied ? t("copied") : t("copy")}</span>
-          </button>
-        </div>
-        <h3 className="mb-3 text-[15px] font-bold">➕ {t("addFriend")}</h3>
+          <span className="flex items-center gap-2.5">
+            <span className="font-mono text-[15px] font-bold tracking-[0.2em] text-[var(--accent-deep)]">{me?.friend_code ?? "…"}</span>
+            <span className="rounded-md bg-[var(--panel)] px-2 py-1 text-[11.5px] font-semibold text-[var(--ink-soft)]">{copied ? t("copied") : t("copy")}</span>
+          </span>
+        </button>
         <div className="flex gap-2">
           <input
             value={searchCode}
             onChange={(e) => setSearchCode(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") search(); }}
             placeholder={t("codePh")}
-            className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 font-mono text-sm uppercase tracking-widest outline-none focus:border-[var(--accent)]"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3.5 font-mono text-sm uppercase tracking-widest outline-none focus:border-[var(--accent)]"
           />
-          <button onClick={search} className="h-10 shrink-0 rounded-lg bg-[var(--accent)] px-4 text-[13px] font-semibold text-[var(--accent-ink)] active:scale-95">
+          <button onClick={search} className="h-11 shrink-0 rounded-xl bg-[var(--accent)] px-5 text-[13px] font-semibold text-[var(--accent-ink)] active:scale-95">
             {t("find")}
           </button>
         </div>
         {found && (
-          <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
             {person(found)}
             <button onClick={() => sendRequest(found)} className="h-9 shrink-0 rounded-lg bg-[var(--accent)] px-3.5 text-[12.5px] font-semibold text-[var(--accent-ink)] active:scale-95">
               {t("sendReq")}
             </button>
           </div>
         )}
-      </div>
+      </FriendsSection>
 
       {/* ===== Входящие запросы ===== */}
-      <div className={`${card} mb-5 animate-rise p-4`} style={{ boxShadow: "var(--shadow-sm)" }}>
-        <h3 className="mb-3 text-[15px] font-bold">📬 {t("incoming")}</h3>
-        {incoming.length === 0 && <p className="text-sm text-[var(--ink-faint)]">{t("noReqs")}</p>}
+      <FriendsSection icon="📬" title={t("incoming")} count={incoming.length} accent={incoming.length > 0}>
+        {incoming.length === 0 && <EmptyState icon="📭">{t("noReqs")}</EmptyState>}
         <div className="flex flex-col gap-2">
           {incoming.map(({ row, profile }) => (
-            <div key={row.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
+            <div key={row.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
               <button onClick={() => setViewId(profile.id)} className="min-w-0 flex-1 text-left transition-opacity hover:opacity-80">
                 {person(profile)}
               </button>
@@ -282,15 +290,14 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
             </div>
           ))}
         </div>
-      </div>
+      </FriendsSection>
 
       {/* ===== Мои друзья ===== */}
-      <div className={`${card} animate-rise p-4`} style={{ boxShadow: "var(--shadow-sm)" }}>
-        <h3 className="mb-3 text-[15px] font-bold">💚 {t("friends")}{friends.length > 0 && <span className="ml-1.5 text-[12px] font-semibold text-[var(--ink-faint)]">· {friends.length}</span>}</h3>
-        {friends.length === 0 && <p className="text-sm text-[var(--ink-faint)]">{t("noFriends")}</p>}
+      <FriendsSection icon="💚" title={t("friends")} count={friends.length}>
+        {friends.length === 0 && <EmptyState icon="💌">{t("noFriends")}</EmptyState>}
         <div className="flex flex-col gap-2">
           {friends.map(({ row, profile }) => (
-            <div key={row.id} className="rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
+            <div key={row.id} className="rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
             <div className="flex items-center justify-between gap-3">
               <button onClick={() => setViewId(profile.id)} className="min-w-0 flex-1 text-left transition-opacity hover:opacity-80">
                 {person(profile)}
@@ -331,16 +338,17 @@ export default function FriendsView({ userId, lang }: FriendsViewProps) {
             </div>
           ))}
         </div>
-      </div>
+      </FriendsSection>
 
-      <div className="mt-5">
-        <SosPanel userId={userId} lang={lang} />
-        <BuddyHabits userId={userId} lang={lang} friends={friendOpts} />
-        <Challenges userId={userId} lang={lang} friends={friendOpts} myName={me?.display_name || "—"} />
-        <SharedMemories userId={userId} lang={lang} friends={friendOpts} />
-        <FriendsAnswers userId={userId} lang={lang} />
-        <GratitudeFeed userId={userId} lang={lang} refreshKey={feedKey} />
-      </div>
+      <GroupLabel>{t("gTogether")}</GroupLabel>
+      <BuddyHabits userId={userId} lang={lang} friends={friendOpts} />
+      <Challenges userId={userId} lang={lang} friends={friendOpts} myName={me?.display_name || "—"} />
+      <SharedMemories userId={userId} lang={lang} friends={friendOpts} />
+
+      <GroupLabel>{t("gCare")}</GroupLabel>
+      <SosPanel userId={userId} lang={lang} />
+      <FriendsAnswers userId={userId} lang={lang} />
+      <GratitudeFeed userId={userId} lang={lang} refreshKey={feedKey} />
 
       {viewId && (
         <ProfilePage

@@ -3,6 +3,7 @@ import type { Lang } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { todayISO } from "../store";
 import { makeSocial } from "../social-strings";
+import FriendsSection, { EmptyState } from "./FriendsSection";
 
 export interface FriendOpt { id: string; name: string }
 interface Memory { id: string; author: string; friend: string; text: string; tag: string | null; memory_date: string; created_at: string }
@@ -55,13 +56,11 @@ export default function SharedMemories({ userId, lang, friends }: { userId: stri
   const btn = "h-10 rounded-lg px-4 text-[13px] font-semibold transition-all active:scale-95 disabled:opacity-50";
 
   return (
-    <div className="mb-5 animate-rise rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-[15px] font-bold">📸 {s("memTitle")}</h3>
-        {friends.length > 0 && !composing && (
-          <button onClick={() => { setComposing(true); setWithId(friends[0].id); }} className="h-8 rounded-lg px-2.5 text-[12px] font-semibold text-[var(--accent-deep)] hover:bg-[var(--accent-soft)]">+ {s("memAdd")}</button>
-        )}
-      </div>
+    <FriendsSection icon="📸" title={s("memTitle")} action={
+      friends.length > 0 && !composing && (
+        <button onClick={() => { setComposing(true); setWithId(friends[0].id); }} className="h-8 rounded-lg px-2.5 text-[12px] font-semibold text-[var(--accent-deep)] hover:bg-[var(--accent-soft)]">+ {s("memAdd")}</button>
+      )
+    }>
 
       {composing && (
         <div className="mb-4 flex flex-col gap-2 rounded-lg bg-[var(--hover)] p-3">
@@ -92,7 +91,7 @@ export default function SharedMemories({ userId, lang, friends }: { userId: stri
       )}
 
       {shown.length === 0 ? (
-        <p className="text-[13px] text-[var(--ink-soft)]">{friends.length === 0 ? s("memNoFriends") : s("memEmpty")}</p>
+        <EmptyState icon="📸">{friends.length === 0 ? s("memNoFriends") : s("memEmpty")}</EmptyState>
       ) : (
         <ul className="flex flex-col gap-2.5">
           {shown.map((r) => {
@@ -113,6 +112,6 @@ export default function SharedMemories({ userId, lang, friends }: { userId: stri
           })}
         </ul>
       )}
-    </div>
+    </FriendsSection>
   );
 }

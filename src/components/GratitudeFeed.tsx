@@ -3,6 +3,7 @@ import type { Lang } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { fetchProfiles } from "../lib/profiles";
 import { makeUI } from "../ui-strings";
+import FriendsSection, { EmptyState } from "./FriendsSection";
 
 interface Row { id: string; from_user: string; to_user: string; text: string; created_at: string }
 interface Person { id: string; display_name: string | null; avatar: string | null; avatar_url: string | null }
@@ -33,10 +34,9 @@ export default function GratitudeFeed({ userId, lang, refreshKey }: { userId: st
   const fmt = new Intl.DateTimeFormat(lang, { day: "numeric", month: "short" });
 
   return (
-    <div className="mb-5 animate-rise rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <h3 className="mb-3 text-[15px] font-bold">{u("gTitle")}</h3>
+    <FriendsSection icon="💌" title={u("gTitle")}>
       {rows.length === 0 ? (
-        <p className="text-[13px] text-[var(--ink-soft)]">{u("gEmpty")}</p>
+        <EmptyState icon="💌">{u("gEmpty")}</EmptyState>
       ) : (
         <ul className="flex flex-col gap-2.5">
           {rows.map((r) => {
@@ -55,6 +55,6 @@ export default function GratitudeFeed({ userId, lang, refreshKey }: { userId: st
           })}
         </ul>
       )}
-    </div>
+    </FriendsSection>
   );
 }

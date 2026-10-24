@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { shiftISO, todayISO } from "../store";
 import { makeSocial } from "../social-strings";
 import type { FriendOpt } from "./SharedMemories";
+import FriendsSection, { EmptyState } from "./FriendsSection";
 
 interface Habit { id: string; owner: string; buddy: string; title: string }
 interface Checkin { habit_id: string; user_id: string; day: string }
@@ -75,13 +76,11 @@ export default function BuddyHabits({ userId, lang, friends }: { userId: string;
   };
 
   return (
-    <div className="mb-5 animate-rise rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-[15px] font-bold">🤝 {s("buddyTitle")}</h3>
-        {friends.length > 0 && !composing && (
-          <button onClick={() => { setComposing(true); setWithId(friends[0].id); }} className="h-8 rounded-lg px-2.5 text-[12px] font-semibold text-[var(--accent-deep)] hover:bg-[var(--accent-soft)]">+ {s("buddyAdd")}</button>
-        )}
-      </div>
+    <FriendsSection icon="🤝" title={s("buddyTitle")} action={
+      friends.length > 0 && !composing && (
+        <button onClick={() => { setComposing(true); setWithId(friends[0].id); }} className="h-8 rounded-lg px-2.5 text-[12px] font-semibold text-[var(--accent-deep)] hover:bg-[var(--accent-soft)]">+ {s("buddyAdd")}</button>
+      )
+    }>
 
       {composing && (
         <div className="mb-4 flex flex-col gap-2 rounded-lg bg-[var(--hover)] p-3">
@@ -98,7 +97,7 @@ export default function BuddyHabits({ userId, lang, friends }: { userId: string;
       )}
 
       {habits.length === 0 ? (
-        <p className="text-[13px] text-[var(--ink-soft)]">{s("buddyEmpty")}</p>
+        <EmptyState icon="🤝">{s("buddyEmpty")}</EmptyState>
       ) : (
         <ul className="flex flex-col gap-2.5">
           {habits.map((h) => {
@@ -135,6 +134,6 @@ export default function BuddyHabits({ userId, lang, friends }: { userId: string;
           })}
         </ul>
       )}
-    </div>
+    </FriendsSection>
   );
 }
