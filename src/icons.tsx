@@ -249,6 +249,20 @@ export const SleepIcon = ({ className = "h-5 w-5" }: IconProps) => (
   </svg>
 );
 
+export const FoodIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M7 3v7a2 2 0 0 0 2 2v9" />
+    <path d="M5 3v6M9 3v6" />
+    <path d="M17 21V3c-2.5 1.5-3.5 4.5-3.5 8H17" />
+  </svg>
+);
+
+export const DumbbellIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" />
+  </svg>
+);
+
 export const UserIcon = ({ className = "h-5 w-5" }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} {...base}>
     <circle cx="12" cy="8" r="4" />
