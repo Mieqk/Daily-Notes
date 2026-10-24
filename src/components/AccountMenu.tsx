@@ -2,6 +2,7 @@ import { FlameIcon, NotebookIcon } from "../icons";
 import { useEffect, useState } from "react";
 import type { Lang } from "../i18n";
 import { supabase } from "../lib/supabase";
+import { fetchProfiles } from "../lib/profiles";
 import ProfilePage from "./ProfilePage";
 
 interface AccountMenuProps {
@@ -52,10 +53,12 @@ export default function AccountMenu({ userId, lang, streak, notesCount, hasPin, 
     setMe(my);
     const { data } = await supabase!.from("friendships").select("*").eq("status", "pending").or(`user_a.eq.${userId},user_b.eq.${userId}`);
     const rows = (data ?? []).filter((r: any) => r.sender !== userId);
+    const senders = await fetchProfiles<Profile>(rows.map((r: any) => r.sender));
+    const byId = new Map(senders.map((pr) => [pr.id, pr]));
     const out: Req[] = [];
     for (const row of rows) {
-      const { data: p } = await supabase!.from("profiles").select("*").eq("id", row.sender).single();
-      if (p) out.push({ id: row.id, profile: p as Profile });
+      const pr = byId.get(row.sender);
+      if (pr) out.push({ id: row.id, profile: pr });
     }
     setReqs(out);
   };
