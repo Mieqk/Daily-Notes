@@ -423,7 +423,14 @@ useSwipe({
             </ul>
           </div>
 
-          <FactOfDay lang={lang} />
+          <FactOfDay lang={lang} onSave={(f) => {
+            setNotes((m) => {
+              const cur = m[date] ?? "";
+              if (cur.includes(f)) return m;
+              return { ...m, [date]: cur.trim() ? `${cur}\n\n💡 ${f}` : `💡 ${f}` };
+            });
+            bumpStatus();
+          }} />
 
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
             <div className="flex items-center gap-3">
