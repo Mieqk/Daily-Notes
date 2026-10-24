@@ -45,10 +45,17 @@ export default async function handler(req, res) {
   }
 
   const LANG_NAMES = { ru: "Russian", en: "English", be: "Belarusian", uk: "Ukrainian", de: "German", fr: "French", es: "Spanish" };
+  // Без случайной темы модель на один и тот же промпт отвечает одним и тем же фактом
+  const TOPICS = ["animals", "oceans", "space and planets", "the human body", "ancient history", "medieval history", "inventions", "plants and fungi", "weather and climate", "geography", "chemistry", "physics", "mathematics", "food and drinks", "music", "languages and writing", "architecture", "insects", "birds", "geology and minerals", "sports", "technology and computers", "psychology and sleep", "art and painting"];
+  const topic = TOPICS[Math.floor(Math.random() * TOPICS.length)];
+  const nonce = Math.random().toString(36).slice(2, 8);
+  const avoid = String(req.query.avoid || "").slice(0, 200);
+  const avoidRu = avoid ? ` Не повторяй этот факт: «${avoid}».` : "";
+  const avoidEn = avoid ? ` Do not repeat this fact: "${avoid}".` : "";
   const prompt =
     lang === "ru"
-      ? "Придумай один короткий интересный научный, исторический или природный факт. Ответь только самим фактом, одним-двумя предложениями, без вступлений и подписей."
-      : `Come up with one short interesting science, history or nature fact. Reply in ${LANG_NAMES[lang] || "English"} with only the fact itself, one or two sentences, no intro or labels.`;
+      ? `Придумай один короткий малоизвестный факт на тему: ${topic} (переведи тему на русский). Выбирай необычные факты, не самые популярные.${avoidRu} Ответь только самим фактом, одним-двумя предложениями, без вступлений и подписей. [${nonce}]`
+      : `Come up with one short little-known fact about: ${topic}. Pick an unusual one, not the most popular.${avoidEn} Reply in ${LANG_NAMES[lang] || "English"} with only the fact itself, one or two sentences, no intro or labels. [${nonce}]`;
 
   const errors = [];
 
@@ -69,7 +76,7 @@ export default async function handler(req, res) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 1.3 } }),
         }
       );
       const data = await r.json();
@@ -85,7 +92,7 @@ export default async function handler(req, res) {
         continue;
       }
 
-      res.setHeader("Cache-Control", "s-maxage=3600");
+      res.setHeader("Cache-Control", "no-store");
       return res.json({ fact: text, model });
     } catch (e) {
       errors.push(`${model}: ${e.message}`);
