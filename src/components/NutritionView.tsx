@@ -3,6 +3,7 @@ import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
 import { fromISO, shiftISO, todayISO, useStored } from "../store";
 import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
+import CoachChat, { SEG, type CoachItem } from "./CoachChat";
 
 interface Per100 { kcal: number; p: number; f: number; c: number }
 interface Food extends Per100 { id: string; name: string; grams: number }
@@ -114,14 +115,11 @@ export default function NutritionView({ lang }: { lang: Lang }) {
   const [foods, setFoods] = useStored<Food[]>("dn.foods", []);
   const [log, setLog] = useStored<Record<string, Entry[]>>("dn.foodLog", {});
   const [goal, setGoal] = useStored<number>("dn.foodGoal", 2000);
-  const [aiOn, setAiOn] = useStored<boolean>("dn.aiFood", false);
   const [date, setDate] = useState(todayISO());
+  const [view, setView] = useState<"coach" | "day">("coach");
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", kcal: "", p: "", f: "", c: "", grams: "100" });
-  const [aiText, setAiText] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [askConsent, setAskConsent] = useState(false);
   const [importText, setImportText] = useState("");
 
   const entries = log[date] ?? [];
@@ -154,34 +152,6 @@ export default function NutritionView({ lang }: { lang: Lang }) {
     setAdding(false);
   };
 
-  const runAi = async (consented = false) => {
-    const text = aiText.trim();
-    if (!text) return;
-    if (!aiOn && consented !== true) { setAskConsent(true); return; }
-    setAiLoading(true);
-    setMsg(null);
-    try {
-      const r = await fetch("/api/food", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lang, text }) });
-      const d = await r.json();
-      if (!r.ok || !Array.isArray(d?.items) || !d.items.length) throw new Error("bad");
-      const newEntries: Entry[] = [];
-      const newFoods: Food[] = [];
-      for (const it of d.items as { name: string; grams: number; kcal: number; protein: number; fat: number; carbs: number }[]) {
-        const k = 100 / it.grams;
-        const per100 = { kcal: round1(it.kcal * k), p: round1(it.protein * k), f: round1(it.fat * k), c: round1(it.carbs * k) };
-        newEntries.push(addEntry(it.name, it.grams, per100));
-        newFoods.push({ id: uid(), name: it.name, grams: it.grams, ...per100 });
-      }
-      setDay([...entries, ...newEntries]);
-      mergeFoods(newFoods);
-      setAiText("");
-    } catch {
-      setMsg(l.aiErr);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -200,6 +170,21 @@ export default function NutritionView({ lang }: { lang: Lang }) {
     setImportText("");
   };
 
+  const coachContext = `Calorie goal ${safeGoal} kcal. Eaten today: ${total.kcal} kcal, protein ${round1(total.p)} g, fat ${round1(total.f)} g, carbs ${round1(total.c)} g.` +
+    (entries.length ? ` Foods: ${entries.map((e) => `${e.name} ${e.grams} g`).join(", ")}.` : "");
+  const applyCoach = (items: CoachItem[]) => {
+    const newEntries: Entry[] = [];
+    const newFoods: Food[] = [];
+    for (const it of items) {
+      if (!it.grams) continue;
+      const k = 100 / it.grams;
+      const per100 = { kcal: round1((it.kcal ?? 0) * k), p: round1((it.protein ?? 0) * k), f: round1((it.fat ?? 0) * k), c: round1((it.carbs ?? 0) * k) };
+      newEntries.push(addEntry(it.name, it.grams, per100));
+      newFoods.push({ id: uid(), name: it.name, grams: it.grams, ...per100 });
+    }
+    setDay([...entries, ...newEntries]);
+    mergeFoods(newFoods);
+  };
   const dateLabel = date === todayISO() ? l.today : new Intl.DateTimeFormat(localeOf(lang), { weekday: "short", day: "numeric", month: "short" }).format(fromISO(date));
   const field = (key: keyof typeof form, label: string, numeric = true) => (
     <label className="flex flex-col gap-1 text-[11px] font-semibold text-[var(--ink-faint)]">
@@ -210,6 +195,22 @@ export default function NutritionView({ lang }: { lang: Lang }) {
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
+      <div className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist">
+        {(["coach", "day"] as const).map((v) => (
+          <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`h-9 rounded-lg text-[13px] font-semibold transition-all ${view === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>{SEG[lang][v]}</button>
+        ))}
+      </div>
+
+      {view === "coach" ? (
+        <>
+          <div className="flex items-baseline justify-between text-[13px] text-[var(--ink-soft)]">
+            <span><b className="text-[var(--ink)]">{total.kcal}</b> / {safeGoal} {l.kcal}</span>
+            <span>{l.p[0]} {round1(total.p)} · {l.f[0]} {round1(total.f)} · {l.c[0]} {round1(total.c)}</span>
+          </div>
+          <CoachChat mode="food" lang={lang} context={coachContext} onApply={applyCoach} />
+        </>
+      ) : (
+      <>
       <div className="flex items-center justify-between">
         <button onClick={() => setDate(shiftISO(date, -1))} className={btnCls} aria-label="‹"><ArrowLeftIcon className="h-4 w-4" /></button>
         <span className="text-[15px] font-bold">{dateLabel}</span>
@@ -227,20 +228,6 @@ export default function NutritionView({ lang }: { lang: Lang }) {
             <span key={label}><b>{round1(v)}</b> <span className="text-[var(--ink-faint)]">{label}</span></span>
           ))}
         </div>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <div className="flex gap-2">
-          <input className={`${inputCls} !h-11`} value={aiText} maxLength={400} placeholder={l.aiPh} onChange={(e) => setAiText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") runAi(); }} />
-          <button onClick={() => runAi()} disabled={aiLoading || !aiText.trim()} className={primaryCls}>{aiLoading ? "…" : l.calc}</button>
-        </div>
-        {askConsent && !aiOn && (
-          <div className="flex flex-col gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel)] p-3">
-            <p className="text-[12px] leading-relaxed text-[var(--ink-soft)]">{l.aiWarn}</p>
-            <button onClick={() => { setAiOn(true); setAskConsent(false); runAi(true); }} className={`${primaryCls} self-start`}>{l.aiEnable}</button>
-          </div>
-        )}
-        {msg && <p className="text-[12.5px] font-semibold text-[var(--ink-soft)]" role="status">{msg}</p>}
       </section>
 
       <section className="flex flex-col gap-2">
@@ -312,9 +299,11 @@ export default function NutritionView({ lang }: { lang: Lang }) {
             <textarea className={`${inputCls} !h-20 py-2 font-mono`} value={importText} onChange={(e) => setImportText(e.target.value)} placeholder={l.importPh} />
             <button onClick={doImport} disabled={!importText.trim()} className={`${btnCls} self-start`}>{l.importBtn}</button>
           </div>
-          {aiOn && <button onClick={() => setAiOn(false)} className="self-start text-[12px] font-semibold text-[var(--ink-faint)] hover:text-[var(--ink)]">{l.aiDisable}: {l.aiTitle}</button>}
+          {msg && <p className="text-[12.5px] font-semibold text-[var(--ink-soft)]" role="status">{msg}</p>}
         </div>
       </details>
+      </>
+      )}
     </div>
   );
 }

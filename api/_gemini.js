@@ -14,8 +14,9 @@ async function listFlashModels(key, version) {
   }
 }
 
-export async function generateText(key, prompt, generationConfig = {}) {
-  const errors = [];
+// diag — необязательный массив: сюда попадают причины отказов моделей (без ключа и данных пользователя)
+export async function generateText(key, prompt, generationConfig = {}, diag = []) {
+  const errors = diag;
   const PREFERRED = ["gemini-3.6-flash", "gemini-flash-latest"];
   let version = "v1beta";
   let dynamic = await listFlashModels(key, version);
