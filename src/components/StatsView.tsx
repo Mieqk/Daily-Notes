@@ -116,6 +116,10 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
   const avgWith = avg(withTasks);
   const avgWithout = avg(withoutTasks);
   const corrStrength = Math.abs(r) >= 0.5 ? t("corrStrong") : Math.abs(r) >= 0.25 ? t("corrMedium") : t("corrWeak");
+  const hasAnyData =
+    Object.values(notes).some((v) => (v ?? "").trim()) ||
+    Object.keys(moods).length > 0 ||
+    Object.values(tasks).some((l) => l.length > 0);
   const hasData = days.some((d) => d.mood !== null || d.total > 0);
 
   /* ---------- heatmap (16 weeks) ---------- */
@@ -284,6 +288,7 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
       </div>
 
       {/* Stat cards */}
+      {hasAnyData && (
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         {statCards.map((c, i) => (
           <div
@@ -298,11 +303,19 @@ export default function StatsView({ notes, tasks, moods, moodEmoji, lang, t }: S
           </div>
         ))}
       </div>
+      )}
 
       {!hasData ? (
         <div className={`${card} animate-rise flex flex-col items-center gap-3 py-16 text-center`}>
           <StatsIcon className="h-10 w-10 text-[var(--ink-faint)]" />
-          <p className="text-sm text-[var(--ink-faint)]">{t("corrNoData")}</p>
+          {hasAnyData ? (
+            <p className="text-sm text-[var(--ink-soft)]">{t("corrNoData")}</p>
+          ) : (
+            <>
+              <h3 className="text-[15px] font-bold">{t("statsEmptyTitle")}</h3>
+              <p className="max-w-sm text-sm text-[var(--ink-soft)]">{t("statsEmptyBody")}</p>
+            </>
+          )}
         </div>
       ) : (
         <>
