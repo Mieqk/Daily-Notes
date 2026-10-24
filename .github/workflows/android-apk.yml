@@ -66,11 +66,13 @@ jobs:
       - name: Set launcher icon
         run: |
           RES=android/app/src/main/res
+          IM=$(command -v magick || command -v convert || true)
+          if [ -z "$IM" ]; then sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick; IM=$(command -v magick || command -v convert); fi
           rm -rf "$RES"/mipmap-anydpi-v26
           for pair in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
             d="$RES/mipmap-${pair%%:*}"; sz="${pair##*:}"
             mkdir -p "$d"
-            convert public/icons/icon-512.png -resize ${sz}x${sz} "$d/ic_launcher.png"
+            "$IM" public/icons/icon-512.png -resize ${sz}x${sz} "$d/ic_launcher.png"
             cp "$d/ic_launcher.png" "$d/ic_launcher_round.png"
             rm -f "$d/ic_launcher_foreground.png"
           done
