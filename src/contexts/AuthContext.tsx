@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { unsubscribePush } from '../lib/push';
 
 interface AuthContextType {
   user: User | null;
@@ -60,6 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    // подписку нужно удалить до выхода: после него RLS уже не пустит запрос
+    await unsubscribePush();
     if (supabase) await supabase.auth.signOut();
   }, []);
 

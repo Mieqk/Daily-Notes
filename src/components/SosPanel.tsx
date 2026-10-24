@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Lang } from "../i18n";
+import { sendPushEvent } from "../lib/push";
 import { supabase } from "../lib/supabase";
 import { fetchProfiles } from "../lib/profiles";
 import { makeUI } from "../ui-strings";
@@ -49,7 +50,8 @@ export default function SosPanel({ userId, lang }: { userId: string; lang: Lang 
     setBusy(true);
     // старый незакрытый сигнал (старше суток) мешал бы создать новый
     await supabase!.from("sos_signals").update({ resolved_at: new Date().toISOString() }).eq("user_id", userId).is("resolved_at", null);
-    await supabase!.from("sos_signals").insert({ user_id: userId, message: text.trim() || null });
+    const { data: row } = await supabase!.from("sos_signals").insert({ user_id: userId, message: text.trim() || null }).select("id").single();
+    if (row?.id) sendPushEvent("sos", row.id);
     setBusy(false);
     setComposing(false);
     setText("");

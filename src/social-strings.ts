@@ -15,12 +15,13 @@ const ru = {
   chDay: "День {n} из {total}", chFinished: "Челлендж завершён", chMembers: "Участники", chLeave: "Выйти", chDelete: "Удалить",
   chConfirm: "Точно?", chNeedFriend: "Выберите хотя бы одного друга",
   loading: "Загрузка…", error: "Не получилось, попробуйте ещё раз",
-  ntTitle: "Уведомления", ntSub: "Напоминание о записи и вести от друзей, пока приложение открыто",
+  ntTitle: "Уведомления", ntSub: "Напоминание о записи и вести от друзей",
   ntEnable: "Включить уведомления", ntOn: "Уведомления включены", ntDenied: "Уведомления запрещены в настройках браузера",
   ntUnsupported: "Этот браузер не поддерживает уведомления", ntTest: "Проверить",
   ntReminder: "Пора заглянуть в дневник", ntReminderBody: "Как прошёл день? Запишите пару строк.",
   ntThanks: "Вам сказали спасибо", ntSos: "Друг просит поддержки", ntFriends: "Сообщения от друзей",
-  ntNote: "Фоновые пуши при закрытом приложении потребуют сервера; сейчас уведомления работают, пока вкладка или PWA открыты.",
+  ntNote: "Войдите в аккаунт, чтобы получать уведомления и при закрытом приложении; без входа они работают, пока вкладка или PWA открыты.",
+  ntNotePush: "Уведомления приходят и при закрытом приложении. Отключить их можно в настройках браузера или устройства.",
 };
 type Strings = typeof ru;
 
@@ -38,12 +39,13 @@ const en: Strings = {
   chDay: "Day {n} of {total}", chFinished: "Challenge finished", chMembers: "Members", chLeave: "Leave", chDelete: "Delete",
   chConfirm: "Sure?", chNeedFriend: "Pick at least one friend",
   loading: "Loading…", error: "Something went wrong, please try again",
-  ntTitle: "Notifications", ntSub: "Entry reminder and news from friends while the app is open",
+  ntTitle: "Notifications", ntSub: "Entry reminder and news from friends",
   ntEnable: "Enable notifications", ntOn: "Notifications are on", ntDenied: "Notifications are blocked in browser settings",
   ntUnsupported: "This browser does not support notifications", ntTest: "Test",
   ntReminder: "Time to open your diary", ntReminderBody: "How was your day? Write a few lines.",
   ntThanks: "Someone thanked you", ntSos: "A friend asks for support", ntFriends: "Messages from friends",
-  ntNote: "Background push while the app is closed needs a server; for now notifications work while the tab or PWA is open.",
+  ntNote: "Sign in to get notifications while the app is closed; without an account they work only while the tab or PWA is open.",
+  ntNotePush: "Notifications also arrive while the app is closed. You can turn them off in your browser or device settings.",
 };
 
 const ALL: Partial<Record<Lang, Strings>> = { ru, en };
