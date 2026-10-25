@@ -144,6 +144,8 @@ export default async function handler(req, res) {
     thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
     // для чата важнее быстрый первый ответ: сначала lite-модели, полные flash в запасе
     preferLite: true,
+    // если модель молчит больше 2,5 с, параллельно шлём такой же запрос и берём того, кто ответит раньше
+    hedgeMs: 2500,
     timing,
   }, (piece) => {
     full += piece;
