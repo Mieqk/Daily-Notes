@@ -118,7 +118,7 @@ function DesignGroup({ title, sub, openLabel, closeLabel, children }: { title: s
         <span className="text-[12px] font-bold text-[var(--accent-deep)]">{open ? closeLabel : openLabel}</span>
         <span className={`text-[var(--ink-faint)] transition-transform ${open ? "rotate-180" : ""}`} aria-hidden>▾</span>
       </button>
-      {open && <div className="animate-fadein mt-5 grid gap-5 lg:grid-cols-2">{children}</div>}
+      {open && <div className="animate-fadein mt-5 grid items-start gap-5 lg:grid-cols-2">{children}</div>}
     </div>
   );
 }
@@ -239,7 +239,7 @@ export default function SettingsView(props: SettingsViewProps) {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid items-start gap-5 lg:grid-cols-2">
         {/* Дизайн: всё про внешний вид в одной сворачиваемой вкладке */}
         <DesignGroup title={makeLook(lang)("dgTitle")} sub={makeLook(lang)("dgSub")} openLabel={makeLook(lang)("dgOpen")} closeLabel={makeLook(lang)("dgClose")}>
         {/* Appearance */}
