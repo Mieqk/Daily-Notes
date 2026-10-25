@@ -8,8 +8,9 @@ import { generateUUID } from "../lib/uuid";
 import { CHAT_BUCKET, CHAT_COLS, CHAT_READ_EVENT, MAX_VIDEO_BYTES, MAX_VIDEO_MB, shrinkChatPhoto, videoExt, type ChatMessage } from "../lib/chat";
 import { makeChat } from "../chat-strings";
 import { XIcon } from "../icons";
+import { PRESENCE_COLOR, type PresenceState } from "../lib/presence";
 
-export interface ChatFriend { id: string; name: string; avatar: string | null; avatar_url: string | null }
+export interface ChatFriend { id: string; name: string; avatar: string | null; avatar_url: string | null; presence?: string | null; presenceState?: PresenceState | null }
 
 const PAGE = 40;
 const POLL_MS = 15_000;
@@ -250,7 +251,12 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
       >
         <header className="flex shrink-0 items-center gap-3 border-b border-[var(--line)] px-4 py-3">
           <span className="h-10 w-10 shrink-0 overflow-hidden rounded-xl">{ava}</span>
-          <h2 className="min-w-0 flex-1 truncate text-[15px] font-bold">{friend.name}</h2>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-[15px] font-bold leading-tight">{friend.name}</h2>
+            {friend.presence && (
+              <p className="truncate text-[11.5px] font-medium" style={{ color: friend.presenceState && friend.presenceState !== "offline" ? PRESENCE_COLOR[friend.presenceState] : "var(--ink-faint)" }}>{friend.presence}</p>
+            )}
+          </div>
           <button onClick={onClose} aria-label={c("close")} className="grid h-9 w-9 place-items-center rounded-lg text-[var(--ink-faint)] hover:bg-[var(--hover)]">
             <XIcon className="h-4.5 w-4.5" />
           </button>

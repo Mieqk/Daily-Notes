@@ -31,6 +31,7 @@ import FriendsView from "./components/FriendsView";
 import AccountMenu from "./components/AccountMenu";
 import { useNotifications } from "./hooks/useNotifications";
 import { useChatUnread } from "./hooks/useChatUnread";
+import { startPresenceHeartbeat } from "./lib/presence";
 import { useGcalSync } from "./hooks/useGcalSync";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
@@ -92,6 +93,7 @@ export default function App() {
 
   useNotifications(userId, lang, reminder);
   const chatUnread = useChatUnread(userId);
+  useEffect(() => (userId ? startPresenceHeartbeat(userId) : undefined), [userId]);
   useGcalSync(userId, tasks);
 
   const now = useNow(1000);
