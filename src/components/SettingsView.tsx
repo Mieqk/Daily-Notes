@@ -89,6 +89,40 @@ const BGS: { id: BgId; key: TKey }[] = [
   { id: "waves", key: "bgWaves" },
 ];
 
+/** Сворачиваемая вкладка: внутри обычная сетка из карточек. Состояние помним в браузере. */
+function DesignGroup({ title, sub, openLabel, closeLabel, children }: { title: string; sub: string; openLabel: string; closeLabel: string; children: ReactNode }) {
+  const [open, setOpen] = useState(() => {
+    try { return localStorage.getItem("dn.designOpen") === "1"; } catch { return false; }
+  });
+  const toggle = () => {
+    setOpen((o) => {
+      try { localStorage.setItem("dn.designOpen", o ? "0" : "1"); } catch { /* без хранилища просто не запоминаем */ }
+      return !o;
+    });
+  };
+  return (
+    <div className="lg:col-span-2">
+      <button
+        onClick={toggle}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5 text-left transition-colors hover:border-[var(--ink-faint)]"
+        style={{ boxShadow: "var(--shadow-sm)" }}
+      >
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent-deep)]">
+          <PaletteIcon className="h-4.5 w-4.5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-[15px] font-bold">{title}</span>
+          <span className="block text-[12px] text-[var(--ink-faint)]">{sub}</span>
+        </span>
+        <span className="text-[12px] font-bold text-[var(--accent-deep)]">{open ? closeLabel : openLabel}</span>
+        <span className={`text-[var(--ink-faint)] transition-transform ${open ? "rotate-180" : ""}`} aria-hidden>▾</span>
+      </button>
+      {open && <div className="animate-fadein mt-5 grid gap-5 lg:grid-cols-2">{children}</div>}
+    </div>
+  );
+}
+
 function Section({
   icon,
   title,
@@ -206,6 +240,8 @@ export default function SettingsView(props: SettingsViewProps) {
   return (
     <div className="mx-auto max-w-5xl">
       <div className="grid gap-5 lg:grid-cols-2">
+        {/* Дизайн: всё про внешний вид в одной сворачиваемой вкладке */}
+        <DesignGroup title={makeLook(lang)("dgTitle")} sub={makeLook(lang)("dgSub")} openLabel={makeLook(lang)("dgOpen")} closeLabel={makeLook(lang)("dgClose")}>
         {/* Appearance */}
         <Section icon={<PaletteIcon className="h-4.5 w-4.5" />} title={t("secAppearance")} sub={t("secAppearanceSub")}>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -240,32 +276,6 @@ export default function SettingsView(props: SettingsViewProps) {
         {/* Look editor */}
         <Section icon={<PaletteIcon className="h-4.5 w-4.5" />} title={makeLook(lang)("lkTitle")} sub={makeLook(lang)("lkSub")} delay={30}>
           <LookEditor look={look} onLook={onLook} theme={theme} onTheme={onTheme} lang={lang} />
-        </Section>
-
-        {/* Language */}
-        <Section icon={<GlobeIcon className="h-4.5 w-4.5" />} title={t("secLanguage")} sub={t("secLanguageSub")} delay={60}>
-          <div className="grid grid-cols-2 gap-2">
-            {LANGS.map((l) => {
-              const active = l.id === lang;
-              return (
-                <button
-                  key={l.id}
-                  onClick={() => onLang(l.id)}
-                  className={`flex h-14 items-center gap-3 rounded-xl border px-4 transition-all duration-200 active:scale-[0.97] ${
-                    active
-                      ? "border-[var(--accent)] bg-[var(--accent-soft)]"
-                      : "border-[var(--line)] bg-[var(--panel-2)] hover:-translate-y-0.5 hover:border-[var(--ink-faint)]"
-                  }`}
-                >
-                  <span className="grid h-8 w-11 place-items-center rounded-lg bg-[var(--hover)] text-[11px] font-bold text-[var(--ink-soft)]">
-                    {l.badge}
-                  </span>
-                  <span className="flex-1 text-left text-[14px] font-bold">{l.native}</span>
-                  {active && <CheckIcon className="animate-checkpop h-4 w-4 text-[var(--accent)]" />}
-                </button>
-              );
-            })}
-          </div>
         </Section>
 
         {/* Writing font */}
@@ -412,6 +422,34 @@ export default function SettingsView(props: SettingsViewProps) {
             >
               {t("emojiReset")}
             </button>
+          </div>
+        </Section>
+
+        </DesignGroup>
+
+        {/* Language */}
+        <Section icon={<GlobeIcon className="h-4.5 w-4.5" />} title={t("secLanguage")} sub={t("secLanguageSub")} delay={60}>
+          <div className="grid grid-cols-2 gap-2">
+            {LANGS.map((l) => {
+              const active = l.id === lang;
+              return (
+                <button
+                  key={l.id}
+                  onClick={() => onLang(l.id)}
+                  className={`flex h-14 items-center gap-3 rounded-xl border px-4 transition-all duration-200 active:scale-[0.97] ${
+                    active
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                      : "border-[var(--line)] bg-[var(--panel-2)] hover:-translate-y-0.5 hover:border-[var(--ink-faint)]"
+                  }`}
+                >
+                  <span className="grid h-8 w-11 place-items-center rounded-lg bg-[var(--hover)] text-[11px] font-bold text-[var(--ink-soft)]">
+                    {l.badge}
+                  </span>
+                  <span className="flex-1 text-left text-[14px] font-bold">{l.native}</span>
+                  {active && <CheckIcon className="animate-checkpop h-4 w-4 text-[var(--accent)]" />}
+                </button>
+              );
+            })}
           </div>
         </Section>
 

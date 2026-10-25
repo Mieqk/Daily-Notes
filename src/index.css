@@ -462,3 +462,20 @@ html[data-flat="1"] {
 html[data-flat="1"] .noise {
   display: none;
 }
+
+html[data-caps="off"] .uppercase {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+html[data-calm="1"] *,
+html[data-calm="1"] *::before,
+html[data-calm="1"] *::after {
+  animation: none !important;
+  transition-duration: 0.01ms !important;
+}
+
+html[data-contrast="high"] {
+  --ink-soft: color-mix(in srgb, var(--ink) 90%, var(--bg)) !important;
+  --ink-faint: color-mix(in srgb, var(--ink) 76%, var(--bg)) !important;
+}
