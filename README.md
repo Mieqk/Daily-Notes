@@ -22,7 +22,7 @@
 
 <br>
 
-<img src="screenshots/hero.jpg" alt="Главный экран Daily Note: запись дня, задачи, факт дня и календарь" width="100%">
+<img src="screenshots/hero.jpg" alt="Главный экран Daily Note в теме «Своя»: запись дня, задачи, факт дня и календарь" width="100%">
 
 </div>
 
@@ -125,15 +125,15 @@ PIN-код и вход по отпечатку или Face ID, закрытые 
 
 <table>
 <tr>
-<td width="50%"><img src="screenshots/stats.jpg" alt="Статистика"><p align="center"><b>Статистика</b> · настроение, задачи, серии</p></td>
-<td width="50%"><img src="screenshots/sleep.jpg" alt="Сон"><p align="center"><b>Сон</b> · часы, качество, тренды</p></td>
+<td width="50%"><img src="screenshots/stats.jpg" alt="Статистика"><p align="center"><b>Статистика</b> · тема «Чистая»</p></td>
+<td width="50%"><img src="screenshots/sleep.jpg" alt="Сон"><p align="center"><b>Сон</b> · «Своя», бирюза без украшений</p></td>
 </tr>
 <tr>
-<td><img src="screenshots/food.jpg" alt="Питание"><p align="center"><b>Питание</b> · КБЖУ и быстрые продукты</p></td>
-<td><img src="screenshots/workout.jpg" alt="Тренировки"><p align="center"><b>Тренировки</b> · подходы и рекорды</p></td>
+<td><img src="screenshots/food.jpg" alt="Питание"><p align="center"><b>Питание</b> · КБЖУ и быстрые продукты, «Чистая»</p></td>
+<td><img src="screenshots/workout.jpg" alt="Тренировки"><p align="center"><b>Тренировки</b> · «Своя», оранжевый акцент</p></td>
 </tr>
 <tr>
-<td><img src="screenshots/notes.jpg" alt="Заметки"><p align="center"><b>Заметки</b> · архив, поиск и теги</p></td>
+<td><img src="screenshots/notes.jpg" alt="Заметки"><p align="center"><b>Заметки</b> · «Своя», светлая сиреневая</p></td>
 <td><img src="screenshots/friends.png" alt="Друзья"><p align="center"><b>Друзья</b> · заявки, привычки, челленджи</p></td>
 </tr>
 </table>
