@@ -3,6 +3,7 @@ import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { fromISO } from "../store";
+import { MoodVisual } from "../icons";
 import { makeSocial } from "../social-strings";
 import FriendsSection, { EmptyState } from "./FriendsSection";
 import type { FriendOpt } from "./SharedMemories";
@@ -39,7 +40,10 @@ export default function SharedEntries({ userId, lang, friends, moodEmoji }: { us
     return (
       <li key={r.id} className="rounded-lg bg-[var(--accent-soft)] px-3 py-2.5">
         <div className="flex items-baseline justify-between gap-2 text-[12px] font-semibold text-[var(--ink-soft)]">
-          <span className="truncate">{label}{r.mood !== null && moodEmoji[r.mood] ? ` · ${moodEmoji[r.mood]}` : ""}</span>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate">{label}</span>
+            {r.mood !== null && <MoodVisual level={r.mood} emoji={moodEmoji[r.mood]} className="h-4 w-4 shrink-0 text-[14px] text-[var(--accent)]" />}
+          </span>
           <span className="shrink-0 font-normal capitalize text-[var(--ink-faint)]">{fmt.format(fromISO(r.entry_date))}</span>
         </div>
         <p className={`mt-0.5 whitespace-pre-wrap break-words text-[14px] leading-relaxed ${open ? "" : "line-clamp-3"}`}>{r.content}</p>

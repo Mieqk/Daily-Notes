@@ -359,7 +359,7 @@ useSwipe({
                 )}
               </span>
               {userId && (
-                <ShareEntry userId={userId} lang={lang} date={date} content={value} mood={moods[date] ?? null} tags={dayTags} sealed={sealed} showToast={showToast} />
+                <ShareEntry key={date} userId={userId} lang={lang} date={date} content={value} mood={moods[date] ?? null} tags={dayTags} sealed={sealed} showToast={showToast} />
               )}
               <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
               <input ref={camRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFiles} />
