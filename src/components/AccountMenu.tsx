@@ -107,18 +107,21 @@ export default function AccountMenu({ userId, lang, streak, notesCount, hasPin, 
 
   return (
     <>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-[var(--line)] bg-[var(--panel)] transition-all active:scale-90"
-        aria-label={t("account")}
-      >
-        {ava(me, "h-full w-full", "16px")}
+      {/* значок заявок снаружи кнопки: у кнопки overflow-hidden, и он обрезался бы */}
+      <span className="relative h-9 w-9 shrink-0">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="h-full w-full overflow-hidden rounded-full border border-[var(--line)] bg-[var(--panel)] transition-all active:scale-90"
+          aria-label={t("account")}
+        >
+          {ava(me, "h-full w-full", "16px")}
+        </button>
         {reqs.length > 0 && (
-          <span className="absolute -right-1 -top-1 grid min-w-[18px] place-items-center rounded-full bg-[var(--danger)] px-1 text-[10px] font-bold text-white">
+          <span className="pointer-events-none absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[var(--danger)] px-1 text-[10px] font-bold leading-none text-white">
             {reqs.length}
           </span>
         )}
-      </button>
+      </span>
 
       {open && (
         <>

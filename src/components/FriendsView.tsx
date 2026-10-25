@@ -398,7 +398,7 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread
             onChange={(e) => setSearchCode(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") search(); }}
             placeholder={t("codePh")}
-            className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3.5 font-mono text-sm uppercase tracking-widest outline-none focus:border-[var(--accent)]"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3.5 font-mono text-sm uppercase tracking-widest outline-none placeholder:font-sans placeholder:text-[13px] placeholder:normal-case placeholder:tracking-normal focus:border-[var(--accent)]"
           />
           <button onClick={search} className="h-11 shrink-0 rounded-xl bg-[var(--accent)] px-5 text-[13px] font-semibold text-[var(--accent-ink)] active:scale-95">
             {t("find")}
@@ -442,10 +442,10 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread
         <div className="flex flex-col gap-2">
           {friends.map(({ row, profile }) => (
             <div key={row.id} className="rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
-            <div className="flex items-center justify-between gap-3">
-              <button onClick={() => setViewId(profile.id)} className="min-w-0 flex-1 text-left transition-opacity hover:opacity-80">
-                {person(profile)}
-              </button>
+            <button onClick={() => setViewId(profile.id)} className="block w-full min-w-0 text-left transition-opacity hover:opacity-80">
+              {person(profile)}
+            </button>
+            <div className="mt-2 flex flex-wrap items-center gap-1 border-t border-[var(--line)] pt-2">
               <button
                 onClick={() => setChatWith(profile)}
                 className="relative h-8 shrink-0 rounded-lg px-2.5 text-[12px] font-semibold text-[var(--accent-deep)] transition-colors hover:bg-[var(--accent-soft)]"
@@ -466,7 +466,7 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread
               </button>
               <button
                 onClick={() => askRemove(row)}
-                className={`h-8 shrink-0 rounded-lg px-2.5 text-[11.5px] font-semibold transition-colors ${
+                className={`ml-auto h-8 shrink-0 rounded-lg px-2.5 text-[11.5px] font-semibold transition-colors ${
                   confirmId === row.id
                     ? "bg-[var(--danger)] text-white"
                     : "text-[var(--ink-faint)] hover:bg-[var(--danger-soft)] hover:text-[var(--danger)]"
