@@ -37,6 +37,7 @@ import FactOfDay from "./FactOfDay";
 import DailyQuestion from "./DailyQuestion";
 import { makeUI } from "../ui-strings";
 import { makeDevice } from "../device-strings";
+import ShareEntry from "./ShareEntry";
 import CameraCapture from "./CameraCapture";
 import { shrinkPhoto } from "../lib/images";
 
@@ -58,6 +59,7 @@ export interface Reminder {
 }
 
 interface DailyViewProps {
+  userId: string | null;
   capsules: Record<string, string>;
   setCapsules: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   date: string;
@@ -85,7 +87,7 @@ const TPL_ICONS = [BriefcaseIcon, LeafIcon, BrushIcon];
 
 export default function DailyView(props: DailyViewProps) {
   const {
-    capsules, setCapsules, date, onDate, notes, setNotes, tasks, setTasks, moods, setMoods,
+    userId, capsules, setCapsules, date, onDate, notes, setNotes, tasks, setTasks, moods, setMoods,
     tags, setTags, photos, setPhotos, reminder, setReminder,
     moodEmoji, writingFont, lang, t, showToast,
   } = props;
@@ -356,6 +358,9 @@ useSwipe({
                   </div>
                 )}
               </span>
+              {userId && (
+                <ShareEntry userId={userId} lang={lang} date={date} content={value} mood={moods[date] ?? null} tags={dayTags} sealed={sealed} showToast={showToast} />
+              )}
               <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
               <input ref={camRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFiles} />
               {camOpen && <CameraCapture lang={lang} onCapture={addShot} onClose={() => setCamOpen(false)} />}

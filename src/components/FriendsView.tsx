@@ -8,6 +8,7 @@ import FriendsAnswers from "./FriendsAnswers";
 import GratitudeFeed from "./GratitudeFeed";
 import SosPanel from "./SosPanel";
 import SharedMemories from "./SharedMemories";
+import SharedEntries from "./SharedEntries";
 import BuddyHabits from "./BuddyHabits";
 import Challenges from "./Challenges";
 import SleepParty from "./SleepParty";
@@ -21,6 +22,7 @@ interface FriendsViewProps {
   streak: number;
   notesCount: number;
   sleep: Record<string, SleepData>;
+  moodEmoji: string[];
 }
 
 interface Profile {
@@ -129,7 +131,7 @@ function genCode(): string {
   return s;
 }
 
-export default function FriendsView({ userId, lang, sleep }: FriendsViewProps) {
+export default function FriendsView({ userId, lang, sleep, moodEmoji }: FriendsViewProps) {
   const t = (k: string) => (L[lang] ?? L.en)[k] ?? L.en[k];
   const card = "rounded-xl border border-[var(--line)] bg-[var(--panel)]";
 
@@ -405,6 +407,7 @@ export default function FriendsView({ userId, lang, sleep }: FriendsViewProps) {
       <Challenges userId={userId} lang={lang} friends={friendOpts} myName={me?.display_name || "—"} />
       <SleepParty userId={userId} lang={lang} friends={friendOpts} sleep={sleep} />
       <SharedMemories userId={userId} lang={lang} friends={friendOpts} />
+      <SharedEntries userId={userId} lang={lang} friends={friendOpts} moodEmoji={moodEmoji} />
 
       <GroupLabel>{t("gCare")}</GroupLabel>
       <SosPanel userId={userId} lang={lang} />
