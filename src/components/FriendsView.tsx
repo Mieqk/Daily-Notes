@@ -288,7 +288,7 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji }: FriendsV
   );
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-6xl">
       {msg && (
         <div className={`mb-4 rounded-lg px-4 py-2.5 text-[13px] font-semibold ${msg.kind === "ok" ? "bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "bg-[var(--danger-soft)] text-[var(--danger)]"}`}>
           {msg.text}
@@ -297,6 +297,8 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji }: FriendsV
 
       <GroupLabel>{t("gConnect")}</GroupLabel>
 
+      {/* блоки раскладываются в две колонки, на телефоне в одну */}
+      <div className="gap-4 lg:columns-2 [&>*]:break-inside-avoid">
       {/* ===== Добавить друга ===== */}
       <FriendsSection icon="➕" title={t("addFriend")} hint={t("addHint")}>
         <button
@@ -401,18 +403,23 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji }: FriendsV
           ))}
         </div>
       </FriendsSection>
+      </div>
 
       <GroupLabel>{t("gTogether")}</GroupLabel>
+      <div className="gap-4 lg:columns-2 [&>*]:break-inside-avoid">
       <BuddyHabits userId={userId} lang={lang} friends={friendOpts} />
       <Challenges userId={userId} lang={lang} friends={friendOpts} myName={me?.display_name || "—"} />
       <SleepParty userId={userId} lang={lang} friends={friendOpts} sleep={sleep} />
       <SharedMemories userId={userId} lang={lang} friends={friendOpts} />
       <SharedEntries userId={userId} lang={lang} friends={friendOpts} moodEmoji={moodEmoji} />
+      </div>
 
       <GroupLabel>{t("gCare")}</GroupLabel>
+      <div className="gap-4 lg:columns-2 [&>*]:break-inside-avoid">
       <SosPanel userId={userId} lang={lang} />
       <FriendsAnswers userId={userId} lang={lang} />
       <GratitudeFeed userId={userId} lang={lang} refreshKey={feedKey} />
+      </div>
 
       {viewId && (
         <ProfilePage
