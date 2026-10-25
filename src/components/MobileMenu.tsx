@@ -12,6 +12,7 @@ interface MobileMenuProps {
   selectedDate: string;
   onPickDate: (iso: string) => void;
   hasEntry: (iso: string) => boolean;
+  friendsBadge?: number;
 }
 
 const TABS = [
@@ -37,7 +38,7 @@ const L: Record<Lang, { menu: string; close: string }> = {
 };
 
 /** Телефон: кнопка-«бургер» в шапке и выдвижное меню разделов вместо нижней полосы. */
-export default function MobileMenu({ tab, onTab, t, lang, selectedDate, onPickDate, hasEntry }: MobileMenuProps) {
+export default function MobileMenu({ tab, onTab, t, lang, selectedDate, onPickDate, hasEntry, friendsBadge = 0 }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
   const l = L[lang] ?? L.en;
 
@@ -54,11 +55,12 @@ export default function MobileMenu({ tab, onTab, t, lang, selectedDate, onPickDa
         onClick={() => setOpen(true)}
         aria-label={l.menu}
         aria-expanded={open}
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] active:scale-95 md:hidden"
+        className="relative grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] active:scale-95 md:hidden"
       >
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
           <path d="M4 7h16M4 12h16M4 17h16" />
         </svg>
+        {friendsBadge > 0 && <span aria-hidden className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-[var(--danger)]" />}
       </button>
 
       {open && (
@@ -84,7 +86,10 @@ export default function MobileMenu({ tab, onTab, t, lang, selectedDate, onPickDa
                     }`}
                   >
                     <Icon className="h-5 w-5 shrink-0" />
-                    <span className="truncate">{t(key)}</span>
+                    <span className="flex-1 truncate">{t(key)}</span>
+                    {id === "friends" && friendsBadge > 0 && (
+                      <span className="rounded-full bg-[var(--danger)] px-2 py-0.5 text-[11px] font-bold text-white">{friendsBadge}</span>
+                    )}
                   </button>
                 );
               })}

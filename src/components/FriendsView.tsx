@@ -15,6 +15,8 @@ import SleepParty from "./SleepParty";
 import type { SleepData } from "../store";
 import FriendsSection, { GroupLabel, EmptyState } from "./FriendsSection";
 import { makeUI } from "../ui-strings";
+import { makeChat } from "../chat-strings";
+import FriendChat from "./FriendChat";
 
 interface FriendsViewProps {
   userId: string;
@@ -23,6 +25,8 @@ interface FriendsViewProps {
   notesCount: number;
   sleep: Record<string, SleepData>;
   moodEmoji: string[];
+  /** непрочитанные сообщения по id друга */
+  chatUnread?: Record<string, number>;
 }
 
 interface Profile {
@@ -131,7 +135,7 @@ function genCode(): string {
   return s;
 }
 
-export default function FriendsView({ userId, lang, sleep, moodEmoji }: FriendsViewProps) {
+export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread = {} }: FriendsViewProps) {
   const t = (k: string) => (L[lang] ?? L.en)[k] ?? L.en[k];
   const card = "rounded-xl border border-[var(--line)] bg-[var(--panel)]";
 
@@ -145,6 +149,8 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji }: FriendsV
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [viewId, setViewId] = useState<string | null>(null);
   const u = makeUI(lang);
+  const chat = makeChat(lang);
+  const [chatWith, setChatWith] = useState<Profile | null>(null);
   const [thanksTo, setThanksTo] = useState<string | null>(null);
   const [thanksText, setThanksText] = useState("");
   const [thanksBusy, setThanksBusy] = useState(false);
@@ -367,6 +373,17 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji }: FriendsV
                 {person(profile)}
               </button>
               <button
+                onClick={() => setChatWith(profile)}
+                className="relative h-8 shrink-0 rounded-lg px-2.5 text-[12px] font-semibold text-[var(--accent-deep)] transition-colors hover:bg-[var(--accent-soft)]"
+              >
+                💬 {chat("open")}
+                {(chatUnread[profile.id] ?? 0) > 0 && (
+                  <span className="absolute -right-1 -top-1 grid h-4.5 min-w-4.5 place-items-center rounded-full bg-[var(--danger)] px-1 text-[10px] font-bold text-white">
+                    {chatUnread[profile.id]}
+                  </span>
+                )}
+              </button>
+              <button
                 onClick={() => { setThanksTo(thanksTo === profile.id ? null : profile.id); setThanksText(""); }}
                 aria-expanded={thanksTo === profile.id}
                 className="h-8 shrink-0 rounded-lg px-2.5 text-[12px] font-semibold text-[var(--accent-deep)] transition-colors hover:bg-[var(--accent-soft)]"
@@ -420,6 +437,15 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji }: FriendsV
       <FriendsAnswers userId={userId} lang={lang} />
       <GratitudeFeed userId={userId} lang={lang} refreshKey={feedKey} />
       </div>
+
+      {chatWith && (
+        <FriendChat
+          userId={userId}
+          lang={lang}
+          friend={{ id: chatWith.id, name: chatWith.display_name || chatWith.friend_code || "—", avatar: chatWith.avatar, avatar_url: chatWith.avatar_url }}
+          onClose={() => setChatWith(null)}
+        />
+      )}
 
       {viewId && (
         <ProfilePage

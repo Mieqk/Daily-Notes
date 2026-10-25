@@ -30,6 +30,7 @@ import MobileMenu from "./components/MobileMenu";
 import FriendsView from "./components/FriendsView";
 import AccountMenu from "./components/AccountMenu";
 import { useNotifications } from "./hooks/useNotifications";
+import { useChatUnread } from "./hooks/useChatUnread";
 import { useGcalSync } from "./hooks/useGcalSync";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
@@ -90,6 +91,7 @@ export default function App() {
   localRef.current = { notes, tasks, moods, tags, photos, sleep };
 
   useNotifications(userId, lang, reminder);
+  const chatUnread = useChatUnread(userId);
   useGcalSync(userId, tasks);
 
   const now = useNow(1000);
@@ -390,11 +392,11 @@ export default function App() {
         <div className="noise absolute inset-0 opacity-[0.05]" />
       </div>
 
-      <Sidebar tab={tab} onTab={setTab} theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} t={t} streak={streak} weekMarks={weekMarks} notesCount={notesCount} selectedDate={date} onPickDate={openDate} hasEntry={hasEntry} hasPin={Boolean(pinHash)} onLock={() => setLocked(true)} />
+      <Sidebar tab={tab} onTab={setTab} theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} t={t} streak={streak} weekMarks={weekMarks} notesCount={notesCount} selectedDate={date} onPickDate={openDate} hasEntry={hasEntry} hasPin={Boolean(pinHash)} onLock={() => setLocked(true)} friendsBadge={chatUnread.total} />
 
       <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col">
         <header className="flex min-h-[74px] shrink-0 py-2 items-center gap-4 border-b border-[var(--line)] px-4 sm:px-8">
-          <MobileMenu tab={tab} onTab={setTab} t={t} lang={lang} selectedDate={date} onPickDate={openDate} hasEntry={hasEntry} />
+          <MobileMenu tab={tab} onTab={setTab} t={t} lang={lang} selectedDate={date} onPickDate={openDate} hasEntry={hasEntry} friendsBadge={chatUnread.total} />
           <div className="min-w-0">
             <h1 className="font-display truncate py-0.5 text-xl font-bold leading-snug tracking-tight sm:text-2xl">{tabMeta[tab].title}</h1>
             <p className="hidden truncate text-xs text-[var(--ink-faint)] sm:block">{tabMeta[tab].sub}</p>
@@ -425,7 +427,7 @@ export default function App() {
               <button onClick={() => { setLocalMode(false); setShowAuth(true); }} className="mt-2 h-11 rounded-lg bg-[var(--accent)] px-5 text-[13px] font-bold text-[var(--accent-ink)] transition-all hover:brightness-110 active:scale-95">{t("loginBtn")}</button>
             </div>
           )}
-          {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} moodEmoji={moodEmoji} sleep={sleep} streak={streak} notesCount={notesCount} />}
+          {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} moodEmoji={moodEmoji} sleep={sleep} streak={streak} notesCount={notesCount} chatUnread={chatUnread.byFriend} />}
           {tab === "settings" && <SettingsView userId={userId} look={look} onLook={setLook} theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={(h) => { setPinHash(h); if (!h) setBioId(null); }} bioId={bioId} onBioChange={setBioId} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} tasks={tasks} showToast={showToast} />}
         </main>
       </div>
