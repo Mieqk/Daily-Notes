@@ -32,6 +32,8 @@ import AccountMenu from "./components/AccountMenu";
 import { useNotifications } from "./hooks/useNotifications";
 import { useChatUnread } from "./hooks/useChatUnread";
 import { startPresenceHeartbeat } from "./lib/presence";
+import { useCalls } from "./hooks/useCalls";
+import CallOverlay from "./components/CallOverlay";
 import { useGcalSync } from "./hooks/useGcalSync";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
@@ -93,6 +95,7 @@ export default function App() {
 
   useNotifications(userId, lang, reminder);
   const chatUnread = useChatUnread(userId);
+  const call = useCalls(userId, lang);
   useEffect(() => (userId ? startPresenceHeartbeat(userId) : undefined), [userId]);
   useGcalSync(userId, tasks);
 
@@ -441,6 +444,7 @@ export default function App() {
           </div>
         </div>
       )}
+      <CallOverlay call={call} />
       <InstallPrompt lang={lang} />
     </div>
   );

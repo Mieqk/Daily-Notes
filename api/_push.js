@@ -4,8 +4,8 @@ import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
 
 const TEXTS = {
-  ru: { reminder: "Пора заглянуть в дневник", reminderBody: "Как прошёл день? Запишите пару строк.", thanks: "Вам сказали спасибо", sos: "Друг просит поддержки", sosBody: "Загляните в приложение, ему нужна поддержка.", chat: "Новое сообщение", photo: "📷 Фото", video: "🎥 Видео", voice: "🎤 Голосовое сообщение" },
-  en: { reminder: "Time to open your diary", reminderBody: "How was your day? Write a few lines.", thanks: "Someone thanked you", sos: "A friend asks for support", sosBody: "Open the app: they could use some support.", chat: "New message", photo: "📷 Photo", video: "🎥 Video", voice: "🎤 Voice message" },
+  ru: { reminder: "Пора заглянуть в дневник", reminderBody: "Как прошёл день? Запишите пару строк.", thanks: "Вам сказали спасибо", sos: "Друг просит поддержки", sosBody: "Загляните в приложение, ему нужна поддержка.", chat: "Новое сообщение", photo: "📷 Фото", video: "🎥 Видео", voice: "🎤 Голосовое сообщение", call: "Входящий звонок", voiceCall: "📞 Вам звонят", videoCall: "📹 Видеозвонок" },
+  en: { reminder: "Time to open your diary", reminderBody: "How was your day? Write a few lines.", thanks: "Someone thanked you", sos: "A friend asks for support", sosBody: "Open the app: they could use some support.", chat: "New message", photo: "📷 Photo", video: "🎥 Video", voice: "🎤 Voice message", call: "Incoming call", voiceCall: "📞 Calling you", videoCall: "📹 Video call" },
 };
 export const tr = (lang) => TEXTS[String(lang || "").slice(0, 2)] || TEXTS.en;
 
