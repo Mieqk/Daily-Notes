@@ -3,6 +3,14 @@
 // Кэш: страница берётся из сети (всегда свежая сборка), при отсутствии сети отдаётся сохранённая;
 // файлы /assets/* имеют хэш в имени, поэтому их можно безопасно брать из кэша.
 const CACHE = "dn-shell-v1";
+const MAX_ASSETS = 80; // старые сборки оставляют хэшированные файлы: держим только последние
+const NAV_TIMEOUT = 4000; // при плохой связи не ждём сеть вечно и открываем сохранённую оболочку
+
+async function trimAssets() {
+  const cache = await caches.open(CACHE);
+  const keys = (await cache.keys()).filter((r) => new URL(r.url).pathname.startsWith("/assets/"));
+  await Promise.all(keys.slice(0, Math.max(0, keys.length - MAX_ASSETS)).map((r) => cache.delete(r)));
+}
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.add("/")).catch(() => {}));
@@ -24,23 +32,34 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
 
   if (req.mode === "navigate") {
+    const network = fetch(req).then((res) => {
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put("/", copy)); }
+      return res;
+    });
+    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), NAV_TIMEOUT));
     event.respondWith(
-      fetch(req)
-        .then((res) => {
-          if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put("/", copy)); }
-          return res;
-        })
-        .catch(() => caches.match("/").then((r) => r || Response.error()))
+      Promise.race([network, timeout]).catch(() => caches.match("/").then((r) => r || network))
     );
     return;
   }
 
-  if (url.pathname.startsWith("/assets/") || url.pathname.startsWith("/icons/")) {
+  if (url.pathname.startsWith("/assets/")) {
     event.respondWith(
       caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
+        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)).then(trimAssets); }
         return res;
       }))
+    );
+  } else if (url.pathname.startsWith("/icons/")) {
+    // иконки без хэша в имени: отдаём сохранённую и тихо обновляем, чтобы новая иконка не застряла
+    event.respondWith(
+      caches.match(req).then((hit) => {
+        const fresh = fetch(req).then((res) => {
+          if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
+          return res;
+        });
+        return hit || fresh;
+      })
     );
   }
 });
