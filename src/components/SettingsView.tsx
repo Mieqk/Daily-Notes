@@ -9,6 +9,9 @@ import { makeDevice } from "../device-strings";
 import { THEMES } from "../themes";
 import type { ThemeId } from "../themes";
 import { BG_IMAGES } from "../bg";
+import LookEditor from "./LookEditor";
+import { makeLook } from "../look-strings";
+import type { Look } from "../look";
 import {
   AlertIcon,
   CheckIcon,
@@ -32,6 +35,8 @@ import NotificationSettings from "./NotificationSettings";
 import GoogleCalendarSettings from "./GoogleCalendarSettings";
 
 interface SettingsViewProps {
+  look: Look;
+  onLook: (l: Look) => void;
   theme: ThemeId;
   onTheme: (t: ThemeId) => void;
   lang: Lang;
@@ -139,6 +144,8 @@ export default function SettingsView(props: SettingsViewProps) {
   }, [user]);
   
   const {
+    look,
+    onLook,
     theme,
     onTheme,
     lang,
@@ -228,6 +235,11 @@ export default function SettingsView(props: SettingsViewProps) {
               );
             })}
           </div>
+        </Section>
+
+        {/* Look editor */}
+        <Section icon={<PaletteIcon className="h-4.5 w-4.5" />} title={makeLook(lang)("lkTitle")} sub={makeLook(lang)("lkSub")} delay={30}>
+          <LookEditor look={look} onLook={onLook} theme={theme} onTheme={onTheme} lang={lang} />
         </Section>
 
         {/* Language */}

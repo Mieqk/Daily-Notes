@@ -4,6 +4,9 @@ import type { Lang, TKey } from "./i18n";
 import { STRINGS, localeOf } from "./i18n";
 import { makeUI } from "./ui-strings";
 import type { ThemeId } from "./themes";
+import { updateCustomSwatch } from "./themes";
+import { applyLook, sanitizeLook, DEFAULT_LOOK } from "./look";
+import type { Look } from "./look";
 import type { BgId, Tab, Task, SleepData, WritingFontId } from "./store";
 import { verifyBiometric } from "./lib/biometric";
 import { makeDevice } from "./device-strings";
@@ -50,6 +53,9 @@ export default function App() {
 
   const [tab, setTab] = useStored<Tab>("dn.tab", "daily");
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
+  const [lookRaw, setLookRaw] = useStored<Look>("dn.look", DEFAULT_LOOK);
+  const look = sanitizeLook(lookRaw);
+  const setLook = (l: Look) => setLookRaw(sanitizeLook(l));
   const [lang, setLang] = useStored<Lang>("dn.lang", "ru");
   const u = makeUI(lang);
   const [fontScale, setFontScale] = useStored<number>("dn.font", 1);
@@ -77,7 +83,7 @@ export default function App() {
   const remoteSnapshot = useRef<Snapshot | null>(null);
   const initialLoadDone = useRef(false);
   const lastUpdateTime = useRef<{ [key: string]: number }>({});
-  const lastLocalSettingsRef = useRef({ theme, lang, fontScale, writingFont, bg, moodEmoji });
+  const lastLocalSettingsRef = useRef({ theme, lang, fontScale, writingFont, bg, moodEmoji, look: JSON.stringify(look) });
 
   const localRef = useRef({ notes, tasks, moods, tags, photos, sleep });
   localRef.current = { notes, tasks, moods, tags, photos, sleep };
@@ -106,8 +112,8 @@ export default function App() {
   useEffect(() => { const unsubscribe = subscribeToSyncStatus(setSyncStatusState); return unsubscribe; }, []);
 
   useEffect(() => {
-    lastLocalSettingsRef.current = { theme, lang, fontScale, writingFont, bg, moodEmoji };
-  }, [theme, lang, fontScale, writingFont, bg, moodEmoji]);
+    lastLocalSettingsRef.current = { theme, lang, fontScale, writingFont, bg, moodEmoji, look: JSON.stringify(look) };
+  }, [theme, lang, fontScale, writingFont, bg, moodEmoji, lookRaw]);
 
   const markSnapshotAsSent = (n: typeof notes, tk: typeof tasks, md: typeof moods, tg: typeof tags, ph: typeof photos, sl: typeof sleep) => {
     remoteSnapshot.current = { notes: clone(n), tasks: clone(tk), moods: clone(md), tags: clone(tg), photos: clone(ph), sleep: clone(sl) };
@@ -151,6 +157,7 @@ export default function App() {
             if (s.font !== undefined) setFontScale(Number(s.font));
             if (s.writingFont) setWritingFont(s.writingFont);
             if (s.bg) setBg(s.bg);
+            if (s.look) setLookRaw(sanitizeLook(s.look));
             if (s.moodEmoji) setMoodEmoji(s.moodEmoji);
             if (s.capsules && typeof s.capsules === 'object') setCapsules((local) => ({ ...local, ...s.capsules }));
           }
@@ -248,6 +255,7 @@ export default function App() {
             if (settings.font !== undefined && settings.font !== last.fontScale) setFontScale(Number(settings.font));
             if (settings.writingFont && settings.writingFont !== last.writingFont) setWritingFont(settings.writingFont);
             if (settings.bg && settings.bg !== last.bg) setBg(settings.bg);
+            if (settings.look && JSON.stringify(sanitizeLook(settings.look)) !== last.look) setLookRaw(sanitizeLook(settings.look));
             if (settings.moodEmoji && JSON.stringify(settings.moodEmoji) !== JSON.stringify(last.moodEmoji)) setMoodEmoji(settings.moodEmoji);
             if (settings.capsules && typeof settings.capsules === 'object') setCapsules((local) => ({ ...local, ...settings.capsules }));
           }
@@ -295,15 +303,15 @@ export default function App() {
   }, [sleep, date, userId]);
 
   useEffect(() => {
-    if (userId && !isLocalMode() && initialLoadDone.current) syncSettings(userId, { theme, lang, font: fontScale, writingFont, bg, moodEmoji, capsules });
-  }, [theme, lang, fontScale, writingFont, bg, moodEmoji, capsules, userId]);
+    if (userId && !isLocalMode() && initialLoadDone.current) syncSettings(userId, { theme, lang, font: fontScale, writingFont, bg, moodEmoji, capsules, look });
+  }, [theme, lang, fontScale, writingFont, bg, moodEmoji, capsules, lookRaw, userId]);
 
   const handleThemeChange = (newTheme: ThemeId) => {
     setTheme(newTheme);
-    if (userId && !isLocalMode()) syncSettings(userId, { theme: newTheme, lang, font: fontScale, writingFont, bg, moodEmoji, capsules });
+    if (userId && !isLocalMode()) syncSettings(userId, { theme: newTheme, lang, font: fontScale, writingFont, bg, moodEmoji, capsules, look });
   };
 
-  useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
+  useEffect(() => { updateCustomSwatch(look); applyLook(theme, look); }, [theme, lookRaw]);
   useEffect(() => { document.documentElement.style.fontSize = FONT_SCALES[fontScale] ?? "100%"; }, [fontScale]);
   useEffect(() => {
     document.documentElement.setAttribute("lang", lang);
@@ -405,7 +413,7 @@ export default function App() {
             </div>
           )}
           {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} moodEmoji={moodEmoji} sleep={sleep} streak={streak} notesCount={notesCount} />}
-          {tab === "settings" && <SettingsView theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={(h) => { setPinHash(h); if (!h) setBioId(null); }} bioId={bioId} onBioChange={setBioId} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} tasks={tasks} showToast={showToast} />}
+          {tab === "settings" && <SettingsView look={look} onLook={setLook} theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={(h) => { setPinHash(h); if (!h) setBioId(null); }} bioId={bioId} onBioChange={setBioId} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} tasks={tasks} showToast={showToast} />}
         </main>
       </div>
 
