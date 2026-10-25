@@ -41,16 +41,17 @@ export default async function handler(req, res) {
   const avoidEn = avoid ? ` Do not repeat this fact: "${avoid}".` : "";
   const prompt =
     lang === "ru"
-      ? `Придумай один короткий малоизвестный факт на тему: ${topic} (тему не называй). Выбирай необычные факты, не самые популярные.${avoidRu} Ответь только самим фактом, одним-двумя предложениями, без вступлений и подписей. [${nonce}]`
-      : `Come up with one short little-known fact about: ${topic}. Pick an unusual one, not the most popular.${avoidEn} Reply in ${LANG_NAMES[lang] || "English"} with only the fact itself, one or two sentences, no intro, topic or labels. [${nonce}]`;
+      ? `Придумай один короткий малоизвестный факт на тему: ${topic} (тему не называй). Выбирай необычные, но достоверные и проверяемые факты; если не уверен, возьми другой.${avoidRu} Ответь только самим фактом, одним-двумя предложениями, без вступлений и подписей. [${nonce}]`
+      : `Come up with one short little-known fact about: ${topic}. Pick an unusual but true, verifiable one; if unsure, pick another.${avoidEn} Reply in ${LANG_NAMES[lang] || "English"} with only the fact itself, one or two sentences, no intro, topic or labels. [${nonce}]`;
 
-  // общий вызов: свежий список моделей, lite первыми (короткий текст, важна скорость), без размышлений и с тайм-аутами
+  // общий вызов: свежий список моделей, без размышлений и с тайм-аутами. Здесь важнее точность, чем скорость:
+  // lite-модели на высокой температуре выдумывали «факты» и путали слова в белорусском, поэтому берём полные flash
+  // и температуру 1.0 (разнообразие и так дают случайная тема и nonce)
   const errors = [];
-  const out = await generateText(key, prompt, { temperature: 1.3, maxOutputTokens: 300 }, errors, {
-    timeoutMs: 8_000,
-    deadlineMs: 20_000,
+  const out = await generateText(key, prompt, { temperature: 1.0, maxOutputTokens: 300 }, errors, {
+    timeoutMs: 10_000,
+    deadlineMs: 22_000,
     thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
-    preferLite: true,
   });
   if (out) {
     res.setHeader("Cache-Control", "no-store");
