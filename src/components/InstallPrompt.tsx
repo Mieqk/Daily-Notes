@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import type { Lang } from '../i18n';
 import { makeUI } from '../ui-strings';
+import { makePwa } from '../pwa-strings';
+import { needsIosInstall } from '../lib/pwa';
+import IosInstallGuide from './IosInstallGuide';
 
 const InstallPrompt: React.FC<{ lang: Lang }> = ({ lang }) => {
   const u = makeUI(lang);
   const [showPrompt, setShowPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showGuide, setShowGuide] = useState(false);
+  const ios = needsIosInstall();
+  const p = makePwa(lang);
 
   useEffect(() => {
     // Проверяем, показывали ли уже подсказку
@@ -14,6 +20,15 @@ const InstallPrompt: React.FC<{ lang: Lang }> = ({ lang }) => {
 
     if (hasSeenPrompt || isInstalled) {
       return;
+    }
+
+    // iPhone/iPad: события beforeinstallprompt нет, поэтому показываем свою подсказку с шагами
+    if (needsIosInstall()) {
+      const timer = setTimeout(() => {
+        setShowPrompt(true);
+        localStorage.setItem('installPromptShown', 'true');
+      }, 5000);
+      return () => clearTimeout(timer);
     }
 
     // Обработчик события beforeinstallprompt
@@ -55,12 +70,13 @@ const InstallPrompt: React.FC<{ lang: Lang }> = ({ lang }) => {
   };
 
   if (!showPrompt) return null;
+  if (showGuide) return <IosInstallGuide lang={lang} onClose={() => { setShowGuide(false); setShowPrompt(false); }} />;
 
   return (
     <div
       style={{
         position: 'fixed',
-        bottom: '20px',
+        bottom: 'calc(20px + env(safe-area-inset-bottom))',
         left: '50%',
         transform: 'translateX(-50%)',
         backgroundColor: '#2d6a4f',
@@ -79,14 +95,14 @@ const InstallPrompt: React.FC<{ lang: Lang }> = ({ lang }) => {
     >
       <div style={{ flex: 1 }}>
         <p style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>
-          {u('installTitle')}
+          {ios ? p('iosTitle') : u('installTitle')}
         </p>
         <p style={{ margin: '4px 0 0', fontSize: '12px', opacity: 0.9 }}>
-          {u('installSub')}
+          {ios ? p('iosSub') : u('installSub')}
         </p>
       </div>
       <button
-        onClick={handleInstall}
+        onClick={ios ? () => setShowGuide(true) : handleInstall}
         style={{
           backgroundColor: '#ffffff',
           color: '#2d6a4f',
@@ -99,7 +115,7 @@ const InstallPrompt: React.FC<{ lang: Lang }> = ({ lang }) => {
           whiteSpace: 'nowrap',
         }}
       >
-        {u('install')}
+        {ios ? p('iosHow') : u('install')}
       </button>
       <button
         onClick={handleClose}
