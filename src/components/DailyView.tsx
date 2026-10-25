@@ -5,6 +5,7 @@ import type { ChangeEvent } from "react";
 import type { Lang, TKey } from "../i18n";
 import { MOODS, TEMPLATES, localeOf } from "../i18n";
 import PluginWidgets from "./PluginWidgets";
+import { plural } from "../plural";
 import { useDayTemplates } from "../hooks/useAddons";
 import type { Task, WritingFontId, SleepData } from "../store";
 import {
@@ -42,18 +43,8 @@ import { makeDevice } from "../device-strings";
 import ShareEntry from "./ShareEntry";
 import CameraCapture from "./CameraCapture";
 import { shrinkPhoto } from "../lib/images";
+import { generateUUID } from "../lib/uuid";
 
-// Генератор настоящих UUID для совместимости с Supabase
-function generateUUID() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
 
 export interface Reminder {
   time: string;
@@ -80,6 +71,7 @@ interface DailyViewProps {
   setReminder: React.Dispatch<React.SetStateAction<Reminder>>;
   moodEmoji: string[];
   writingFont: WritingFontId;
+  onWritingFont: (f: WritingFontId) => void;
   lang: Lang;
   t: (k: TKey) => string;
   showToast: (msg: string) => void;
@@ -91,7 +83,7 @@ export default function DailyView(props: DailyViewProps) {
   const {
     userId, capsules, setCapsules, date, onDate, notes, setNotes, tasks, setTasks, moods, setMoods,
     tags, setTags, photos, setPhotos, reminder, setReminder,
-    moodEmoji, writingFont, lang, t, showToast,
+    moodEmoji, writingFont, onWritingFont, lang, t, showToast,
   } = props;
 
   const locale = localeOf(lang);
@@ -138,6 +130,7 @@ export default function DailyView(props: DailyViewProps) {
   const [listening, setListening] = useState(false);
   const [appliedTpl, setAppliedTpl] = useState<string | null>(null);
   const [myTemplates] = useDayTemplates();
+  const [fontOpen, setFontOpen] = useState(false);
   const statusTimer = useRef<number>(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<{ stop: () => void } | null>(null);
@@ -274,6 +267,7 @@ useSwipe({
   };
 
   const font = FONT_STACKS[writingFont];
+  const fontName = (f: WritingFontId) => (f === "body" ? t("fontBody") : f === "serif" ? t("fontSerif") : t("fontMono"));
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -339,7 +333,7 @@ useSwipe({
                 ))}
               </div>
             )}
-            <div className="flex items-center gap-2 border-t border-[var(--line)] px-4 py-2.5">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-[var(--line)] px-4 py-2.5">
               <button onClick={toggleVoice} title={SR ? undefined : t("voiceUnsupported")} className={`flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-semibold transition-all duration-200 active:scale-95 ${listening ? "animate-pulsering bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)] hover:text-[var(--ink)]"} ${SR ? "" : "cursor-not-allowed opacity-40"}`}>
                 <MicIcon className="h-4 w-4" />{listening ? t("voiceListening") : ""}
               </button>
@@ -371,11 +365,35 @@ useSwipe({
               <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
               <input ref={camRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFiles} />
               {camOpen && <CameraCapture lang={lang} onCapture={addShot} onClose={() => setCamOpen(false)} />}
-              <span className="hidden h-7 items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-[11px] font-semibold text-[var(--ink-soft)] min-[420px]:flex" title={`${t("secFont")}: ${t("settingsTitle")}`}>
-                <PenIcon className="h-3 w-3 text-[var(--accent)]" />{writingFont === "body" ? t("fontBody") : writingFont === "serif" ? t("fontSerif") : t("fontMono")}
+              {/* Шрифт записи меняется прямо здесь: по нажатию открывается выбор из трёх */}
+              <span className="relative hidden min-[420px]:inline-flex">
+                <button
+                  onClick={() => setFontOpen((o) => !o)}
+                  aria-expanded={fontOpen}
+                  className="flex h-7 items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel-2)] px-2.5 text-[11px] font-semibold text-[var(--ink-soft)] transition-colors hover:border-[var(--accent)] hover:text-[var(--ink)]"
+                  title={t("secFont")}
+                >
+                  <PenIcon className="h-3 w-3 text-[var(--accent)]" />{fontName(writingFont)}
+                  <span aria-hidden className={`text-[9px] transition-transform ${fontOpen ? "rotate-180" : ""}`}>▾</span>
+                </button>
+                {fontOpen && (
+                  <span className="absolute bottom-9 left-0 z-20 flex w-48 flex-col gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-1.5" style={{ boxShadow: "var(--shadow)" }}>
+                    {(["body", "serif", "mono"] as WritingFontId[]).map((f) => (
+                      <button
+                        key={f}
+                        onClick={() => { onWritingFont(f); setFontOpen(false); }}
+                        className={`flex items-center justify-between rounded-lg px-3 py-2 text-left text-[13px] transition-colors ${writingFont === f ? "bg-[var(--accent-soft)] font-bold text-[var(--accent-deep)]" : "hover:bg-[var(--hover)]"}`}
+                        style={{ fontFamily: FONT_STACKS[f] }}
+                      >
+                        {fontName(f)}
+                        {writingFont === f && <CheckIcon className="h-3.5 w-3.5" />}
+                      </button>
+                    ))}
+                  </span>
+                )}
               </span>
-              <span className="ml-auto text-[11.5px] tabular-nums text-[var(--ink-faint)]">{countWords(value)} {t("words")} · {value.length} {t("chars")}</span>
-              <span className={`flex items-center gap-1.5 text-[11.5px] font-semibold transition-colors ${status === "saving" ? "text-[var(--ink-faint)]" : status === "saved" ? "text-[var(--accent)]" : "text-[var(--ink-faint)]"}`}>
+              <span className="ml-auto whitespace-nowrap text-[11.5px] tabular-nums text-[var(--ink-faint)]">{countWords(value)} {plural(lang, countWords(value), "word")} · {value.length} {plural(lang, value.length, "char")}</span>
+              <span className={`flex items-center gap-1.5 whitespace-nowrap text-[11.5px] font-semibold transition-colors ${status === "saving" ? "text-[var(--ink-faint)]" : status === "saved" ? "text-[var(--accent)]" : "text-[var(--ink-faint)]"}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${status === "saving" ? "animate-livedot bg-[var(--ink-faint)]" : status === "saved" ? "bg-[var(--accent)]" : "bg-[var(--line)]"}`} />
                 {status === "saving" ? t("saving") : status === "saved" ? t("saved") : t("autosave")}
               </span>

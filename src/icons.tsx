@@ -18,6 +18,15 @@ export const CalendarIcon = ({ className = "h-5 w-5" }: IconProps) => (
   </svg>
 );
 
+/** Календарь-план: сетка дней с отмеченным диапазоном */
+export const PlanIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+    <path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" />
+    <path d="M7 14.5h10" strokeWidth="3" />
+  </svg>
+);
+
 export const StatsIcon = ({ className = "h-5 w-5" }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} {...base}>
     <path d="M4 20V4" />

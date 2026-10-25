@@ -247,6 +247,8 @@ export default function AddonsManager({ lang, userId, showToast }: Props) {
 
   return (
     <div>
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div>
       <p className={label}>{t("adPlugins")}</p>
       <div className="space-y-2">
         {plugins.length === 0 && !editPlugin && <p className="text-[12.5px] text-[var(--ink-faint)]">{t("adNoPlugins")}</p>}
@@ -287,6 +289,9 @@ export default function AddonsManager({ lang, userId, showToast }: Props) {
         )
       )}
 
+      </div>
+
+      <div>
       <p className={label}>{t("adTemplates")}</p>
       <div className="space-y-2">
         {templates.length === 0 && !editTpl && <p className="text-[12.5px] text-[var(--ink-faint)]">{t("adNoTemplates")}</p>}
@@ -309,6 +314,9 @@ export default function AddonsManager({ lang, userId, showToast }: Props) {
           ＋ {t("adNewTemplate")}
         </button>
       )}
+
+      </div>
+      </div>
 
       <p className={label}>{t("imTitle")}</p>
       <div className="flex gap-2">

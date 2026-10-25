@@ -96,13 +96,13 @@ const BGS: { id: BgId; key: TKey }[] = [
 ];
 
 /** Сворачиваемая вкладка: внутри обычная сетка из карточек. Состояние помним в браузере. */
-function DesignGroup({ title, sub, openLabel, closeLabel, children }: { title: string; sub: string; openLabel: string; closeLabel: string; children: ReactNode }) {
+function DesignGroup({ title, sub, openLabel, closeLabel, children, storeKey = "dn.designOpen", icon = <PaletteIcon className="h-4.5 w-4.5" /> }: { title: string; sub: string; openLabel: string; closeLabel: string; children: ReactNode; storeKey?: string; icon?: ReactNode }) {
   const [open, setOpen] = useState(() => {
-    try { return localStorage.getItem("dn.designOpen") === "1"; } catch { return false; }
+    try { return localStorage.getItem(storeKey) === "1"; } catch { return false; }
   });
   const toggle = () => {
     setOpen((o) => {
-      try { localStorage.setItem("dn.designOpen", o ? "0" : "1"); } catch { /* без хранилища просто не запоминаем */ }
+      try { localStorage.setItem(storeKey, o ? "0" : "1"); } catch { /* без хранилища просто не запоминаем */ }
       return !o;
     });
   };
@@ -115,7 +115,7 @@ function DesignGroup({ title, sub, openLabel, closeLabel, children }: { title: s
         style={{ boxShadow: "var(--shadow-sm)" }}
       >
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent-deep)]">
-          <PaletteIcon className="h-4.5 w-4.5" />
+          {icon}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block font-display text-[15px] font-bold">{title}</span>
@@ -439,10 +439,12 @@ export default function SettingsView(props: SettingsViewProps) {
 
         </DesignGroup>
 
-        {/* Свои плагины-виджеты и шаблоны дня */}
-        <Section icon={<PlusIcon className="h-4.5 w-4.5" />} title={makeAddonStrings(lang)("adTitle")} sub={makeAddonStrings(lang)("adSub")} delay={40}>
-          <AddonsManager lang={lang} userId={userId} showToast={showToast} />
-        </Section>
+        {/* Свои плагины-виджеты и шаблоны дня: сворачиваемый блок во всю ширину, как «Дизайн» */}
+        <DesignGroup storeKey="dn.addonsOpen" icon={<PlusIcon className="h-4.5 w-4.5" />} title={makeAddonStrings(lang)("adTitle")} sub={makeAddonStrings(lang)("adSub")} openLabel={makeLook(lang)("dgOpen")} closeLabel={makeLook(lang)("dgClose")}>
+          <section className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-5" style={{ boxShadow: "var(--shadow-sm)" }}>
+            <AddonsManager lang={lang} userId={userId} showToast={showToast} />
+          </section>
+        </DesignGroup>
 
         {/* Language */}
         <Section icon={<GlobeIcon className="h-4.5 w-4.5" />} title={t("secLanguage")} sub={t("secLanguageSub")} delay={60}>

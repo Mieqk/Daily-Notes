@@ -18,6 +18,7 @@ import type { Reminder } from "./components/DailyView";
 const StatsView = lazy(() => import("./components/StatsView"));
 import NotesView from "./components/NotesView";
 import SettingsView from "./components/SettingsView";
+import PlannerView from "./components/PlannerView";
 import LockScreen from "./components/LockScreen";
 import SleepView from "./components/SleepView";
 import NutritionView from "./components/NutritionView";
@@ -281,12 +282,21 @@ export default function App() {
     markSnapshotAsSent(notes, tasks, moods, tags, photos, sleep);
   }, [notes, moods, tags, photos, date, userId]);
 
+  // Отправляем все даты, где задачи изменились: планировщик меняет сразу несколько дней
+  const prevTasks = useRef(tasks);
   useEffect(() => {
+    const prev = prevTasks.current;
+    prevTasks.current = tasks;
     if (!userId || isLocalMode() || !initialLoadDone.current) return;
     const snap = remoteSnapshot.current;
     if (snap && JSON.stringify(snap.tasks) === JSON.stringify(tasks)) return;
-    lastUpdateTime.current[`tasks-${date}`] = Date.now();
-    syncTasks(userId, date, tasks[date] ?? []);
+    const changed = [...new Set([...Object.keys(prev), ...Object.keys(tasks), date])]
+      .filter((d) => d === date || JSON.stringify(prev[d] ?? []) !== JSON.stringify(tasks[d] ?? []))
+      .slice(0, 100);
+    for (const d of changed) {
+      lastUpdateTime.current[`tasks-${d}`] = Date.now();
+      syncTasks(userId, d, tasks[d] ?? []);
+    }
     markSnapshotAsSent(notes, tasks, moods, tags, photos, sleep);
   }, [tasks, date, userId]);
 
@@ -346,6 +356,7 @@ export default function App() {
 
   const tabMeta: Record<Tab, { title: string; sub: string }> = {
     daily: { title: t("dailyTitle"), sub: t("dailySub") },
+    plan: { title: t("planTitle"), sub: t("planSub") },
     stats: { title: t("statsTitle"), sub: t("statsSub") },
     notes: { title: t("notesTitle"), sub: t("notesSub") },
     sleep: { title: t("sleepTitle"), sub: t("sleepSub") },
@@ -400,11 +411,12 @@ export default function App() {
         </header>
 
         <main key={tab + date} className="animate-rise min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-6 sm:px-8 sm:pt-8">
-          {tab === "daily" && <DailyView userId={userId} capsules={capsules} setCapsules={setCapsules} date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} lang={lang} t={t} showToast={showToast} />}
+          {tab === "daily" && <DailyView userId={userId} capsules={capsules} setCapsules={setCapsules} date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} onWritingFont={setWritingFont} lang={lang} t={t} showToast={showToast} />}
           {tab === "stats" && <Suspense fallback={<div className="grid h-64 place-items-center text-sm text-[var(--ink-faint)]"><span className="animate-livedot h-2.5 w-2.5 rounded-full bg-[var(--accent)]" /></div>}><StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} /></Suspense>}
           {tab === "sleep" && <SleepView sleep={sleep} lang={lang} t={t} setSleep={(iso, data) => setSleep((prev) => { const next = { ...prev }; if (data) next[iso] = data; else delete next[iso]; return next; })} />}
           {tab === "food" && <NutritionView lang={lang} />}
           {tab === "workout" && <WorkoutView lang={lang} />}
+          {tab === "plan" && <PlannerView tasks={tasks} setTasks={setTasks} onOpen={openDate} lang={lang} showToast={showToast} />}
           {tab === "notes" && <NotesView capsules={capsules} notes={notes} tasks={tasks} moods={moods} tags={tags} photos={photos} moodEmoji={moodEmoji} writingFont={writingFont} onOpen={openDate} lang={lang} t={t} />}
           {tab === "friends" && !userId && (
             <div className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-6 py-12 text-center" style={{ boxShadow: "var(--shadow-sm)" }}>
