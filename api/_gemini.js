@@ -155,8 +155,8 @@ async function* streamPieces(key, version, model, prompt, generationConfig, thin
 
 // Потоковый вариант: onDelta получает куски текста по мере генерации.
 // Модели перебираются, только пока не пришёл первый кусок (opts.firstByteMs на попытку); дальше ответ дочитывается
-// до конца или до opts.deadlineMs. opts.hedgeMs: если первая попытка молчит дольше, параллельно запускается такая же
-// вторая, и побеждает та, что заговорит раньше (у Gemini время до первого слова сильно скачет).
+// до конца или до opts.deadlineMs. opts.hedgeMs: если первая попытка молчит дольше, параллельно запускается вторая
+// (в следующую модель списка), и побеждает та, что заговорит раньше (у Gemini время до первого слова сильно скачет).
 // Возвращает { model, text } или null, если ни одна модель не начала отвечать.
 export async function streamText(key, prompt, generationConfig = {}, diag = [], opts = {}, onDelta = () => {}) {
   const errors = diag;
@@ -203,7 +203,8 @@ export async function streamText(key, prompt, generationConfig = {}, diag = [], 
     clearTimeout(hedgeTimer);
     if (got.hedge) {
       hedged = true;
-      launch([...live][0].model);
+      // копию шлём в другую модель из списка: задержки одной и той же модели обычно скачут вместе
+      launch(queue.length ? queue.shift() : [...live][0].model);
       continue;
     }
     const { a, r, e } = got;
