@@ -16,6 +16,16 @@ export interface Look {
   uiFont: UiFont;
   /** Без световых пятен, зерна и мягких теней */
   flat: boolean;
+  /** Свой цвет фона для темы «Своя», #rrggbb или "" (из акцента) */
+  bgColor: string;
+  /** Свой цвет текста для темы «Своя», #rrggbb или "" */
+  inkColor: string;
+  /** Подписи без КАПСА */
+  noCaps: boolean;
+  /** Без анимаций и дрейфующих пятен */
+  calm: boolean;
+  /** Усиленный контраст текста */
+  contrast: boolean;
 }
 
 export const DEFAULT_LOOK: Look = {
@@ -26,6 +36,11 @@ export const DEFAULT_LOOK: Look = {
   density: "normal",
   uiFont: "auto",
   flat: false,
+  bgColor: "",
+  inkColor: "",
+  noCaps: false,
+  calm: false,
+  contrast: false,
 };
 
 export const ACCENT_PRESETS = ["#3d6b8f", "#226b52", "#b5651d", "#c0453c", "#6a55c8", "#c2477a", "#2f2f2c"];
@@ -33,6 +48,8 @@ export const ACCENT_PRESETS = ["#3d6b8f", "#226b52", "#b5651d", "#c0453c", "#6a5
 const RADII: Radius[] = ["auto", "sharp", "soft", "round"];
 const DENSITIES: Density[] = ["compact", "normal", "airy"];
 const FONTS: UiFont[] = ["auto", "golos", "system", "serif", "mono"];
+
+const hexOrEmpty = (v: unknown) => (typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : "");
 
 /** Приводит что угодно (localStorage, чужие настройки из аккаунта) к корректному Look. */
 export function sanitizeLook(raw: unknown): Look {
@@ -46,6 +63,11 @@ export function sanitizeLook(raw: unknown): Look {
     density: DENSITIES.includes(r.density as Density) ? (r.density as Density) : d.density,
     uiFont: FONTS.includes(r.uiFont as UiFont) ? (r.uiFont as UiFont) : d.uiFont,
     flat: r.flat === true,
+    bgColor: hexOrEmpty(r.bgColor),
+    inkColor: hexOrEmpty(r.inkColor),
+    noCaps: r.noCaps === true,
+    calm: r.calm === true,
+    contrast: r.contrast === true,
   };
 }
 
@@ -73,9 +95,11 @@ function inkOn(l: number): string {
 export function customVars(look: Look): Record<string, string> {
   const [h, sRaw] = hexToHsl(look.accent);
   const [, , lRaw] = hexToHsl(look.accent);
-  const dark = look.base === "dark";
+  const own = look.bgColor ? hexToHsl(look.bgColor) : null;
+  const dark = own ? own[2] < 50 : look.base === "dark";
   const neutral = sRaw < 8; // серый акцент: фон не подкрашиваем
-  const bgS = look.tint && !neutral ? (dark ? 16 : 18) : neutral ? 3 : 4;
+  const bgS = own ? Math.min(own[1], 45) : look.tint && !neutral ? (dark ? 16 : 18) : neutral ? 3 : 4;
+  const bgH = own ? own[0] : h;
   // акцент часто используется как цвет текста: держим его в читаемом диапазоне яркости
   const aL = dark ? Math.max(lRaw, 62) : Math.min(lRaw, 38);
   const aS = Math.min(sRaw, 85);
@@ -84,20 +108,29 @@ export function customVars(look: Look): Record<string, string> {
   const L = dark
     ? { bg: 9, panel: 12.5, panel2: 16, hover: 18, line: 22, ink: 93, soft: 72, faint: 60 }
     : { bg: 94, panel: 97, panel2: 99.5, hover: 90, line: 84, ink: 11, soft: 33, faint: 40 };
+  if (own) {
+    const b = Math.min(Math.max(own[2], dark ? 3 : 80), dark ? 30 : 99);
+    const up = (n: number) => Math.min(Math.max(b + n, 0), 100);
+    Object.assign(L, dark
+      ? { bg: b, panel: up(3.5), panel2: up(7), hover: up(9), line: up(13) }
+      : { bg: b, panel: up(3), panel2: up(5.5), hover: up(-4), line: up(-10) });
+  }
   const inkS = look.tint && !neutral ? 14 : 4;
+  const bgCss = hsl(bgH, bgS, L.bg);
+  const ink = look.inkColor || hsl(h, inkS, L.ink);
   return {
-    "--bg": hsl(h, bgS, L.bg),
-    "--panel": hsl(h, bgS, L.panel),
-    "--panel-2": hsl(h, bgS, L.panel2),
-    "--ink": hsl(h, inkS, L.ink),
-    "--ink-soft": hsl(h, inkS, L.soft),
-    "--ink-faint": hsl(h, inkS, L.faint),
-    "--line": hsl(h, bgS, L.line),
-    "--hover": hsl(h, bgS, L.hover),
+    "--bg": bgCss,
+    "--panel": hsl(bgH, bgS, L.panel),
+    "--panel-2": hsl(bgH, bgS, L.panel2),
+    "--ink": ink,
+    "--ink-soft": look.inkColor ? `color-mix(in srgb, ${ink} 78%, ${bgCss})` : hsl(h, inkS, L.soft),
+    "--ink-faint": look.inkColor ? `color-mix(in srgb, ${ink} 62%, ${bgCss})` : hsl(h, inkS, L.faint),
+    "--line": hsl(bgH, bgS, L.line),
+    "--hover": hsl(bgH, bgS, L.hover),
     "--accent": accent,
     "--accent-deep": deep,
     "--accent-ink": inkOn(aL),
-    "--accent-soft": `color-mix(in srgb, ${accent} ${dark ? 22 : 14}%, ${hsl(h, bgS, L.panel)})`,
+    "--accent-soft": `color-mix(in srgb, ${accent} ${dark ? 22 : 14}%, ${hsl(bgH, bgS, L.panel)})`,
     "--danger": dark ? "#e5655c" : "#c0453c",
     "--danger-soft": dark ? "#3a2321" : "#f2dcd6",
     "--dot": dark ? "rgba(255,255,255,0.07)" : "rgba(20,20,20,0.1)",
@@ -125,13 +158,16 @@ export function applyLook(theme: string, look: Look) {
   set("data-density", look.density !== "normal", look.density);
   set("data-ui-font", look.uiFont !== "auto", look.uiFont);
   set("data-flat", look.flat, "1");
+  set("data-caps", look.noCaps, "off");
+  set("data-calm", look.calm, "1");
+  set("data-contrast", look.contrast, "high");
   for (const k of appliedKeys) el.style.removeProperty(k);
   appliedKeys = [];
   if (theme === "custom") {
     const vars = customVars(look);
     for (const [k, val] of Object.entries(vars)) el.style.setProperty(k, val);
     appliedKeys = Object.keys(vars);
-    el.style.colorScheme = look.base;
+    el.style.colorScheme = vars["--bg"] && look.bgColor ? (hexToHsl(look.bgColor)[2] < 50 ? "dark" : "light") : look.base;
   } else {
     el.style.removeProperty("color-scheme");
   }

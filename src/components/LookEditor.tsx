@@ -4,7 +4,6 @@ import { ACCENT_PRESETS, DEFAULT_LOOK } from "../look";
 import type { Look } from "../look";
 import { makeLook } from "../look-strings";
 import type { LookKey } from "../look-strings";
-import { CheckIcon } from "../icons";
 
 interface Props {
   look: Look;
@@ -33,7 +32,7 @@ export default function LookEditor({ look, onLook, theme, onTheme, lang }: Props
   };
 
   const choice = <V extends string>(items: { v: V; k: LookKey }[], value: V, set: (v: V) => void) => (
-    <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
+    <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(92px, 1fr))" }}>
       {items.map((it) => {
         const active = value === it.v;
         return (
@@ -48,7 +47,6 @@ export default function LookEditor({ look, onLook, theme, onTheme, lang }: Props
             }`}
           >
             {t(it.k)}
-            {active && <CheckIcon className="h-3 w-3 shrink-0 text-[var(--accent)]" />}
           </button>
         );
       })}
@@ -94,6 +92,31 @@ export default function LookEditor({ look, onLook, theme, onTheme, lang }: Props
         </label>
       </Group>
 
+      <Group title={t("lkAdv")}>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {([
+            { key: "bgColor", label: "lkBgColor", fallback: "#f4f3ef" },
+            { key: "inkColor", label: "lkInkColor", fallback: "#1d1d1b" },
+          ] as const).map((c) => (
+            <div key={c.key} className="flex items-center gap-2 text-[12px] font-bold text-[var(--ink-soft)]">
+              <input
+                type="color"
+                value={look[c.key] || c.fallback}
+                onChange={(e) => setColors({ [c.key]: e.target.value })}
+                aria-label={t(c.label)}
+                className="h-7 w-9 cursor-pointer rounded border border-[var(--line)] bg-transparent p-0"
+              />
+              <span className="flex-1">{t(c.label)}</span>
+              {look[c.key] && (
+                <button onClick={() => onLook({ ...look, [c.key]: "" })} className="text-[11px] text-[var(--accent-deep)] underline">
+                  {t("lkAutoColor")}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </Group>
+
       <Group title={t("lkRadius")}>
         {choice(
           [{ v: "auto", k: "lkAuto" }, { v: "sharp", k: "lkSharp" }, { v: "soft", k: "lkSoft" }, { v: "round", k: "lkRound" }],
@@ -118,14 +141,23 @@ export default function LookEditor({ look, onLook, theme, onTheme, lang }: Props
         )}
       </Group>
 
-      <Group title={t("lkFlat")}>
-        <label className="flex cursor-pointer items-start gap-2 text-[13px]">
-          <input type="checkbox" checked={look.flat} onChange={(e) => onLook({ ...look, flat: e.target.checked })} className="mt-0.5 h-4 w-4 accent-[var(--accent)]" />
-          <span>
-            {t("lkFlat")}
-            <span className="block text-[11.5px] text-[var(--ink-faint)]">{t("lkFlatHint")}</span>
-          </span>
-        </label>
+      <Group title={t("lkExtras")}>
+        <div className="space-y-2.5">
+          {([
+            { key: "flat", label: "lkFlat", hint: "lkFlatHint" },
+            { key: "noCaps", label: "lkNoCaps", hint: "lkNoCapsHint" },
+            { key: "calm", label: "lkCalm", hint: "lkCalmHint" },
+            { key: "contrast", label: "lkContrast", hint: "lkContrastHint" },
+          ] as const).map((o) => (
+            <label key={o.key} className="flex cursor-pointer items-start gap-2 text-[13px]">
+              <input type="checkbox" checked={look[o.key]} onChange={(e) => onLook({ ...look, [o.key]: e.target.checked })} className="mt-0.5 h-4 w-4 accent-[var(--accent)]" />
+              <span>
+                {t(o.label)}
+                <span className="block text-[11.5px] text-[var(--ink-faint)]">{t(o.hint)}</span>
+              </span>
+            </label>
+          ))}
+        </div>
       </Group>
 
       <button
