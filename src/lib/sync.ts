@@ -158,7 +158,7 @@ const debouncedUpsertSettings = debounceByKey(async (userId: string, settings: R
 export function syncEntry(userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) { debouncedUpsertEntry(userId, date, content, mood, tags, photos); }
 export function syncTasks(userId: string, date: string, tasks: Task[]) { debouncedUpsertTasks(userId, date, tasks); }
 export function syncSleep(userId: string, date: string, sleepData: SleepData) { debouncedUpsertSleep(userId, date, sleepData); }
-export function syncSettings(userId: string, settings: { theme?: string; lang?: string; font?: number; writingFont?: string; bg?: string; moodEmoji?: string[]; capsules?: Record<string, string> }) { debouncedUpsertSettings(userId, settings); }
+export function syncSettings(userId: string, settings: { theme?: string; lang?: string; font?: number; writingFont?: string; bg?: string; moodEmoji?: string[]; capsules?: Record<string, string>; look?: unknown }) { debouncedUpsertSettings(userId, settings); }
 
 export interface LocalData {
   notes: Record<string, string>;

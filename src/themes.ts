@@ -1,6 +1,8 @@
 import type { Lang } from "./i18n";
+import { DEFAULT_LOOK, customSwatch } from "./look";
+import type { Look } from "./look";
 
-export type ThemeId = "day" | "night" | "ocean" | "lavender" | "cherry";
+export type ThemeId = "day" | "night" | "ocean" | "lavender" | "cherry" | "paper" | "custom";
 
 export interface ThemeMeta {
   id: ThemeId;
@@ -40,7 +42,25 @@ export const THEMES: ThemeMeta[] = [
     desc: { ru: "уголь и роза", en: "charcoal & rose", be: "вугаль і ружа", uk: "вугілля і троянда", de: "Kohle & Rose", fr: "charbon & rose", es: "carbón y rosa" },
     swatch: { bg: "#16121a", panel: "#1e1823", accent: "#e0637c" },
   },
+  {
+    id: "paper",
+    name: { ru: "Чистая", en: "Plain", be: "Чыстая", uk: "Чиста", de: "Schlicht", fr: "Sobre", es: "Sobria" },
+    desc: { ru: "спокойно, без украшений", en: "calm, no decoration", be: "спакойна, без упрыгожванняў", uk: "спокійно, без прикрас", de: "ruhig, ohne Schnörkel", fr: "calme, sans fioritures", es: "tranquila, sin adornos" },
+    swatch: { bg: "#f4f3ef", panel: "#fbfaf8", accent: "#35506b" },
+  },
+  {
+    id: "custom",
+    name: { ru: "Своя", en: "Custom", be: "Свая", uk: "Своя", de: "Eigene", fr: "Perso", es: "Propia" },
+    desc: { ru: "ваши цвета", en: "your colors", be: "вашы колеры", uk: "ваші кольори", de: "deine Farben", fr: "vos couleurs", es: "tus colores" },
+    swatch: customSwatch(DEFAULT_LOOK),
+  },
 ];
+
+/** Образец для «Своей» темы обновляется вместе с настройками. */
+export function updateCustomSwatch(look: Look) {
+  const t = THEMES.find((x) => x.id === "custom");
+  if (t) t.swatch = customSwatch(look);
+}
 
 export const themeMeta = (id: ThemeId): ThemeMeta =>
   THEMES.find((t) => t.id === id) ?? THEMES[0];
