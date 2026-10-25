@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CalendarIcon, StatsIcon, NotebookIcon, SleepIcon, FoodIcon, DumbbellIcon, GearIcon, UsersIcon, XIcon } from "../icons";
+import { CalendarIcon, PlanIcon, StatsIcon, NotebookIcon, SleepIcon, FoodIcon, DumbbellIcon, GearIcon, UsersIcon, XIcon } from "../icons";
 import type { Tab } from "../store";
 import type { Lang, TKey } from "../i18n";
 
@@ -12,6 +12,7 @@ interface MobileMenuProps {
 
 const TABS = [
   { id: "daily" as Tab, icon: CalendarIcon, key: "tabDaily" as TKey },
+  { id: "plan" as Tab, icon: PlanIcon, key: "tabPlan" as TKey },
   { id: "stats" as Tab, icon: StatsIcon, key: "tabStats" as TKey },
   { id: "sleep" as Tab, icon: SleepIcon, key: "tabSleep" as TKey },
   { id: "food" as Tab, icon: FoodIcon, key: "tabFood" as TKey },

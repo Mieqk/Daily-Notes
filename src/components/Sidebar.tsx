@@ -11,6 +11,7 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   CalendarIcon,
+  PlanIcon,
   CheckIcon,
   ChevronIcon,
   DumbbellIcon,
@@ -49,6 +50,7 @@ type MenuId = "theme" | "lang" | null;
 
 const TABS: { id: Tab; icon: (p: { className?: string }) => ReactNode; key: TKey }[] = [
   { id: "daily", icon: CalendarIcon, key: "tabDaily" },
+  { id: "plan", icon: PlanIcon, key: "tabPlan" },
   { id: "stats", icon: StatsIcon, key: "tabStats" },
   { id: "sleep", icon: SleepIcon, key: "tabSleep" },
   { id: "food", icon: FoodIcon, key: "tabFood" },
