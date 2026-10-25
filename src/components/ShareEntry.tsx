@@ -3,6 +3,9 @@ import type { Lang } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { fetchFriendOptions, type FriendOpt } from "../lib/friendOptions";
 import { makeSocial } from "../social-strings";
+import { makeMedia } from "../media-strings";
+import { mediaErrorKey, prepareMedia, removeMedia, uploadMedia, type PendingMedia } from "../lib/media";
+import MediaAttach from "./MediaAttach";
 
 interface ShareEntryProps {
   userId: string;
@@ -21,6 +24,9 @@ export default function ShareEntry({ userId, lang, date, content, mood, tags, se
   const [open, setOpen] = useState(false);
   const [friends, setFriends] = useState<FriendOpt[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [media, setMedia] = useState<PendingMedia | null>(null);
+  const [mErr, setMErr] = useState<string | null>(null);
+  const m = makeMedia(lang);
   const empty = !content.trim();
 
   const toggle = async () => {
@@ -32,14 +38,25 @@ export default function ShareEntry({ userId, lang, date, content, mood, tags, se
   const send = async (f: FriendOpt) => {
     if (!supabase || empty || sealed) return;
     setBusy(true);
+    setMErr(null);
+    let path: string | null = null;
+    try {
+      if (media) path = await uploadMedia(userId, f.id, await prepareMedia(media.file));
+    } catch (e) {
+      setBusy(false); setMErr(m(mediaErrorKey((e as Error).message))); return;
+    }
     const { data: prev } = await supabase.from("shared_entries").select("id").eq("owner", userId).eq("friend", f.id).eq("entry_date", date).maybeSingle();
     const { error } = await supabase.from("shared_entries").upsert(
-      { owner: userId, friend: f.id, entry_date: date, content: content.slice(0, 20000), mood, tags: tags.slice(0, 20), updated_at: new Date().toISOString() },
+      {
+        owner: userId, friend: f.id, entry_date: date, content: content.slice(0, 20000), mood, tags: tags.slice(0, 20), updated_at: new Date().toISOString(),
+        ...(path ? { media_path: path, media_type: media!.kind } : {}),
+      },
       { onConflict: "owner,friend,entry_date" },
     );
     setBusy(false);
-    if (error) { showToast(s("error")); return; }
+    if (error) { removeMedia(path); showToast(s("error")); return; }
     setOpen(false);
+    setMedia(null);
     showToast(s(prev ? "shUpdated" : "shSent").replace("{name}", f.name));
   };
 
@@ -59,8 +76,10 @@ export default function ShareEntry({ userId, lang, date, content, mood, tags, se
         <span className="hidden whitespace-nowrap xl:inline">{s("shBtn")}</span>
       </button>
       {open && (
-        <div className="absolute bottom-11 left-0 z-20 w-64 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-3" style={{ boxShadow: "var(--shadow)" }}>
+        <div className="absolute bottom-11 left-0 z-20 w-72 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-3" style={{ boxShadow: "var(--shadow)" }}>
           <p className="mb-2 text-[12px] leading-snug text-[var(--ink-soft)]">{s("shWith")}</p>
+          <MediaAttach lang={lang} value={media} onChange={setMedia} onError={setMErr} disabled={busy} className="mb-2" />
+          {mErr && <p className="mb-2 text-[12px] text-[var(--danger)]">{mErr}</p>}
           {friends === null ? (
             <p className="text-[12.5px] text-[var(--ink-faint)]">{s("shLoadFriends")}</p>
           ) : friends.length === 0 ? (

@@ -5,9 +5,13 @@ import { shiftISO, todayISO } from "../store";
 import { makeSocial } from "../social-strings";
 import type { FriendOpt } from "./SharedMemories";
 import FriendsSection, { EmptyState } from "./FriendsSection";
+import MediaAttach from "./MediaAttach";
+import MediaView from "./MediaView";
+import { makeMedia } from "../media-strings";
+import { mediaErrorKey, prepareMedia, removeMedia, uploadMedia, useMediaUrls, type MediaType, type PendingMedia } from "../lib/media";
 
 interface Habit { id: string; owner: string; buddy: string; title: string }
-interface Checkin { habit_id: string; user_id: string; day: string }
+interface Checkin { habit_id: string; user_id: string; day: string; media_path?: string | null; media_type?: MediaType | null }
 
 /** Серия вместе: подряд идущие дни, в которые отметились оба. Сегодня не обрывает серию, пока друг не отметился. */
 export function pairStreak(mine: Set<string>, theirs: Set<string>, today: string): number {
@@ -29,6 +33,9 @@ export default function BuddyHabits({ userId, lang, friends }: { userId: string;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [proof, setProof] = useState<Record<string, PendingMedia | null>>({});
+  const [proofErr, setProofErr] = useState<string | null>(null);
+  const m = makeMedia(lang);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase!.from("buddy_habits").select("*").order("created_at", { ascending: false });
@@ -42,10 +49,12 @@ export default function BuddyHabits({ userId, lang, friends }: { userId: string;
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  const urls = useMediaUrls(checks.filter((c) => c.day === todayISO()).map((c) => c.media_path));
   if (habits === null) return null;
 
   const today = todayISO();
   const nameOf = (id: string) => friends.find((f) => f.id === id)?.name || "—";
+  const todayProofs = (hid: string, uid: string) => checks.filter((c) => c.habit_id === hid && c.user_id === uid && c.day === today && c.media_path);
   const btn = "h-10 rounded-lg px-4 text-[13px] font-semibold transition-all active:scale-95 disabled:opacity-50";
 
   const create = async () => {
@@ -59,11 +68,26 @@ export default function BuddyHabits({ userId, lang, friends }: { userId: string;
     load();
   };
 
-  const toggle = async (habitId: string, done: boolean) => {
+  const toggle = async (habitId: string, other: string, done: boolean) => {
     setBusy(true);
+    setProofErr(null);
     const q = supabase!.from("buddy_checkins");
-    if (done) await q.delete().eq("habit_id", habitId).eq("user_id", userId).eq("day", today);
-    else await q.insert({ habit_id: habitId, user_id: userId, day: today });
+    if (done) {
+      const mine = checks.find((c) => c.habit_id === habitId && c.user_id === userId && c.day === today);
+      await q.delete().eq("habit_id", habitId).eq("user_id", userId).eq("day", today);
+      removeMedia(mine?.media_path);
+    } else {
+      const pend = proof[habitId];
+      let path: string | null = null;
+      try {
+        if (pend) path = await uploadMedia(userId, other, await prepareMedia(pend.file));
+      } catch (e) {
+        setBusy(false); setProofErr(m(mediaErrorKey((e as Error).message))); return;
+      }
+      const { error } = await q.insert({ habit_id: habitId, user_id: userId, day: today, media_path: path, media_type: path ? pend!.kind : null });
+      if (error) { removeMedia(path); setProofErr(s("error")); }
+      else setProof((p) => ({ ...p, [habitId]: null }));
+    }
     setBusy(false);
     load();
   };
@@ -118,7 +142,7 @@ export default function BuddyHabits({ userId, lang, friends }: { userId: string;
                   <div className="shrink-0 rounded-full bg-[var(--panel)] px-2.5 py-1 text-[12px] font-bold text-[var(--accent-deep)]" aria-label={s("buddyStreak").replace("{n}", String(streak))}>🔥 {streak}</div>
                 </div>
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                  <button onClick={() => toggle(h.id, iDone)} disabled={busy} aria-pressed={iDone}
+                  <button onClick={() => toggle(h.id, other, iDone)} disabled={busy} aria-pressed={iDone}
                     className={`${btn} ${iDone ? "border border-[var(--accent)] text-[var(--accent-deep)]" : "bg-[var(--accent)] text-[var(--accent-ink)]"}`}>
                     {iDone ? `✓ ${s("buddyChecked")}` : s("buddyDone")}
                   </button>
@@ -129,11 +153,21 @@ export default function BuddyHabits({ userId, lang, friends }: { userId: string;
                     {confirmId === h.id ? s("buddyConfirm") : s("buddyLeave")}
                   </button>
                 </div>
+                {!iDone && (
+                  <MediaAttach lang={lang} value={proof[h.id] ?? null} onChange={(v) => setProof((p) => ({ ...p, [h.id]: v }))} onError={setProofErr} disabled={busy} className="mt-2" />
+                )}
+                {[...todayProofs(h.id, userId), ...todayProofs(h.id, other)].map((c) => c.media_path && c.media_type && (
+                  <div key={`${c.user_id}-${c.day}`} className="mt-2">
+                    <p className="mb-1 text-[11.5px] font-semibold text-[var(--ink-soft)]">{c.user_id === userId ? m("proof") : nameOf(c.user_id)}</p>
+                    <MediaView url={urls[c.media_path]} type={c.media_type} />
+                  </div>
+                ))}
               </li>
             );
           })}
         </ul>
       )}
+      {proofErr && <p className="mt-2 text-[12.5px] text-[var(--danger)]">{proofErr}</p>}
     </FriendsSection>
   );
 }

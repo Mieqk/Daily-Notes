@@ -5,10 +5,14 @@ import { todayISO } from "../store";
 import { makeSocial } from "../social-strings";
 import type { FriendOpt } from "./SharedMemories";
 import FriendsSection, { EmptyState } from "./FriendsSection";
+import MediaAttach from "./MediaAttach";
+import MediaView from "./MediaView";
+import { makeMedia } from "../media-strings";
+import { mediaErrorKey, prepareMedia, removeMedia, uploadMedia, useMediaUrls, type MediaType, type PendingMedia } from "../lib/media";
 
 interface Challenge { id: string; owner: string; title: string; goal_days: number; start_date: string }
 interface Member { challenge_id: string; user_id: string }
-interface Checkin { challenge_id: string; user_id: string; day: string }
+interface Checkin { challenge_id: string; user_id: string; day: string; media_path?: string | null; media_type?: MediaType | null }
 
 const dayNumber = (start: string, today: string) => {
   const [a, b, c] = start.split("-").map(Number);
@@ -29,6 +33,9 @@ export default function Challenges({ userId, lang, friends, myName }: { userId: 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [proof, setProof] = useState<Record<string, PendingMedia | null>>({});
+  const [proofErr, setProofErr] = useState<string | null>(null);
+  const m = makeMedia(lang);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase!.from("challenges").select("*").order("created_at", { ascending: false });
@@ -46,6 +53,7 @@ export default function Challenges({ userId, lang, friends, myName }: { userId: 
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  const urls = useMediaUrls(checks.filter((k) => k.day === todayISO()).map((k) => k.media_path));
   if (list === null) return null;
 
   const today = todayISO();
@@ -68,9 +76,24 @@ export default function Challenges({ userId, lang, friends, myName }: { userId: 
 
   const toggle = async (cid: string, done: boolean) => {
     setBusy(true);
+    setProofErr(null);
     const q = supabase!.from("challenge_checkins");
-    if (done) await q.delete().eq("challenge_id", cid).eq("user_id", userId).eq("day", today);
-    else await q.insert({ challenge_id: cid, user_id: userId, day: today });
+    if (done) {
+      const mine = checks.find((k) => k.challenge_id === cid && k.user_id === userId && k.day === today);
+      await q.delete().eq("challenge_id", cid).eq("user_id", userId).eq("day", today);
+      removeMedia(mine?.media_path);
+    } else {
+      const pend = proof[cid];
+      let path: string | null = null;
+      try {
+        if (pend) path = await uploadMedia(userId, `ch-${cid}`, await prepareMedia(pend.file));
+      } catch (e) {
+        setBusy(false); setProofErr(m(mediaErrorKey((e as Error).message))); return;
+      }
+      const { error } = await q.insert({ challenge_id: cid, user_id: userId, day: today, media_path: path, media_type: path ? pend!.kind : null });
+      if (error) { removeMedia(path); setProofErr(s("error")); }
+      else setProof((p) => ({ ...p, [cid]: null }));
+    }
     setBusy(false);
     load();
   };
@@ -151,6 +174,15 @@ export default function Challenges({ userId, lang, friends, myName }: { userId: 
                     );
                   })}
                 </div>
+                {!finished && !iDone && (
+                  <MediaAttach lang={lang} value={proof[c.id] ?? null} onChange={(v) => setProof((p) => ({ ...p, [c.id]: v }))} onError={setProofErr} disabled={busy} className="mt-2.5" />
+                )}
+                {cs.filter((k) => k.day === today && k.media_path && k.media_type).map((k) => (
+                  <div key={k.user_id} className="mt-2.5">
+                    <p className="mb-1 text-[11.5px] font-semibold text-[var(--ink-soft)]">{k.user_id === userId ? m("proof") : nameOf(k.user_id)}</p>
+                    <MediaView url={urls[k.media_path!]} type={k.media_type!} />
+                  </div>
+                ))}
                 <div className="mt-2.5 flex items-center gap-2">
                   {!finished && (
                     <button onClick={() => toggle(c.id, iDone)} disabled={busy} aria-pressed={iDone}
@@ -167,6 +199,7 @@ export default function Challenges({ userId, lang, friends, myName }: { userId: 
           })}
         </ul>
       )}
+      {proofErr && <p className="mt-2 text-[12.5px] text-[var(--danger)]">{proofErr}</p>}
     </FriendsSection>
   );
 }

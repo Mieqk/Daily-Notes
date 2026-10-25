@@ -7,8 +7,10 @@ import { MoodVisual } from "../icons";
 import { makeSocial } from "../social-strings";
 import FriendsSection, { EmptyState } from "./FriendsSection";
 import type { FriendOpt } from "./SharedMemories";
+import MediaView from "./MediaView";
+import { removeMedia, useMediaUrls, type MediaType } from "../lib/media";
 
-interface Row { id: string; owner: string; friend: string; entry_date: string; content: string; mood: number | null; tags: string[] }
+interface Row { id: string; owner: string; friend: string; entry_date: string; content: string; mood: number | null; tags: string[]; media_path: string | null; media_type: MediaType | null }
 
 /** Записи, которыми друзья поделились со мной, и те, которыми поделился я (их можно отозвать). */
 export default function SharedEntries({ userId, lang, friends, moodEmoji }: { userId: string; lang: Lang; friends: FriendOpt[]; moodEmoji: string[] }) {
@@ -17,11 +19,12 @@ export default function SharedEntries({ userId, lang, friends, moodEmoji }: { us
   const [openId, setOpenId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase!.from("shared_entries").select("id,owner,friend,entry_date,content,mood,tags").order("entry_date", { ascending: false }).limit(100);
+    const { data, error } = await supabase!.from("shared_entries").select("id,owner,friend,entry_date,content,mood,tags,media_path,media_type").order("entry_date", { ascending: false }).limit(100);
     setRows(error ? [] : ((data ?? []) as Row[]));
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  const urls = useMediaUrls((rows ?? []).map((r) => r.media_path));
   if (rows === null) return null;
 
   const nameOf = (id: string) => friends.find((f) => f.id === id)?.name || "—";
@@ -29,8 +32,9 @@ export default function SharedEntries({ userId, lang, friends, moodEmoji }: { us
   const incoming = rows.filter((r) => r.friend === userId);
   const outgoing = rows.filter((r) => r.owner === userId);
 
-  const remove = async (id: string) => {
-    await supabase!.from("shared_entries").delete().eq("id", id);
+  const remove = async (r: Row) => {
+    await supabase!.from("shared_entries").delete().eq("id", r.id);
+    if (r.owner === userId) removeMedia(r.media_path);
     load();
   };
 
@@ -47,10 +51,11 @@ export default function SharedEntries({ userId, lang, friends, moodEmoji }: { us
           <span className="shrink-0 font-normal capitalize text-[var(--ink-faint)]">{fmt.format(fromISO(r.entry_date))}</span>
         </div>
         <p className={`mt-0.5 whitespace-pre-wrap break-words text-[14px] leading-relaxed ${open ? "" : "line-clamp-3"}`}>{r.content}</p>
+        {r.media_path && r.media_type && <MediaView url={urls[r.media_path]} type={r.media_type} className="mt-2" />}
         {r.tags.length > 0 && <p className="mt-1 text-[12px] font-semibold text-[var(--accent-deep)]">{r.tags.map((x) => `#${x}`).join(" ")}</p>}
         <div className="mt-1 flex items-center justify-between">
           <button onClick={() => setOpenId(open ? null : r.id)} className="text-[12px] font-semibold text-[var(--accent-deep)]">{open ? s("shClose") : s("shOpen")}</button>
-          <button onClick={() => remove(r.id)} className="text-[11.5px] text-[var(--ink-faint)] hover:text-[var(--danger)]">{mine ? s("shRevoke") : s("shHide")}</button>
+          <button onClick={() => remove(r)} className="text-[11.5px] text-[var(--ink-faint)] hover:text-[var(--danger)]">{mine ? s("shRevoke") : s("shHide")}</button>
         </div>
       </li>
     );

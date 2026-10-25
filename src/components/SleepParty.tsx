@@ -7,9 +7,13 @@ import { makeSocial } from "../social-strings";
 import type { FriendOpt } from "./SharedMemories";
 import { pairStreak } from "./BuddyHabits";
 import FriendsSection, { EmptyState } from "./FriendsSection";
+import MediaAttach from "./MediaAttach";
+import MediaView from "./MediaView";
+import { makeMedia } from "../media-strings";
+import { mediaErrorKey, prepareMedia, removeMedia, uploadMedia, useMediaUrls, type MediaType, type PendingMedia } from "../lib/media";
 
 interface Party { id: string; owner: string; buddy: string }
-interface Night { party_id: string; user_id: string; day: string; hours: number; quality: number; bedtime: string | null; waketime: string | null }
+interface Night { party_id: string; user_id: string; day: string; hours: number; quality: number; bedtime: string | null; waketime: string | null; media_path?: string | null; media_type?: MediaType | null }
 
 const toMin = (v?: string | null) => {
   if (!v || !v.includes(":")) return null;
@@ -34,6 +38,9 @@ export default function SleepParty({ userId, lang, friends, sleep }: { userId: s
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [attach, setAttach] = useState<Record<string, PendingMedia | null>>({});
+  const [attachErr, setAttachErr] = useState<string | null>(null);
+  const m = makeMedia(lang);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase!.from("sleep_parties").select("*").order("created_at", { ascending: false });
@@ -47,6 +54,7 @@ export default function SleepParty({ userId, lang, friends, sleep }: { userId: s
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  const urls = useMediaUrls(nights.map((n) => n.media_path));
   if (parties === null) return null;
 
   const today = todayISO();
@@ -68,17 +76,28 @@ export default function SleepParty({ userId, lang, friends, sleep }: { userId: s
     load();
   };
 
-  const share = async (partyId: string, shared: boolean) => {
-    setBusy(true); setErr(false);
+  const share = async (partyId: string, other: string, shared: boolean) => {
+    setBusy(true); setErr(false); setAttachErr(null);
     if (shared) {
+      const prev = nights.find((n) => n.party_id === partyId && n.user_id === userId && n.day === today);
       await supabase!.from("sleep_party_nights").delete().eq("party_id", partyId).eq("user_id", userId).eq("day", today);
+      removeMedia(prev?.media_path);
     } else if (mine) {
+      const pend = attach[partyId];
+      let path: string | null = null;
+      try {
+        if (pend) path = await uploadMedia(userId, other, await prepareMedia(pend.file));
+      } catch (e) {
+        setBusy(false); setAttachErr(m(mediaErrorKey((e as Error).message))); return;
+      }
       const { error } = await supabase!.from("sleep_party_nights").upsert({
         party_id: partyId, user_id: userId, day: today,
         hours: mine.hours || 0, quality: mine.quality || 0,
         bedtime: mine.bedtime || null, waketime: mine.waketime || null, updated_at: new Date().toISOString(),
+        media_path: path, media_type: path ? pend!.kind : null,
       });
-      if (error) setErr(true);
+      if (error) { removeMedia(path); setErr(true); }
+      else setAttach((a) => ({ ...a, [partyId]: null }));
     }
     setBusy(false);
     load();
@@ -174,9 +193,19 @@ export default function SleepParty({ userId, lang, friends, sleep }: { userId: s
                   </div>
                 </div>
 
+                {!iShared && hasMine && (
+                  <MediaAttach lang={lang} value={attach[p.id] ?? null} onChange={(v) => setAttach((a) => ({ ...a, [p.id]: v }))} onError={setAttachErr} disabled={busy} className="mt-2.5" />
+                )}
+                {[...my, ...their].filter((n) => n.day === today && n.media_path && n.media_type).map((n) => (
+                  <div key={n.user_id} className="mt-2.5">
+                    <p className="mb-1 text-[11.5px] font-semibold text-[var(--ink-soft)]">{n.user_id === userId ? s("spYou") : nameOf(n.user_id)}</p>
+                    <MediaView url={urls[n.media_path!]} type={n.media_type!} />
+                  </div>
+                ))}
+
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
                   {hasMine || iShared ? (
-                    <button onClick={() => share(p.id, iShared)} disabled={busy} aria-pressed={iShared}
+                    <button onClick={() => share(p.id, other, iShared)} disabled={busy} aria-pressed={iShared}
                       className={`${btn} ${iShared ? "border border-[var(--accent)] text-[var(--accent-deep)]" : "bg-[var(--accent)] text-[var(--accent-ink)]"}`}>
                       {iShared ? `✓ ${s("spShared")} · ${s("spUnshare")}` : s("spShare")}
                     </button>
@@ -193,6 +222,7 @@ export default function SleepParty({ userId, lang, friends, sleep }: { userId: s
         </ul>
       )}
       {err && !composing && <p className="mt-2 text-[12.5px] text-[var(--danger)]">{s("error")}</p>}
+      {attachErr && <p className="mt-2 text-[12.5px] text-[var(--danger)]">{attachErr}</p>}
     </FriendsSection>
   );
 }

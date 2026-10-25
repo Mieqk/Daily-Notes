@@ -16,7 +16,7 @@ export interface ChatMessage {
   recipient: string;
   body: string | null;
   media_path: string | null;
-  media_type: "image" | "video" | null;
+  media_type: "image" | "video" | "audio" | null;
   created_at: string;
   read_at: string | null;
 }

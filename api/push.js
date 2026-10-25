@@ -74,7 +74,7 @@ export default async function handler(req, res) {
       kind === "gratitude"
         ? { title: t.thanks, body: String(row.text || "").slice(0, 280), tag: "dn-thanks" }
         : kind === "chat"
-          ? { title: senderName || t.chat, body: String(row.body || (row.media_type === "video" ? t.video : t.photo)).slice(0, 140), tag: "dn-chat" }
+          ? { title: senderName || t.chat, body: String(row.body || (row.media_type === "audio" ? t.voice : row.media_type === "video" ? t.video : t.photo)).slice(0, 140), tag: "dn-chat" }
           : { title: t.sos, body: String(row.message || t.sosBody).slice(0, 200), tag: "dn-sos" };
     return [sub, payload];
   });

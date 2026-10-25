@@ -5,7 +5,11 @@ import { localeOf } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { sendPushEvent } from "../lib/push";
 import { generateUUID } from "../lib/uuid";
-import { CHAT_BUCKET, CHAT_COLS, CHAT_READ_EVENT, MAX_VIDEO_BYTES, MAX_VIDEO_MB, shrinkChatPhoto, videoExt, type ChatMessage } from "../lib/chat";
+import { CHAT_BUCKET, CHAT_COLS, CHAT_READ_EVENT, type ChatMessage } from "../lib/chat";
+import { mediaErrorKey, prepareMedia, removeMedia, uploadMedia, type PendingMedia } from "../lib/media";
+import { makeMedia } from "../media-strings";
+import MediaAttach from "./MediaAttach";
+import MediaView from "./MediaView";
 import { makeChat } from "../chat-strings";
 import { XIcon } from "../icons";
 import { PRESENCE_COLOR, type PresenceState } from "../lib/presence";
@@ -16,15 +20,15 @@ const PAGE = 40;
 const POLL_MS = 15_000;
 const URL_TTL = 3600;
 
-interface Pending { file: File; kind: "image" | "video"; preview: string }
 
 /** Личный чат с другом: текст, фото и видео. Новые сообщения приходят через Realtime, опрос страхует от обрыва связи. */
 export default function FriendChat({ userId, friend, lang, onClose }: { userId: string; friend: ChatFriend; lang: Lang; onClose: () => void }) {
   const c = makeChat(lang);
+  const m2 = makeMedia(lang);
   const [msgs, setMsgs] = useState<ChatMessage[] | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [text, setText] = useState("");
-  const [pending, setPending] = useState<Pending | null>(null);
+  const [pending, setPending] = useState<PendingMedia | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [urls, setUrls] = useState<Record<string, string>>({});
@@ -32,7 +36,6 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const stickRef = useRef(true);
-  const fileRef = useRef<HTMLInputElement>(null);
   const requested = useRef(new Set<string>());
 
   const pairFilter = `and(sender.eq.${userId},recipient.eq.${friend.id}),and(sender.eq.${friend.id},recipient.eq.${userId})`;
@@ -135,8 +138,6 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  useEffect(() => () => { if (pending) URL.revokeObjectURL(pending.preview); }, [pending]);
-
   useEffect(() => {
     if (!err) return;
     const id = window.setTimeout(() => setErr(null), 4000);
@@ -160,16 +161,6 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
     if (el) stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
   };
 
-  const pickFile = (e: ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    e.target.value = "";
-    if (!f) return;
-    const kind = f.type.startsWith("image/") ? "image" : f.type.startsWith("video/") ? "video" : null;
-    if (!kind) { setErr(c("badType")); return; }
-    if (kind === "video" && f.size > MAX_VIDEO_BYTES) { setErr(c("tooBig").replace("{mb}", String(MAX_VIDEO_MB))); return; }
-    setPending({ file: f, kind, preview: URL.createObjectURL(f) });
-  };
-
   const send = async () => {
     const body = text.trim();
     if (busy || (!body && !pending)) return;
@@ -177,14 +168,9 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
     setErr(null);
     let path: string | null = null;
     try {
-      let media_type: "image" | "video" | null = null;
+      let media_type: "image" | "video" | "audio" | null = null;
       if (pending) {
-        const blob: Blob = pending.kind === "image" ? await shrinkChatPhoto(pending.file) : pending.file;
-        const ext = pending.kind === "image" ? "jpg" : videoExt(pending.file);
-        const contentType = pending.kind === "image" ? "image/jpeg" : pending.file.type || "video/mp4";
-        path = `${userId}/${friend.id}/${generateUUID()}.${ext}`;
-        const up = await supabase!.storage.from(CHAT_BUCKET).upload(path, blob, { contentType });
-        if (up.error) throw new Error("upload");
+        path = await uploadMedia(userId, friend.id, await prepareMedia(pending.file));
         media_type = pending.kind;
       }
       const { data, error } = await supabase!
@@ -200,9 +186,9 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
       setPending(null);
       sendPushEvent("chat", row.id);
     } catch (e) {
-      if (path) supabase!.storage.from(CHAT_BUCKET).remove([path]);
-      const m = e instanceof Error ? e.message : "";
-      setErr(m === "too-big" ? c("tooBig").replace("{mb}", String(MAX_VIDEO_MB)) : c("failed"));
+      removeMedia(path);
+      const msg = e instanceof Error ? e.message : "";
+      setErr(msg === "insert" ? c("failed") : m2(mediaErrorKey(msg)).replace("{mb}", msg === "too-big-audio" ? "10" : "25"));
     }
     setBusy(false);
   };
@@ -282,22 +268,7 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
                     onClick={() => mine && setSelId(selected ? null : m.id)}
                     className={`max-w-[82%] overflow-hidden rounded-2xl ${mine ? "cursor-pointer bg-[var(--accent)] text-[var(--accent-ink)]" : "border border-[var(--line)] bg-[var(--panel-2)]"}`}
                   >
-                    {m.media_type === "image" && (
-                      url ? (
-                        <a href={url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-                          <img src={url} alt="" loading="lazy" className="block max-h-72 w-full object-cover" />
-                        </a>
-                      ) : (
-                        <div className="grid h-40 w-56 place-items-center text-[12px] opacity-70">…</div>
-                      )
-                    )}
-                    {m.media_type === "video" && (
-                      url ? (
-                        <video src={url} controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} className="block max-h-72 w-full bg-black" />
-                      ) : (
-                        <div className="grid h-40 w-56 place-items-center text-[12px] opacity-70">…</div>
-                      )
-                    )}
+                    {m.media_path && m.media_type && <MediaView url={url} type={m.media_type} className="rounded-none" />}
                     {m.body && <p className="whitespace-pre-wrap break-words px-3 py-2 text-[14.5px] leading-snug">{m.body}</p>}
                   </div>
                   <p className="mt-0.5 px-1 text-[10.5px] text-[var(--ink-faint)]">
@@ -320,31 +291,8 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
 
         {err && <p className="shrink-0 bg-[var(--danger-soft)] px-4 py-2 text-[12.5px] font-semibold text-[var(--danger)]">{err}</p>}
 
-        {pending && (
-          <div className="flex shrink-0 items-center gap-3 border-t border-[var(--line)] px-3 py-2">
-            {pending.kind === "image" ? (
-              <img src={pending.preview} alt="" className="h-14 w-14 rounded-lg object-cover" />
-            ) : (
-              <video src={pending.preview} muted playsInline className="h-14 w-14 rounded-lg bg-black object-cover" />
-            )}
-            <span className="min-w-0 flex-1 truncate text-[12.5px] text-[var(--ink-soft)]">{pending.file.name}</span>
-            <button onClick={() => setPending(null)} aria-label={c("removeFile")} className="grid h-8 w-8 place-items-center rounded-lg text-[var(--ink-faint)] hover:bg-[var(--hover)]">
-              <XIcon className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-
-        <div className="flex shrink-0 items-end gap-2 border-t border-[var(--line)] px-3 py-2.5">
-          <input ref={fileRef} type="file" accept="image/*,video/*" onChange={pickFile} className="hidden" />
-          <button
-            onClick={() => fileRef.current?.click()}
-            disabled={busy}
-            aria-label={c("attach")}
-            title={c("attach")}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[var(--line)] text-[18px] text-[var(--ink-soft)] active:scale-95 disabled:opacity-50"
-          >
-            📎
-          </button>
+        <div className="relative flex shrink-0 items-end gap-2 border-t border-[var(--line)] px-3 py-2.5">
+          <MediaAttach lang={lang} value={pending} onChange={setPending} onError={setErr} disabled={busy} floating />
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
