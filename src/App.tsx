@@ -382,9 +382,9 @@ export default function App() {
       <Sidebar tab={tab} onTab={setTab} theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} t={t} streak={streak} weekMarks={weekMarks} notesCount={notesCount} selectedDate={date} onPickDate={openDate} hasEntry={hasEntry} hasPin={Boolean(pinHash)} onLock={() => setLocked(true)} />
 
       <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col">
-        <header className="flex h-[74px] shrink-0 items-center gap-4 border-b border-[var(--line)] px-4 sm:px-8">
+        <header className="flex min-h-[74px] shrink-0 py-2 items-center gap-4 border-b border-[var(--line)] px-4 sm:px-8">
           <div className="min-w-0">
-            <h1 className="font-display truncate text-xl font-bold leading-tight tracking-tight sm:text-2xl">{tabMeta[tab].title}</h1>
+            <h1 className="font-display truncate py-0.5 text-xl font-bold leading-snug tracking-tight sm:text-2xl">{tabMeta[tab].title}</h1>
             <p className="hidden truncate text-xs text-[var(--ink-faint)] sm:block">{tabMeta[tab].sub}</p>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-3">

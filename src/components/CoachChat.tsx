@@ -52,7 +52,11 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
   const [error, setError] = useState<{ msg: string; detail?: string } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" }); }, [msgs.length, busy, live]);
+  // листаем только <main>: scrollIntoView сдвигал и внешние контейнеры, и шапка уезжала вверх
+  useEffect(() => {
+    const box = endRef.current?.closest("main");
+    if (box) box.scrollTo({ top: box.scrollHeight, behavior: "smooth" });
+  }, [msgs.length, busy, live]);
 
   // кнопка «наверх»: появляется, когда чат пролистан вниз; страница листается внутри <main>
   const rootRef = useRef<HTMLDivElement>(null);
@@ -204,15 +208,15 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
         </div>
       )}
 
-      <div className="sticky bottom-24 z-10 flex gap-2 bg-[var(--bg)] pb-1 pt-2 md:bottom-0">
+      <div className="sticky bottom-24 z-10 flex gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1.5 md:bottom-2" style={{ boxShadow: "var(--shadow-sm)" }}>
         {showUp && (
           <button onClick={toTop} aria-label={UP[lang] ?? UP.en} title={UP[lang] ?? UP.en} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel)] text-[16px] font-bold text-[var(--ink-soft)] transition-all hover:border-[var(--accent)] active:scale-95">↑</button>
         )}
-        <input className="h-11 min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-[13.5px] text-[var(--ink)] outline-none focus:border-[var(--accent)]" value={text} maxLength={600} placeholder={l.ph} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(text); }} />
+        <input className="h-11 min-w-0 flex-1 rounded-lg border border-transparent bg-[var(--panel-2)] px-3 text-[13.5px] text-[var(--ink)] outline-none focus:border-[var(--accent)]" value={text} maxLength={600} placeholder={l.ph} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(text); }} />
         <button onClick={() => send(text)} disabled={busy || !text.trim()} className="flex h-11 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] px-4 text-[13px] font-bold text-[var(--accent-ink)] transition-all active:scale-95 disabled:opacity-50">{l.send}</button>
       </div>
 
-      <div className="flex justify-between text-[12px] font-semibold text-[var(--ink-faint)]">
+      <div className="flex justify-between px-1 pb-2 text-[12px] font-semibold leading-relaxed text-[var(--ink-faint)]">
         <button onClick={() => { setMsgs([]); setError(null); }} disabled={!msgs.length || busy} className="hover:text-[var(--ink)] disabled:opacity-40">{l.clear}</button>
         <button onClick={() => setOn(false)} disabled={busy} className="hover:text-[var(--ink)] disabled:opacity-40">{l.off}</button>
       </div>
