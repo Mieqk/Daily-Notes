@@ -124,6 +124,8 @@ export default async function handler(req, res) {
   // Потоковый ответ (NDJSON): {"d": кусок текста}… затем {"done": true, reply, items}. Текст появляется сразу,
   // а не после всей генерации. Если ни одна модель не начала отвечать, приходит обычная JSON-ошибка.
   const diag = [];
+  const timing = {};
+  const t0 = Date.now();
   let sent = 0;
   let open = false;
   let full = "";
@@ -140,6 +142,9 @@ export default async function handler(req, res) {
     firstByteMs: 12_000,
     deadlineMs: 50_000,
     thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
+    // для чата важнее быстрый первый ответ: сначала lite-модели, полные flash в запасе
+    preferLite: true,
+    timing,
   }, (piece) => {
     full += piece;
     const vis = visibleLength(full);
@@ -159,6 +164,8 @@ export default async function handler(req, res) {
     if (open) return res.end(JSON.stringify({ error: "bad reply", detail: `${out.model}: ${out.text.slice(0, 120)}` }) + "\n");
     return res.status(422).json({ error: "bad reply", detail: `${out.model}: ${out.text.slice(0, 120)}` });
   }
+  // только время и модель, без текста переписки: чтобы видеть в логах Vercel, где теряются секунды
+  console.log(`coach: ${out.model} first ${timing.firstMs ?? "-"}ms total ${Date.now() - t0}ms`);
   if (!open) startStream();
   return res.end(JSON.stringify({ done: true, ...parsed, model: out.model, cut: !!out.cut }) + "\n");
 }
