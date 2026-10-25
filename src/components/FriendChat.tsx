@@ -10,6 +10,8 @@ import { mediaErrorKey, prepareMedia, removeMedia, uploadMedia, type PendingMedi
 import { makeMedia } from "../media-strings";
 import MediaAttach from "./MediaAttach";
 import MediaView from "./MediaView";
+import { makeCall } from "../call-strings";
+import { callsSupported, START_CALL_EVENT, type StartCallDetail } from "../hooks/useCalls";
 import { makeChat } from "../chat-strings";
 import { XIcon } from "../icons";
 import { PRESENCE_COLOR, type PresenceState } from "../lib/presence";
@@ -25,6 +27,11 @@ const URL_TTL = 3600;
 export default function FriendChat({ userId, friend, lang, onClose }: { userId: string; friend: ChatFriend; lang: Lang; onClose: () => void }) {
   const c = makeChat(lang);
   const m2 = makeMedia(lang);
+  const cl = makeCall(lang);
+  const offline = friend.presenceState === "offline";
+  const startCall = (video: boolean) => {
+    window.dispatchEvent(new CustomEvent<StartCallDetail>(START_CALL_EVENT, { detail: { peer: { id: friend.id, name: friend.name, avatar: friend.avatar, avatar_url: friend.avatar_url }, video } }));
+  };
   const [msgs, setMsgs] = useState<ChatMessage[] | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [text, setText] = useState("");
@@ -243,6 +250,12 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
               <p className="truncate text-[11.5px] font-medium" style={{ color: friend.presenceState && friend.presenceState !== "offline" ? PRESENCE_COLOR[friend.presenceState] : "var(--ink-faint)" }}>{friend.presence}</p>
             )}
           </div>
+          {callsSupported() && (
+            <>
+              <button onClick={() => startCall(false)} disabled={offline} aria-label={cl("voice")} title={offline ? cl("offlineHint") : cl("voice")} className="grid h-9 w-9 place-items-center rounded-lg text-[17px] hover:bg-[var(--hover)] disabled:opacity-40">📞</button>
+              <button onClick={() => startCall(true)} disabled={offline} aria-label={cl("video")} title={offline ? cl("offlineHint") : cl("video")} className="grid h-9 w-9 place-items-center rounded-lg text-[17px] hover:bg-[var(--hover)] disabled:opacity-40">📹</button>
+            </>
+          )}
           <button onClick={onClose} aria-label={c("close")} className="grid h-9 w-9 place-items-center rounded-lg text-[var(--ink-faint)] hover:bg-[var(--hover)]">
             <XIcon className="h-4.5 w-4.5" />
           </button>

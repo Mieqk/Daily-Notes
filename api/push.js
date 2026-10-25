@@ -1,4 +1,4 @@
-// POST /api/push { kind: "gratitude" | "sos" | "chat", id }  +  Authorization: Bearer <JWT пользователя>
+// POST /api/push { kind: "gratitude" | "sos" | "chat" | "call", id }  +  Authorization: Bearer <JWT пользователя>
 // Рассылает фоновый web-push адресату благодарности или сообщения чата либо друзьям автора SOS-сигнала.
 import { config, sendMany, tr } from "./_push.js";
 
@@ -16,6 +16,7 @@ function tooMany(key, max = MAX_PER_WINDOW) {
 }
 
 const FRESH_MS = 10 * 60_000;
+const CALL_FRESH_MS = 60_000; // звонок, который не ответили минуту назад, уже не актуален
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "method not allowed" });
@@ -30,22 +31,22 @@ export default async function handler(req, res) {
   if (!me) return res.status(401).json({ error: "unauthorized" });
 
   const { kind, id } = req.body || {};
-  if ((kind !== "gratitude" && kind !== "sos" && kind !== "chat") || typeof id !== "string" || id.length > 64) {
+  if ((kind !== "gratitude" && kind !== "sos" && kind !== "chat" && kind !== "call") || typeof id !== "string" || id.length > 64) {
     return res.status(400).json({ error: "bad request" });
   }
   if (kind === "chat" ? tooMany(`${me}:chat`, MAX_CHAT_PER_WINDOW) : tooMany(me)) return res.status(429).json({ error: "too many requests" });
 
   // 1. Запись должна принадлежать вызывающему, быть свежей и ещё не разосланной.
   //    Условие pushed_at IS NULL в UPDATE делает «первый вызов выигрывает» атомарным.
-  const table = kind === "gratitude" ? "gratitude" : kind === "chat" ? "chat_messages" : "sos_signals";
-  const ownerCol = kind === "gratitude" ? "from_user" : kind === "chat" ? "sender" : "user_id";
+  const table = kind === "gratitude" ? "gratitude" : kind === "chat" ? "chat_messages" : kind === "call" ? "call_signals" : "sos_signals";
+  const ownerCol = kind === "gratitude" ? "from_user" : kind === "chat" || kind === "call" ? "sender" : "user_id";
   const { data: row } = await admin
     .from(table)
     .update({ pushed_at: new Date().toISOString() })
     .eq("id", id)
     .eq(ownerCol, me)
     .is("pushed_at", null)
-    .gte("created_at", new Date(Date.now() - FRESH_MS).toISOString())
+    .gte("created_at", new Date(Date.now() - (kind === "call" ? CALL_FRESH_MS : FRESH_MS)).toISOString())
     .select("*")
     .maybeSingle();
   if (!row) return res.status(200).json({ sent: 0 });
@@ -54,17 +55,17 @@ export default async function handler(req, res) {
   let recipients;
   if (kind === "gratitude") {
     recipients = [row.to_user];
-  } else if (kind === "chat") {
+  } else if (kind === "chat" || kind === "call") {
     recipients = [row.recipient];
   } else {
     const { data: fr } = await admin.from("friendships").select("user_a,user_b").eq("status", "accepted").or(`user_a.eq.${me},user_b.eq.${me}`);
     recipients = (fr || []).map((f) => (f.user_a === me ? f.user_b : f.user_a));
   }
-  if (!recipients.length) return res.status(200).json({ sent: 0 });
+  if (!recipients.length || (kind === "call" && row.kind !== "invite")) return res.status(200).json({ sent: 0 });
 
   const { data: subs } = await admin.from("push_subscriptions").select("*").in("user_id", recipients).eq("friends_enabled", true);
   let senderName = "";
-  if (kind === "chat") {
+  if (kind === "chat" || kind === "call") {
     const { data: prof } = await admin.from("profiles").select("display_name").eq("id", me).maybeSingle();
     senderName = String(prof?.display_name || "").slice(0, 60);
   }
@@ -73,6 +74,8 @@ export default async function handler(req, res) {
     const payload =
       kind === "gratitude"
         ? { title: t.thanks, body: String(row.text || "").slice(0, 280), tag: "dn-thanks" }
+        : kind === "call"
+          ? { title: senderName || t.call, body: row.video ? t.videoCall : t.voiceCall, tag: "dn-call", requireInteraction: true }
         : kind === "chat"
           ? { title: senderName || t.chat, body: String(row.body || (row.media_type === "audio" ? t.voice : row.media_type === "video" ? t.video : t.photo)).slice(0, 140), tag: "dn-chat" }
           : { title: t.sos, body: String(row.message || t.sosBody).slice(0, 200), tag: "dn-sos" };

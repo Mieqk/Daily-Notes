@@ -73,6 +73,8 @@ self.addEventListener("push", (event) => {
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
       tag: data.tag,
+      requireInteraction: Boolean(data.requireInteraction),
+      vibrate: data.requireInteraction ? [300, 150, 300, 150, 300] : undefined,
     })
   );
 });
