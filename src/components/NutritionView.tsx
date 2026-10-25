@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
-import { fromISO, shiftISO, todayISO, useStored } from "../store";
+import { fromISO, shiftISO, todayISO } from "../store";
+import { useSyncedStored, mergeById, mergeLog, preferRemote } from "../lib/fitnessSync";
 import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
 import CoachChat, { SEG, type CoachItem } from "./CoachChat";
 
@@ -112,9 +113,9 @@ const primaryCls = "flex h-11 shrink-0 items-center justify-center rounded-lg bg
 
 export default function NutritionView({ lang }: { lang: Lang }) {
   const l = L[lang] ?? L.en;
-  const [foods, setFoods] = useStored<Food[]>("dn.foods", []);
-  const [log, setLog] = useStored<Record<string, Entry[]>>("dn.foodLog", {});
-  const [goal, setGoal] = useStored<number>("dn.foodGoal", 2000);
+  const [foods, setFoods] = useSyncedStored<Food[]>("foods", [], mergeById<Food>((f) => f.name.trim().toLowerCase()));
+  const [log, setLog] = useSyncedStored<Record<string, Entry[]>>("foodLog", {}, mergeLog<Entry>());
+  const [goal, setGoal] = useSyncedStored<number>("foodGoal", 2000, preferRemote);
   const [date, setDate] = useState(todayISO());
   const [view, setView] = useState<"coach" | "day">("coach");
   const [adding, setAdding] = useState(false);

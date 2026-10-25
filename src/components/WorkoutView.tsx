@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
-import { fromISO, shiftISO, todayISO, useStored } from "../store";
+import { fromISO, shiftISO, todayISO } from "../store";
+import { useSyncedStored, mergeById, mergeLog, preferRemote } from "../lib/fitnessSync";
 import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
 import CoachChat, { SEG, type CoachItem } from "./CoachChat";
 
@@ -35,8 +36,8 @@ const primaryCls = "flex h-11 shrink-0 items-center justify-center rounded-lg bg
 
 export default function WorkoutView({ lang }: { lang: Lang }) {
   const l = L[lang] ?? L.en;
-  const [log, setLog] = useStored<Record<string, WEx[]>>("dn.workoutLog", {});
-  const [tpls, setTpls] = useStored<Tpl[]>("dn.workoutTpl", []);
+  const [log, setLog] = useSyncedStored<Record<string, WEx[]>>("workoutLog", {}, mergeLog<WEx>());
+  const [tpls, setTpls] = useSyncedStored<Tpl[]>("workoutTpl", [], mergeById<Tpl>((t) => t.name.trim().toLowerCase()));
   const [view, setView] = useState<"coach" | "day">("coach");
   const [date, setDate] = useState(todayISO());
   const [name, setName] = useState("");
@@ -44,7 +45,7 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [rest, setRest] = useState(0);
-  const [restLen, setRestLen] = useStored<number>("dn.restLen", 90);
+  const [restLen, setRestLen] = useSyncedStored<number>("restLen", 90, preferRemote);
 
   useEffect(() => {
     if (rest <= 0) return;
