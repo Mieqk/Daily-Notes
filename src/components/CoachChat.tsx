@@ -71,8 +71,8 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lang, mode, context, messages: next.slice(-14).map((m) => ({ role: m.role, text: m.text, items: m.items?.map((it) => ({ name: it.name })) })) }),
       });
-      const type = r.headers.get("Content-Type") || "";
-      if (!r.ok || !r.body || !type.includes("ndjson")) {
+      // тип ответа не проверяем: прокси и WebView могут его менять, а построчный разбор понимает и обычный JSON
+      if (!r.ok || !r.body) {
         clearTimeout(timer);
         const d = await r.json().catch(() => ({}));
         throw Object.assign(new Error("bad"), { detail: d?.detail || `HTTP ${r.status}` });
@@ -83,6 +83,14 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
       let acc = "";
       type Fin = { reply?: string; items?: CoachItem[]; error?: string; detail?: string };
       let fin = null as Fin | null;
+      const onLine = (raw: string) => {
+        const line = raw.trim();
+        if (!line) return;
+        let ev: Fin & { d?: string; done?: boolean };
+        try { ev = JSON.parse(line); } catch { return; }
+        if (typeof ev.d === "string") { acc += ev.d; setLive(acc); }
+        else if (ev.done || ev.error || typeof ev.reply === "string") fin = ev;
+      };
       try {
         for (;;) {
           const { value, done } = await reader.read();
@@ -90,15 +98,11 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
           buf += dec.decode(value, { stream: true });
           let nl;
           while ((nl = buf.indexOf("\n")) >= 0) {
-            const line = buf.slice(0, nl).trim();
+            onLine(buf.slice(0, nl));
             buf = buf.slice(nl + 1);
-            if (!line) continue;
-            let ev: Fin & { d?: string; done?: boolean };
-            try { ev = JSON.parse(line); } catch { continue; }
-            if (typeof ev.d === "string") { acc += ev.d; setLive(acc); }
-            else if (ev.done || ev.error) fin = ev;
           }
         }
+        onLine(buf);
       } catch (e) {
         // связь оборвалась посреди ответа: оставляем то, что успело прийти
         if (!acc) throw e;
@@ -106,7 +110,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
         clearTimeout(timer);
       }
       const reply = typeof fin?.reply === "string" && fin.reply ? fin.reply : acc.trim();
-      if (!reply) throw Object.assign(new Error("bad"), { detail: fin?.detail || "empty reply" });
+      if (!reply) throw Object.assign(new Error("bad"), { detail: fin?.detail || `empty reply (HTTP ${r.status})` });
       const items = Array.isArray(fin?.items) && fin.items.length ? fin.items : undefined;
       setMsgs([...next, { id: uid(), role: "assistant" as const, text: reply, items }].slice(-40));
       if (fin?.error) setError({ msg: l.err, detail: fin.detail });
