@@ -20,21 +20,23 @@ async function listFlashModels(key, version) {
   }
 }
 
-// Новее — раньше, полные модели раньше lite; неизвестные имена в конец
-const rank = (name) => {
+// Новее — раньше, полные модели раньше lite (с preferLite наоборот: lite быстрее начинает отвечать); неизвестные имена в конец
+const rank = (name, preferLite = false) => {
   const m = /^gemini-(\d+(?:\.\d+)?)-flash(-lite)?(?:-\d+)?$/.exec(name);
-  return m ? parseFloat(m[1]) * 100 - (m[2] ? 1000 : 0) : -Infinity;
+  return m ? parseFloat(m[1]) * 100 - (!m[2] === preferLite ? 1000 : 0) : -Infinity;
 };
 const deadModels = new Set(); // модели, ответившие 404 (отключены): пропускаем до перезапуска функции
+// какой вариант thinkingConfig модель приняла: следующие запросы сразу шлют его, без лишних ответов 400
+const thinkingOk = new Map(); // model -> index в opts.thinking (или -1: без thinkingConfig)
 
-async function pickModels(key) {
+async function pickModels(key, preferLite = false) {
   let version = "v1beta";
   let dynamic = await listFlashModels(key, version);
   if (!dynamic.length) {
     version = "v1";
     dynamic = await listFlashModels(key, version);
   }
-  const sorted = [...dynamic].sort((a, b) => rank(b) - rank(a)).filter((m) => !deadModels.has(m));
+  const sorted = [...dynamic].sort((a, b) => rank(b, preferLite) - rank(a, preferLite)).filter((m) => !deadModels.has(m));
   const fallback = ["gemini-3.8-flash", "gemini-3.6-flash"].filter((m) => !deadModels.has(m));
   const models = [...(sorted.length ? sorted.slice(0, 3) : fallback), "gemini-flash-latest"].filter((m, i, a) => a.indexOf(m) === i);
   return { version, models };
@@ -98,11 +100,14 @@ export async function generateText(key, prompt, generationConfig = {}, diag = []
 // Потоковый вариант: onDelta получает куски текста по мере генерации.
 // Модели перебираются, только пока не пришёл первый кусок (opts.firstByteMs на модель); дальше ответ дочитывается
 // до конца или до opts.deadlineMs. Возвращает { model, text } или null, если ни одна модель не начала отвечать.
+// Список моделей запрашиваем сразу при загрузке функции, параллельно с разбором запроса
+if (process.env.GEMINI_API_KEY && !process.env.GEMINI_BASE_URL) listFlashModels(process.env.GEMINI_API_KEY, "v1beta");
+
 export async function streamText(key, prompt, generationConfig = {}, diag = [], opts = {}, onDelta = () => {}) {
   const errors = diag;
   const started = Date.now();
-  const { firstByteMs = 12_000, deadlineMs = 50_000, thinking = [] } = opts;
-  const { version, models } = await pickModels(key);
+  const { firstByteMs = 12_000, deadlineMs = 50_000, thinking = [], preferLite = false } = opts;
+  const { version, models } = await pickModels(key, preferLite);
 
   for (const model of models) {
     const left = deadlineMs - (Date.now() - started);
@@ -116,7 +121,15 @@ export async function streamText(key, prompt, generationConfig = {}, diag = [], 
     let text = "";
     try {
       let r;
-      for (const v of [...thinking, null]) {
+      const variants = [...thinking, null];
+      const known = thinkingOk.get(model);
+      // принятый раньше вариант идёт первым, остальные остаются запасными
+      const first = known === undefined ? 0 : known === -1 ? variants.length - 1 : known;
+      const order = [first, ...variants.map((_, i) => i).filter((i) => i !== first)];
+      let used = -1;
+      for (const i of order) {
+        const v = variants[i];
+        used = v ? i : -1;
         r = await fetch(`${BASE}/${version}/models/${model}:streamGenerateContent?alt=sse`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-goog-api-key": key },
@@ -133,6 +146,7 @@ export async function streamText(key, prompt, generationConfig = {}, diag = [], 
         errors.push(`${model}: HTTP ${r.status} — ${r.errorMessage}`);
         continue;
       }
+      thinkingOk.set(model, used);
       const reader = r.body.getReader();
       const dec = new TextDecoder();
       let buf = "";
@@ -157,6 +171,7 @@ export async function streamText(key, prompt, generationConfig = {}, diag = [], 
           if (firstTimer) {
             clearTimeout(firstTimer);
             firstTimer = null;
+            if (opts.timing) opts.timing.firstMs = Date.now() - started;
           }
           text += piece;
           onDelta(piece);
