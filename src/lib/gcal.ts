@@ -75,8 +75,15 @@ export async function gcalSync(tasks: Record<string, Task[]>): Promise<{ ok: boo
     if (date < from || date > to) continue;
     for (const t of items ?? []) if (t.text.trim()) list.push({ id: t.id, date, text: t.text, done: t.done });
   }
-  const r = await call<{ failed: number; error?: string }>({ action: "sync", from, tasks: list.slice(0, 400) });
-  // доступ отозван в Google или подключения нет: больше не пытаемся; прочие сбои (сеть, сессия) временные
-  if (r.status === 404 || (r.status === 401 && r.data?.error === "revoked")) setGcalEnabled(false);
-  return { ok: r.ok, failed: r.data?.failed ?? 0 };
+  // сервер за один вызов делает ограниченное число запросов к Google и сообщает, если осталось ещё
+  let failed = 0;
+  for (let i = 0; i < 12; i++) {
+    const r = await call<{ failed: number; more?: boolean; error?: string }>({ action: "sync", from, tasks: list.slice(0, 400) });
+    // доступ отозван в Google или подключения нет: больше не пытаемся; прочие сбои (сеть, сессия) временные
+    if (r.status === 404 || (r.status === 401 && r.data?.error === "revoked")) setGcalEnabled(false);
+    if (!r.ok) return { ok: false, failed };
+    failed += r.data?.failed ?? 0;
+    if (!r.data?.more) break;
+  }
+  return { ok: true, failed };
 }
