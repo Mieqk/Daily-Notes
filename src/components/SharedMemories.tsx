@@ -4,9 +4,13 @@ import { supabase } from "../lib/supabase";
 import { todayISO } from "../store";
 import { makeSocial } from "../social-strings";
 import FriendsSection, { EmptyState } from "./FriendsSection";
+import MediaAttach from "./MediaAttach";
+import MediaView from "./MediaView";
+import { makeMedia } from "../media-strings";
+import { mediaErrorKey, prepareMedia, removeMedia, uploadMedia, useMediaUrls, type MediaType, type PendingMedia } from "../lib/media";
 
 export interface FriendOpt { id: string; name: string }
-interface Memory { id: string; author: string; friend: string; text: string; tag: string | null; memory_date: string; created_at: string }
+interface Memory { id: string; author: string; friend: string; text: string; tag: string | null; memory_date: string; created_at: string; media_path: string | null; media_type: MediaType | null }
 
 /** Общие воспоминания с друзьями: запись видят оба, можно фильтровать по общим тегам. */
 export default function SharedMemories({ userId, lang, friends }: { userId: string; lang: Lang; friends: FriendOpt[] }) {
@@ -18,7 +22,9 @@ export default function SharedMemories({ userId, lang, friends }: { userId: stri
   const [tag, setTag] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [media, setMedia] = useState<PendingMedia | null>(null);
+  const m = makeMedia(lang);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase!.from("shared_memories").select("*").order("memory_date", { ascending: false }).order("created_at", { ascending: false }).limit(100);
@@ -26,6 +32,7 @@ export default function SharedMemories({ userId, lang, friends }: { userId: stri
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  const urls = useMediaUrls((rows ?? []).map((r) => r.media_path));
   if (rows === null) return null;
 
   const nameOf = (id: string) => friends.find((f) => f.id === id)?.name || "—";
@@ -37,18 +44,26 @@ export default function SharedMemories({ userId, lang, friends }: { userId: stri
   const save = async () => {
     const to = withId || friends[0]?.id;
     if (!to || !text.trim()) return;
-    setBusy(true); setErr(false);
+    setBusy(true); setErr(null);
+    let path: string | null = null;
+    try {
+      if (media) path = await uploadMedia(userId, to, await prepareMedia(media.file));
+    } catch (e) {
+      setBusy(false); setErr(m(mediaErrorKey((e as Error).message))); return;
+    }
     const { error } = await supabase!.from("shared_memories").insert({
       author: userId, friend: to, text: text.trim(), tag: tag.trim().replace(/^#/, "").slice(0, 24) || null, memory_date: todayISO(),
+      media_path: path, media_type: path ? media!.kind : null,
     });
     setBusy(false);
-    if (error) { setErr(true); return; }
-    setComposing(false); setText(""); setTag("");
+    if (error) { removeMedia(path); setErr(s("error")); return; }
+    setComposing(false); setText(""); setTag(""); setMedia(null);
     load();
   };
 
-  const remove = async (id: string) => {
-    await supabase!.from("shared_memories").delete().eq("id", id);
+  const remove = async (r: Memory) => {
+    await supabase!.from("shared_memories").delete().eq("id", r.id);
+    if (r.author === userId) removeMedia(r.media_path);
     load();
   };
 
@@ -71,10 +86,11 @@ export default function SharedMemories({ userId, lang, friends }: { userId: stri
           </label>
           <textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={500} rows={3} placeholder={s("memText")} aria-label={s("memText")} className={`${field} resize-y py-2.5`} />
           <input value={tag} onChange={(e) => setTag(e.target.value)} maxLength={24} placeholder={s("memTag")} aria-label={s("memTag")} className={`${field} h-10`} />
-          {err && <p className="text-[12.5px] text-[var(--danger)]">{s("error")}</p>}
+          <MediaAttach lang={lang} value={media} onChange={setMedia} onError={setErr} disabled={busy} />
+          {err && <p className="text-[12.5px] text-[var(--danger)]">{err}</p>}
           <div className="flex gap-2">
             <button onClick={save} disabled={busy || !text.trim()} className={`${btn} bg-[var(--accent)] text-[var(--accent-ink)]`}>{s("memSave")}</button>
-            <button onClick={() => setComposing(false)} className={`${btn} text-[var(--ink-soft)] hover:bg-[var(--panel)]`}>✕</button>
+            <button onClick={() => { setComposing(false); setMedia(null); setErr(null); }} className={`${btn} text-[var(--ink-soft)] hover:bg-[var(--panel)]`}>✕</button>
           </div>
         </div>
       )}
@@ -103,9 +119,10 @@ export default function SharedMemories({ userId, lang, friends }: { userId: stri
                   <span className="shrink-0 font-normal text-[var(--ink-faint)]">{fmtDay(r.memory_date)}</span>
                 </div>
                 <p className="mt-0.5 whitespace-pre-wrap break-words text-[14px] leading-relaxed">{r.text}</p>
+                {r.media_path && r.media_type && <MediaView url={urls[r.media_path]} type={r.media_type} className="mt-2" />}
                 <div className="mt-1 flex items-center justify-between">
                   <span className="text-[12px] font-semibold text-[var(--accent-deep)]">{r.tag ? `#${r.tag}` : ""}</span>
-                  <button onClick={() => remove(r.id)} className="text-[11.5px] text-[var(--ink-faint)] hover:text-[var(--danger)]">{s("memDelete")}</button>
+                  <button onClick={() => remove(r)} className="text-[11.5px] text-[var(--ink-faint)] hover:text-[var(--danger)]">{s("memDelete")}</button>
                 </div>
               </li>
             );

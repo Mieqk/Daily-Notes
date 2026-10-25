@@ -6,6 +6,7 @@ import { PUSH_SYNC_EVENT, syncPush } from "../lib/push";
 import { PRESENCE_MODE_EVENT } from "../lib/presence";
 import { makeSocial } from "../social-strings";
 import { makeChat } from "../chat-strings";
+import { makeMedia } from "../media-strings";
 import { todayISO } from "../store";
 
 interface Reminder { time: string; enabled: boolean }
@@ -17,6 +18,8 @@ export function useNotifications(userId: string | null, lang: Lang, reminder: Re
   sRef.current = s;
   const cRef = useRef(makeChat(lang));
   cRef.current = makeChat(lang);
+  const vRef = useRef(makeMedia(lang));
+  vRef.current = makeMedia(lang);
 
   useEffect(() => { registerServiceWorker(); }, []);
 
@@ -63,7 +66,7 @@ export function useNotifications(userId: string | null, lang: Lang, reminder: Re
         if (!document.hidden || !friendNotificationsEnabled()) return;
         const row = p.new as { body?: string | null; media_type?: string | null };
         const c = cRef.current;
-        notify(c("newMsg"), row.body || (row.media_type === "video" ? c("video") : c("photo")), "dn-chat");
+        notify(c("newMsg"), row.body || (row.media_type === "audio" ? vRef.current("voice") : row.media_type === "video" ? c("video") : c("photo")), "dn-chat");
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "sos_signals" }, (p) => {
         const row = p.new as { user_id?: string; message?: string | null };
