@@ -54,6 +54,19 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" }); }, [msgs.length, busy, live]);
 
+  // кнопка «наверх»: появляется, когда чат пролистан вниз; страница листается внутри <main>
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [showUp, setShowUp] = useState(false);
+  useEffect(() => {
+    const box = rootRef.current?.closest("main");
+    if (!box) return;
+    const onScroll = () => setShowUp(box.scrollTop > 400);
+    onScroll();
+    box.addEventListener("scroll", onScroll, { passive: true });
+    return () => box.removeEventListener("scroll", onScroll);
+  }, [on]);
+  const toTop = () => rootRef.current?.closest("main")?.scrollTo({ top: 0, behavior: "smooth" });
+
   const send = async (raw: string) => {
     const t = raw.trim();
     if (!t || busy || !on) return;
@@ -112,7 +125,8 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
       const reply = typeof fin?.reply === "string" && fin.reply ? fin.reply : acc.trim();
       if (!reply) throw Object.assign(new Error("bad"), { detail: fin?.detail || `empty reply (HTTP ${r.status})` });
       const items = Array.isArray(fin?.items) && fin.items.length ? fin.items : undefined;
-      setMsgs([...next, { id: uid(), role: "assistant" as const, text: reply, items }].slice(-40));
+      // от текущей истории, а не от снимка до запроса: иначе пропадёт отметка «Добавлено», поставленная во время ответа
+      setMsgs((prev) => [...prev, { id: uid(), role: "assistant" as const, text: reply, items }].slice(-40));
       if (fin?.error) setError({ msg: l.err, detail: fin.detail });
     } catch (e) {
       const err = e as { detail?: string; name?: string };
@@ -126,7 +140,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
   const apply = (m: Msg) => {
     if (!m.items || m.added) return;
     onApply(m.items);
-    setMsgs(msgs.map((x) => (x.id === m.id ? { ...x, added: true } : x)));
+    setMsgs((prev) => prev.map((x) => (x.id === m.id ? { ...x, added: true } : x)));
   };
 
   const describe = (it: CoachItem) =>
@@ -148,7 +162,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div ref={rootRef} className="flex flex-col gap-3">
       <div className="flex flex-col gap-3">
         <div className="flex items-end gap-2">
           <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[13px] font-bold text-[var(--accent-ink)]" aria-hidden="true">{l.name[0]}</div>
@@ -191,17 +205,22 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
       )}
 
       <div className="sticky bottom-24 z-10 flex gap-2 bg-[var(--bg)] pb-1 pt-2 md:bottom-0">
+        {showUp && (
+          <button onClick={toTop} aria-label={UP[lang] ?? UP.en} title={UP[lang] ?? UP.en} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel)] text-[16px] font-bold text-[var(--ink-soft)] transition-all hover:border-[var(--accent)] active:scale-95">↑</button>
+        )}
         <input className="h-11 min-w-0 flex-1 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-[13.5px] text-[var(--ink)] outline-none focus:border-[var(--accent)]" value={text} maxLength={600} placeholder={l.ph} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(text); }} />
         <button onClick={() => send(text)} disabled={busy || !text.trim()} className="flex h-11 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] px-4 text-[13px] font-bold text-[var(--accent-ink)] transition-all active:scale-95 disabled:opacity-50">{l.send}</button>
       </div>
 
       <div className="flex justify-between text-[12px] font-semibold text-[var(--ink-faint)]">
-        <button onClick={() => { setMsgs([]); setError(null); }} disabled={!msgs.length} className="hover:text-[var(--ink)] disabled:opacity-40">{l.clear}</button>
-        <button onClick={() => setOn(false)} className="hover:text-[var(--ink)]">{l.off}</button>
+        <button onClick={() => { setMsgs([]); setError(null); }} disabled={!msgs.length || busy} className="hover:text-[var(--ink)] disabled:opacity-40">{l.clear}</button>
+        <button onClick={() => setOn(false)} disabled={busy} className="hover:text-[var(--ink)] disabled:opacity-40">{l.off}</button>
       </div>
     </div>
   );
 }
+
+const UP: Record<Lang, string> = { ru: "Наверх", en: "Back to top", be: "Уверх", uk: "Нагору", de: "Nach oben", fr: "Haut de page", es: "Arriba" };
 
 export const SEG: Record<Lang, { coach: string; day: string }> = {
   ru: { coach: "Помощник", day: "День" },

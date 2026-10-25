@@ -117,18 +117,23 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
   const coachContext =
     (day.length ? `Today's exercises: ${day.map((e) => `${e.name} ${e.sets.map((x) => `${fmt(x.kg)}x${x.reps}${x.done ? " done" : ""}`).join(", ")}`).join("; ")}.` : "No exercises logged today.") +
     (Object.keys(topWeights).length ? ` Best weights so far: ${Object.entries(topWeights).slice(0, 8).map(([n, kg]) => `${n} ${fmt(kg)} kg`).join(", ")}.` : "");
+  // подходы и повторы берём из плана тренера, а вес (тренер ставит 0) из прошлой тренировки с этим упражнением
   const applyCoach = (items: CoachItem[]) => setDay([...day, ...items.map((it) => {
     const prev = history(it.name).lastSets;
-    return blank(it.name, prev.length ? prev.map((x) => ({ kg: x.kg, reps: x.reps })) : Array.from({ length: it.sets ?? 3 }, () => ({ kg: it.kg ?? 0, reps: it.reps ?? 10 })));
+    const kg = it.kg || prev[prev.length - 1]?.kg || 0;
+    return blank(it.name, Array.from({ length: it.sets ?? 3 }, () => ({ kg, reps: it.reps ?? 10 })));
   })]);
   const dateLabel = date === todayISO() ? l.today : new Intl.DateTimeFormat(localeOf(lang), { weekday: "short", day: "numeric", month: "short" }).format(fromISO(date));
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
-      <div className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist">
-        {(["coach", "day"] as const).map((v) => (
-          <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`h-9 rounded-lg text-[13px] font-semibold transition-all ${view === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>{SEG[lang][v]}</button>
-        ))}
+      {/* переключатель закреплён сверху: в длинном чате до него не нужно долго листать */}
+      <div className="sticky -top-6 z-20 -mx-4 -mb-2 -mt-6 bg-[var(--bg)] px-4 pb-2 pt-6 sm:-top-8 sm:-mx-8 sm:-mt-8 sm:px-8 sm:pt-8">
+        <div className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
+          {(["coach", "day"] as const).map((v) => (
+            <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`h-9 rounded-lg text-[13px] font-semibold transition-all ${view === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>{SEG[lang][v]}</button>
+          ))}
+        </div>
       </div>
 
       {view === "coach" ? (
