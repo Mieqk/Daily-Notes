@@ -10,8 +10,10 @@ const TEXTS = {
 export const tr = (lang) => TEXTS[String(lang || "").slice(0, 2)] || TEXTS.en;
 
 export function config() {
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // VITE_SUPABASE_URL это тот проект, с которым работает приложение. SUPABASE_URL может прийти из
+  // интеграции Vercel и указывать на другой проект, поэтому он только запасной вариант.
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const serviceKey = process.env.APP_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   const pub = process.env.VAPID_PUBLIC_KEY || process.env.VITE_VAPID_PUBLIC_KEY;
   const priv = process.env.VAPID_PRIVATE_KEY;
   const subject = process.env.VAPID_SUBJECT;
