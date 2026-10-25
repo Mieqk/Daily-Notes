@@ -11,6 +11,8 @@ import type { ThemeId } from "../themes";
 import { BG_IMAGES } from "../bg";
 import LookEditor from "./LookEditor";
 import ThemeShare from "./ThemeShare";
+import AddonsManager from "./AddonsManager";
+import { makeAddonStrings } from "../addon-strings";
 import { makeThemeStrings } from "../theme-strings";
 import { makeLook } from "../look-strings";
 import type { Look } from "../look";
@@ -28,6 +30,7 @@ import {
   LogOutIcon,
   UserIcon,
   LoginIcon,
+  PlusIcon,
 } from "../icons";
 import { useAuth } from "../contexts/AuthContext";
 import { isLocalMode } from "../lib/sync";
@@ -435,6 +438,11 @@ export default function SettingsView(props: SettingsViewProps) {
         </Section>
 
         </DesignGroup>
+
+        {/* Свои плагины-виджеты и шаблоны дня */}
+        <Section icon={<PlusIcon className="h-4.5 w-4.5" />} title={makeAddonStrings(lang)("adTitle")} sub={makeAddonStrings(lang)("adSub")} delay={40}>
+          <AddonsManager lang={lang} userId={userId} showToast={showToast} />
+        </Section>
 
         {/* Language */}
         <Section icon={<GlobeIcon className="h-4.5 w-4.5" />} title={t("secLanguage")} sub={t("secLanguageSub")} delay={60}>
