@@ -195,10 +195,13 @@ export default function NutritionView({ lang }: { lang: Lang }) {
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
-      <div className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist">
-        {(["coach", "day"] as const).map((v) => (
-          <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`h-9 rounded-lg text-[13px] font-semibold transition-all ${view === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>{SEG[lang][v]}</button>
-        ))}
+      {/* переключатель закреплён сверху: в длинном чате до него не нужно долго листать */}
+      <div className="sticky -top-6 z-20 -mx-4 -mb-2 -mt-6 bg-[var(--bg)] px-4 pb-2 pt-6 sm:-top-8 sm:-mx-8 sm:-mt-8 sm:px-8 sm:pt-8">
+        <div className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
+          {(["coach", "day"] as const).map((v) => (
+            <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`h-9 rounded-lg text-[13px] font-semibold transition-all ${view === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>{SEG[lang][v]}</button>
+          ))}
+        </div>
       </div>
 
       {view === "coach" ? (
