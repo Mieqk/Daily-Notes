@@ -5,7 +5,7 @@ import { fromISO, shiftISO, todayISO } from "../store";
 import { useSyncedStored, mergeById, mergeLog, preferRemote } from "../lib/fitnessSync";
 import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
 import CoachChat, { SEG, type CoachItem } from "./CoachChat";
-import NutritionCalendar from "./NutritionCalendar";
+import DayCalendar from "./DayCalendar";
 import { makeUI } from "../ui-strings";
 
 interface Per100 { kcal: number; p: number; f: number; c: number }
@@ -209,7 +209,7 @@ export default function NutritionView({ lang }: { lang: Lang }) {
       </div>
 
       {view === "calendar" ? (
-        <NutritionCalendar kcalByDay={kcalByDay} goal={safeGoal} selected={date} onPick={(iso) => { setDate(iso); setView("day"); }} lang={lang} />
+        <DayCalendar valueByDay={kcalByDay} goal={safeGoal} summary={(days) => (days.length ? `Ø ${Math.round(days.reduce((a, d) => a + kcalByDay[d], 0) / days.length)} / ${safeGoal} ${l.kcal}` : null)} selected={date} onPick={(iso) => { setDate(iso); setView("day"); }} lang={lang} />
       ) : view === "coach" ? (
         <>
           <div className="flex items-baseline justify-between text-[13px] text-[var(--ink-soft)]">
