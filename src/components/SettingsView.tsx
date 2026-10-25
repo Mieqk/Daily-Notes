@@ -118,7 +118,7 @@ function DesignGroup({ title, sub, openLabel, closeLabel, children }: { title: s
         <span className="text-[12px] font-bold text-[var(--accent-deep)]">{open ? closeLabel : openLabel}</span>
         <span className={`text-[var(--ink-faint)] transition-transform ${open ? "rotate-180" : ""}`} aria-hidden>▾</span>
       </button>
-      {open && <div className="animate-fadein mt-5 grid items-start gap-5 lg:grid-cols-2">{children}</div>}
+      {open && <div className="animate-fadein mt-5 grid gap-5">{children}</div>}
     </div>
   );
 }
@@ -244,7 +244,7 @@ export default function SettingsView(props: SettingsViewProps) {
         <DesignGroup title={makeLook(lang)("dgTitle")} sub={makeLook(lang)("dgSub")} openLabel={makeLook(lang)("dgOpen")} closeLabel={makeLook(lang)("dgClose")}>
         {/* Appearance */}
         <Section icon={<PaletteIcon className="h-4.5 w-4.5" />} title={t("secAppearance")} sub={t("secAppearanceSub")}>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
             {THEMES.map((th) => {
               const active = th.id === theme;
               return (
