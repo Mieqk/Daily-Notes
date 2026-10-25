@@ -52,7 +52,7 @@ export default async function handler(req, res) {
   }
 
   const key = process.env.GEMINI_API_KEY;
-  if (!key) return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
+  if (!key) return res.status(500).json({ error: "GEMINI_API_KEY not configured", detail: "GEMINI_API_KEY is not set on the server" });
 
   const body = typeof req.body === "string" ? safeParse(req.body) : req.body || {};
   const lang = LANG_NAMES[body.lang] ? body.lang : "en";
@@ -69,15 +69,22 @@ export default async function handler(req, res) {
     `Reply in ${LANG_NAMES[lang]}, one insight per line, each starting with "- ", no intro, no headings.\n` +
     `Data (JSON): ${JSON.stringify(days)}`;
 
-  const out = await generateText(key, prompt, { temperature: 0.6, maxOutputTokens: 600 });
-  if (!out) return res.status(500).json({ error: "ai failed" });
+  const diag = [];
+  // без отключения размышлений новые модели тратят лимит токенов на «мысли» и отвечают пусто или обрывком;
+  // функция живёт 60 секунд (vercel.json), поэтому на все попытки не больше 45
+  const out = await generateText(key, prompt, { temperature: 0.6, maxOutputTokens: 1024 }, diag, {
+    timeoutMs: 15_000,
+    deadlineMs: 45_000,
+    thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
+  });
+  if (!out) return res.status(500).json({ error: "ai failed", detail: diag.join(" | ").slice(0, 400) });
 
   const insights = out.text
     .split("\n")
     .map((l) => l.replace(/^\s*[-*•\d.)]+\s*/, "").replace(/\*\*/g, "").trim())
     .filter(Boolean)
     .slice(0, 5);
-  if (!insights.length) return res.status(500).json({ error: "ai failed" });
+  if (!insights.length) return res.status(500).json({ error: "ai failed", detail: `${out.model}: empty reply` });
 
   res.setHeader("Cache-Control", "no-store");
   return res.json({ insights, model: out.model });
