@@ -3,6 +3,13 @@ export type Radius = "auto" | "sharp" | "soft" | "round";
 export type Density = "compact" | "normal" | "airy";
 export type UiFont = "auto" | "golos" | "system" | "serif" | "mono";
 export type Base = "light" | "dark";
+export type HeadFont = "auto" | "unbounded" | "golos" | "system" | "serif" | "mono";
+export type Border = "normal" | "bold" | "none";
+export type Shadow = "auto" | "none" | "hard" | "deep";
+
+/** Цвета темы «Своя», которые можно задать вручную, каждый по отдельности. */
+export const COLOR_TOKENS = ["bg", "panel", "panel-2", "hover", "line", "ink", "ink-soft", "ink-faint", "accent", "accent-deep", "accent-ink", "accent-soft", "danger"] as const;
+export type ColorToken = (typeof COLOR_TOKENS)[number];
 
 export interface Look {
   /** Основа для темы «Своя» */
@@ -26,6 +33,14 @@ export interface Look {
   calm: boolean;
   /** Усиленный контраст текста */
   contrast: boolean;
+  /** Шрифт заголовков, отдельно от интерфейса */
+  headFont: HeadFont;
+  /** Толщина рамок у карточек и полей */
+  border: Border;
+  /** Тени: как в теме, без теней, жёсткие (смещённые) или глубокие */
+  shadow: Shadow;
+  /** Ручные цвета отдельных переменных темы «Своя», #rrggbb */
+  colors: Partial<Record<ColorToken, string>>;
 }
 
 export const DEFAULT_LOOK: Look = {
@@ -41,6 +56,10 @@ export const DEFAULT_LOOK: Look = {
   noCaps: false,
   calm: false,
   contrast: false,
+  headFont: "auto",
+  border: "normal",
+  shadow: "auto",
+  colors: {},
 };
 
 export const ACCENT_PRESETS = ["#3d6b8f", "#226b52", "#b5651d", "#c0453c", "#6a55c8", "#c2477a", "#2f2f2c"];
@@ -48,6 +67,9 @@ export const ACCENT_PRESETS = ["#3d6b8f", "#226b52", "#b5651d", "#c0453c", "#6a5
 const RADII: Radius[] = ["auto", "sharp", "soft", "round"];
 const DENSITIES: Density[] = ["compact", "normal", "airy"];
 const FONTS: UiFont[] = ["auto", "golos", "system", "serif", "mono"];
+const HEAD_FONTS: HeadFont[] = ["auto", "unbounded", "golos", "system", "serif", "mono"];
+const BORDERS: Border[] = ["normal", "bold", "none"];
+const SHADOWS: Shadow[] = ["auto", "none", "hard", "deep"];
 
 const hexOrEmpty = (v: unknown) => (typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : "");
 
@@ -68,10 +90,24 @@ export function sanitizeLook(raw: unknown): Look {
     noCaps: r.noCaps === true,
     calm: r.calm === true,
     contrast: r.contrast === true,
+    headFont: HEAD_FONTS.includes(r.headFont as HeadFont) ? (r.headFont as HeadFont) : d.headFont,
+    border: BORDERS.includes(r.border as Border) ? (r.border as Border) : d.border,
+    shadow: SHADOWS.includes(r.shadow as Shadow) ? (r.shadow as Shadow) : d.shadow,
+    colors: sanitizeColors(r.colors),
   };
 }
 
-function hexToHsl(hex: string): [number, number, number] {
+function sanitizeColors(raw: unknown): Look["colors"] {
+  const out: Look["colors"] = {};
+  if (!raw || typeof raw !== "object") return out;
+  for (const k of COLOR_TOKENS) {
+    const v = hexOrEmpty((raw as Record<string, unknown>)[k]);
+    if (v) out[k] = v;
+  }
+  return out;
+}
+
+export function hexToHsl(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
   const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -93,9 +129,11 @@ function inkOn(l: number): string {
 
 /** Палитра темы «Своя» из акцента и основы. Все значения — CSS-переменные темы. */
 export function customVars(look: Look): Record<string, string> {
-  const [h, sRaw] = hexToHsl(look.accent);
-  const [, , lRaw] = hexToHsl(look.accent);
-  const own = look.bgColor ? hexToHsl(look.bgColor) : null;
+  const accentHex = look.colors.accent || look.accent;
+  const [h, sRaw] = hexToHsl(accentHex);
+  const [, , lRaw] = hexToHsl(accentHex);
+  const ownBg = look.colors.bg || look.bgColor;
+  const own = ownBg ? hexToHsl(ownBg) : null;
   const dark = own ? own[2] < 50 : look.base === "dark";
   const neutral = sRaw < 8; // серый акцент: фон не подкрашиваем
   const bgS = own ? Math.min(own[1], 45) : look.tint && !neutral ? (dark ? 16 : 18) : neutral ? 3 : 4;
@@ -117,19 +155,19 @@ export function customVars(look: Look): Record<string, string> {
   }
   const inkS = look.tint && !neutral ? 14 : 4;
   const bgCss = hsl(bgH, bgS, L.bg);
-  const ink = look.inkColor || hsl(h, inkS, L.ink);
-  return {
+  const ink = look.colors.ink || look.inkColor || hsl(h, inkS, L.ink);
+  const vars: Record<string, string> = {
     "--bg": bgCss,
     "--panel": hsl(bgH, bgS, L.panel),
     "--panel-2": hsl(bgH, bgS, L.panel2),
     "--ink": ink,
-    "--ink-soft": look.inkColor ? `color-mix(in srgb, ${ink} 78%, ${bgCss})` : hsl(h, inkS, L.soft),
-    "--ink-faint": look.inkColor ? `color-mix(in srgb, ${ink} 62%, ${bgCss})` : hsl(h, inkS, L.faint),
+    "--ink-soft": (look.colors.ink || look.inkColor) ? `color-mix(in srgb, ${ink} 78%, ${bgCss})` : hsl(h, inkS, L.soft),
+    "--ink-faint": (look.colors.ink || look.inkColor) ? `color-mix(in srgb, ${ink} 62%, ${bgCss})` : hsl(h, inkS, L.faint),
     "--line": hsl(bgH, bgS, L.line),
     "--hover": hsl(bgH, bgS, L.hover),
     "--accent": accent,
     "--accent-deep": deep,
-    "--accent-ink": inkOn(aL),
+    "--accent-ink": inkOn(look.colors.accent ? lRaw : aL),
     "--accent-soft": `color-mix(in srgb, ${accent} ${dark ? 22 : 14}%, ${hsl(bgH, bgS, L.panel)})`,
     "--danger": dark ? "#e5655c" : "#c0453c",
     "--danger-soft": dark ? "#3a2321" : "#f2dcd6",
@@ -139,6 +177,15 @@ export function customVars(look: Look): Record<string, string> {
     "--shadow": dark ? "0 24px 50px -20px rgba(0,0,0,0.65)" : "0 22px 48px -20px rgba(20,20,20,0.3)",
     "--shadow-sm": dark ? "0 12px 26px -14px rgba(0,0,0,0.6)" : "0 10px 24px -14px rgba(20,20,20,0.26)",
   };
+  // ручные цвета побеждают всё рассчитанное
+  for (const [k, v] of Object.entries(look.colors)) if (v) vars[`--${k}`] = v;
+  return vars;
+}
+
+/** Тёмная ли получилась тема «Своя» (для color-scheme и образцов). */
+export function isDarkLook(look: Look): boolean {
+  const bg = look.colors.bg || look.bgColor;
+  return bg ? hexToHsl(bg)[2] < 50 : look.base === "dark";
 }
 
 /** Цвета для кружков-образцов в списке тем. */
@@ -161,13 +208,16 @@ export function applyLook(theme: string, look: Look) {
   set("data-caps", look.noCaps, "off");
   set("data-calm", look.calm, "1");
   set("data-contrast", look.contrast, "high");
+  set("data-head-font", look.headFont !== "auto", look.headFont);
+  set("data-border", look.border !== "normal", look.border);
+  set("data-shadow", look.shadow !== "auto", look.shadow);
   for (const k of appliedKeys) el.style.removeProperty(k);
   appliedKeys = [];
   if (theme === "custom") {
     const vars = customVars(look);
     for (const [k, val] of Object.entries(vars)) el.style.setProperty(k, val);
     appliedKeys = Object.keys(vars);
-    el.style.colorScheme = vars["--bg"] && look.bgColor ? (hexToHsl(look.bgColor)[2] < 50 ? "dark" : "light") : look.base;
+    el.style.colorScheme = isDarkLook(look) ? "dark" : "light";
   } else {
     el.style.removeProperty("color-scheme");
   }
