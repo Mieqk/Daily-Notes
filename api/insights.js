@@ -81,7 +81,7 @@ export default async function handler(req, res) {
 
   const insights = out.text
     .split("\n")
-    .map((l) => l.replace(/^\s*[-*•\d.)]+\s*/, "").replace(/\*\*/g, "").trim())
+    .map((l) => l.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, "").replace(/\*\*/g, "").trim())
     .filter(Boolean)
     .slice(0, 5);
   if (!insights.length) return res.status(500).json({ error: "ai failed", detail: `${out.model}: empty reply` });

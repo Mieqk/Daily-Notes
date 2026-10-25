@@ -117,9 +117,11 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
   const coachContext =
     (day.length ? `Today's exercises: ${day.map((e) => `${e.name} ${e.sets.map((x) => `${fmt(x.kg)}x${x.reps}${x.done ? " done" : ""}`).join(", ")}`).join("; ")}.` : "No exercises logged today.") +
     (Object.keys(topWeights).length ? ` Best weights so far: ${Object.entries(topWeights).slice(0, 8).map(([n, kg]) => `${n} ${fmt(kg)} kg`).join(", ")}.` : "");
+  // подходы и повторы берём из плана тренера, а вес (тренер ставит 0) из прошлой тренировки с этим упражнением
   const applyCoach = (items: CoachItem[]) => setDay([...day, ...items.map((it) => {
     const prev = history(it.name).lastSets;
-    return blank(it.name, prev.length ? prev.map((x) => ({ kg: x.kg, reps: x.reps })) : Array.from({ length: it.sets ?? 3 }, () => ({ kg: it.kg ?? 0, reps: it.reps ?? 10 })));
+    const kg = it.kg || prev[prev.length - 1]?.kg || 0;
+    return blank(it.name, Array.from({ length: it.sets ?? 3 }, () => ({ kg, reps: it.reps ?? 10 })));
   })]);
   const dateLabel = date === todayISO() ? l.today : new Intl.DateTimeFormat(localeOf(lang), { weekday: "short", day: "numeric", month: "short" }).format(fromISO(date));
 

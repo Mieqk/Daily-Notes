@@ -38,7 +38,10 @@ export default function FactOfDay({ lang, onSave }: { lang: Lang; onSave?: (text
     setJustSaved(false);
     try {
       // если ИИ не ответил за 25 с, показываем факт из встроенного списка
-      const r = await fetch(`/api/fact?lang=${lang}&r=${Date.now()}&avoid=${encodeURIComponent(text.slice(0, 150))}`, { signal: AbortSignal.timeout(25_000) });
+      // (AbortController, а не AbortSignal.timeout: его нет в старых WebView на Android)
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 25_000);
+      const r = await fetch(`/api/fact?lang=${lang}&r=${Date.now()}&avoid=${encodeURIComponent(text.slice(0, 150))}`, { signal: ctl.signal }).finally(() => clearTimeout(timer));
       const d = await r.json();
       if (!d?.fact) throw new Error("bad");
       setAiFact(d.fact);

@@ -125,7 +125,8 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
       const reply = typeof fin?.reply === "string" && fin.reply ? fin.reply : acc.trim();
       if (!reply) throw Object.assign(new Error("bad"), { detail: fin?.detail || `empty reply (HTTP ${r.status})` });
       const items = Array.isArray(fin?.items) && fin.items.length ? fin.items : undefined;
-      setMsgs([...next, { id: uid(), role: "assistant" as const, text: reply, items }].slice(-40));
+      // от текущей истории, а не от снимка до запроса: иначе пропадёт отметка «Добавлено», поставленная во время ответа
+      setMsgs((prev) => [...prev, { id: uid(), role: "assistant" as const, text: reply, items }].slice(-40));
       if (fin?.error) setError({ msg: l.err, detail: fin.detail });
     } catch (e) {
       const err = e as { detail?: string; name?: string };
@@ -139,7 +140,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
   const apply = (m: Msg) => {
     if (!m.items || m.added) return;
     onApply(m.items);
-    setMsgs(msgs.map((x) => (x.id === m.id ? { ...x, added: true } : x)));
+    setMsgs((prev) => prev.map((x) => (x.id === m.id ? { ...x, added: true } : x)));
   };
 
   const describe = (it: CoachItem) =>
@@ -212,8 +213,8 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
       </div>
 
       <div className="flex justify-between text-[12px] font-semibold text-[var(--ink-faint)]">
-        <button onClick={() => { setMsgs([]); setError(null); }} disabled={!msgs.length} className="hover:text-[var(--ink)] disabled:opacity-40">{l.clear}</button>
-        <button onClick={() => setOn(false)} className="hover:text-[var(--ink)]">{l.off}</button>
+        <button onClick={() => { setMsgs([]); setError(null); }} disabled={!msgs.length || busy} className="hover:text-[var(--ink)] disabled:opacity-40">{l.clear}</button>
+        <button onClick={() => setOn(false)} disabled={busy} className="hover:text-[var(--ink)] disabled:opacity-40">{l.off}</button>
       </div>
     </div>
   );
