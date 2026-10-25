@@ -75,7 +75,8 @@ export async function generateText(key, prompt, generationConfig = {}, diag = []
       let r, data;
       for (const v of variants) {
         ({ r, data } = await call(model, v ? { ...generationConfig, thinkingConfig: v } : generationConfig, limit));
-        if (r.ok || r.status !== 400 || !/think/i.test(data?.error?.message || "")) break;
+        // на неподходящий thinkingConfig новые модели отвечают просто «invalid argument», без слова think
+        if (r.ok || r.status !== 400) break;
       }
       if (!r.ok) {
         if (r.status === 404 && model !== "gemini-flash-latest") deadModels.add(model);
@@ -121,7 +122,8 @@ async function* streamPieces(key, version, model, prompt, generationConfig, thin
     if (r.ok) break;
     const data = await r.json().catch(() => ({}));
     r.errorMessage = data?.error?.message || "unknown";
-    if (r.status !== 400 || !/think/i.test(r.errorMessage)) break;
+    // на неподходящий thinkingConfig новые модели отвечают просто «invalid argument», без слова think
+    if (r.status !== 400) break;
   }
   if (!r.ok) {
     if (r.status === 404 && model !== "gemini-flash-latest") deadModels.add(model);
