@@ -208,7 +208,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
         </div>
       )}
 
-      <div className="sticky bottom-24 z-10 flex gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1.5 md:bottom-2" style={{ boxShadow: "var(--shadow-sm)" }}>
+      <div className="sticky bottom-2 z-10 flex gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1.5" style={{ boxShadow: "var(--shadow-sm)" }}>
         {showUp && (
           <button onClick={toTop} aria-label={UP[lang] ?? UP.en} title={UP[lang] ?? UP.en} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel)] text-[16px] font-bold text-[var(--ink-soft)] transition-all hover:border-[var(--accent)] active:scale-95">↑</button>
         )}

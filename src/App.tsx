@@ -25,7 +25,7 @@ import WorkoutView from "./components/WorkoutView";
 import InstallPrompt from "./components/InstallPrompt";
 import NewPasswordScreen from "./components/NewPasswordScreen";
 import AuthScreen from "./components/AuthScreen";
-import MobileBottomNav from "./components/MobileBottomNav";
+import MobileMenu from "./components/MobileMenu";
 import FriendsView from "./components/FriendsView";
 import AccountMenu from "./components/AccountMenu";
 import { useNotifications } from "./hooks/useNotifications";
@@ -383,13 +383,14 @@ export default function App() {
 
       <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col">
         <header className="flex min-h-[74px] shrink-0 py-2 items-center gap-4 border-b border-[var(--line)] px-4 sm:px-8">
+          <MobileMenu tab={tab} onTab={setTab} t={t} lang={lang} />
           <div className="min-w-0">
             <h1 className="font-display truncate py-0.5 text-xl font-bold leading-snug tracking-tight sm:text-2xl">{tabMeta[tab].title}</h1>
             <p className="hidden truncate text-xs text-[var(--ink-faint)] sm:block">{tabMeta[tab].sub}</p>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-3">
             {syncBadge}
-            <span className="flex items-center gap-2.5">
+            <span className="hidden items-center gap-2.5 sm:flex">
               <span className="animate-livedot h-2 w-2 rounded-full bg-[var(--accent)]" />
               <span className="font-display text-lg font-semibold tabular-nums tracking-tight">{clock}</span>
             </span>
@@ -398,7 +399,7 @@ export default function App() {
           </div>
         </header>
 
-        <main key={tab + date} className="animate-rise min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-28 pt-6 sm:px-8 sm:pt-8 md:pb-8">
+        <main key={tab + date} className="animate-rise min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-6 sm:px-8 sm:pt-8">
           {tab === "daily" && <DailyView userId={userId} capsules={capsules} setCapsules={setCapsules} date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} lang={lang} t={t} showToast={showToast} />}
           {tab === "stats" && <Suspense fallback={<div className="grid h-64 place-items-center text-sm text-[var(--ink-faint)]"><span className="animate-livedot h-2.5 w-2.5 rounded-full bg-[var(--accent)]" /></div>}><StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} /></Suspense>}
           {tab === "sleep" && <SleepView sleep={sleep} lang={lang} t={t} setSleep={(iso, data) => setSleep((prev) => { const next = { ...prev }; if (data) next[iso] = data; else delete next[iso]; return next; })} />}
@@ -424,7 +425,6 @@ export default function App() {
           </div>
         </div>
       )}
-      <MobileBottomNav tab={tab} onTab={setTab} t={t} />
       <InstallPrompt lang={lang} />
     </div>
   );

@@ -378,7 +378,7 @@
 /* ============ Улучшенный мобильный layout ============ */
 @media (max-width: 767px) {
   main {
-    padding-bottom: 80px !important;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom)) !important;
   }
 /* ============ Защита от pull-to-refresh на мобильных ============ */
 html,
