@@ -49,8 +49,8 @@ async function pickModels(key, preferLite = false) {
 export async function generateText(key, prompt, generationConfig = {}, diag = [], opts = {}) {
   const errors = diag;
   const started = Date.now();
-  const { timeoutMs = 25_000, deadlineMs = 50_000, thinking = [] } = opts;
-  const { version, models } = await pickModels(key);
+  const { timeoutMs = 25_000, deadlineMs = 50_000, thinking = [], preferLite = false } = opts;
+  const { version, models } = await pickModels(key, preferLite);
 
   const call = async (model, config, limit) => {
     const r = await fetch(`${BASE}/${version}/models/${model}:generateContent`, {
@@ -72,8 +72,13 @@ export async function generateText(key, prompt, generationConfig = {}, diag = []
     try {
       // разные модели по-разному отключают размышления: пробуем варианты, потом без них
       const variants = [...thinking, null];
-      let r, data;
-      for (const v of variants) {
+      const known = thinkingOk.get(model);
+      const first = known === undefined ? 0 : known === -1 ? variants.length - 1 : known;
+      const order = [first, ...variants.map((_, i) => i).filter((i) => i !== first)];
+      let r, data, used = -1;
+      for (const i of order) {
+        const v = variants[i];
+        used = v ? i : -1;
         ({ r, data } = await call(model, v ? { ...generationConfig, thinkingConfig: v } : generationConfig, limit));
         // на неподходящий thinkingConfig новые модели отвечают просто «invalid argument», без слова think
         if (r.ok || r.status !== 400) break;
@@ -83,6 +88,7 @@ export async function generateText(key, prompt, generationConfig = {}, diag = []
         errors.push(`${model}: HTTP ${r.status} — ${data?.error?.message || "unknown"}`);
         continue;
       }
+      if (thinking.length) thinkingOk.set(model, used);
       const parts = data?.candidates?.[0]?.content?.parts || [];
       const text = parts.filter((p) => !p.thought).map((p) => p.text || "").join("").trim();
       if (!text) {

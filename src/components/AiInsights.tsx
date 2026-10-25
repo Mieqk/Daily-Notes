@@ -53,18 +53,25 @@ export default function AiInsights({ notes, tasks, moods, sleep, range, lang }: 
     }
     setLoading(true);
     setError(null);
+    // сервер укладывается в 45 с; клиент ждёт чуть дольше и показывает причину, а не вечную загрузку
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 55_000);
     try {
       const r = await fetch("/api/insights", {
+        signal: ctl.signal,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lang, days }),
       });
-      const d = await r.json();
-      if (!r.ok || !Array.isArray(d?.insights)) throw new Error("bad");
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !Array.isArray(d?.insights)) throw Object.assign(new Error("bad"), { detail: d?.detail || d?.error || `HTTP ${r.status}` });
       setState({ range, items: d.insights });
-    } catch {
-      setError(l.err);
+    } catch (e) {
+      const err = e as { detail?: string; name?: string };
+      const detail = err.name === "AbortError" ? "timeout" : err.detail;
+      setError(detail ? `${l.err} (${detail})` : l.err);
     } finally {
+      clearTimeout(timer);
       setLoading(false);
     }
   };

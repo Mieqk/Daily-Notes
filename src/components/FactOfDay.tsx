@@ -37,7 +37,8 @@ export default function FactOfDay({ lang, onSave }: { lang: Lang; onSave?: (text
     setLoading(true);
     setJustSaved(false);
     try {
-      const r = await fetch(`/api/fact?lang=${lang}&r=${Date.now()}&avoid=${encodeURIComponent(text.slice(0, 150))}`);
+      // если ИИ не ответил за 25 с, показываем факт из встроенного списка
+      const r = await fetch(`/api/fact?lang=${lang}&r=${Date.now()}&avoid=${encodeURIComponent(text.slice(0, 150))}`, { signal: AbortSignal.timeout(25_000) });
       const d = await r.json();
       if (!d?.fact) throw new Error("bad");
       setAiFact(d.fact);
