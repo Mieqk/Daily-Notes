@@ -389,7 +389,7 @@ export default function App() {
         </header>
 
         <main key={tab + date} className="animate-rise min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-28 pt-6 sm:px-8 sm:pt-8 md:pb-8">
-          {tab === "daily" && <DailyView capsules={capsules} setCapsules={setCapsules} date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} lang={lang} t={t} showToast={showToast} />}
+          {tab === "daily" && <DailyView userId={userId} capsules={capsules} setCapsules={setCapsules} date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} lang={lang} t={t} showToast={showToast} />}
           {tab === "stats" && <Suspense fallback={<div className="grid h-64 place-items-center text-sm text-[var(--ink-faint)]"><span className="animate-livedot h-2.5 w-2.5 rounded-full bg-[var(--accent)]" /></div>}><StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} /></Suspense>}
           {tab === "sleep" && <SleepView sleep={sleep} lang={lang} t={t} setSleep={(iso, data) => setSleep((prev) => { const next = { ...prev }; if (data) next[iso] = data; else delete next[iso]; return next; })} />}
           {tab === "food" && <NutritionView lang={lang} />}
@@ -402,7 +402,7 @@ export default function App() {
               <button onClick={() => { setLocalMode(false); setShowAuth(true); }} className="mt-2 h-11 rounded-lg bg-[var(--accent)] px-5 text-[13px] font-bold text-[var(--accent-ink)] transition-all hover:brightness-110 active:scale-95">{t("loginBtn")}</button>
             </div>
           )}
-          {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} sleep={sleep} streak={streak} notesCount={notesCount} />}
+          {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} moodEmoji={moodEmoji} sleep={sleep} streak={streak} notesCount={notesCount} />}
           {tab === "settings" && <SettingsView theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={(h) => { setPinHash(h); if (!h) setBioId(null); }} bioId={bioId} onBioChange={setBioId} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} showToast={showToast} />}
         </main>
       </div>
