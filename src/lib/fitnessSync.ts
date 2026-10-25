@@ -5,8 +5,8 @@ import { supabase } from "./supabase";
 import { isLocalMode } from "./sync";
 import { useStored } from "../store";
 
-/** Данные вкладок «Питание» и «Тренировки»: ключ в localStorage = `dn.<key>`, строка в таблице fitness_data. */
-export type FitnessKey = "foods" | "foodLog" | "foodGoal" | "workoutLog" | "workoutTpl" | "restLen";
+/** Данные вкладок «Питание», «Тренировки», а также свои шаблоны и плагины: ключ в localStorage = `dn.<key>`, строка в таблице fitness_data. */
+export type FitnessKey = "foods" | "foodLog" | "foodGoal" | "workoutLog" | "workoutTpl" | "restLen" | "dayTemplates" | "plugins" | "pluginData";
 
 type Merge<T> = (local: T, remote: T) => T;
 

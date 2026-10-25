@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type { Lang, TKey } from "../i18n";
 import { MOODS, TEMPLATES, localeOf } from "../i18n";
+import PluginWidgets from "./PluginWidgets";
+import { useDayTemplates } from "../hooks/useAddons";
 import type { Task, WritingFontId, SleepData } from "../store";
 import {
   FONT_STACKS,
@@ -135,6 +137,7 @@ export default function DailyView(props: DailyViewProps) {
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [listening, setListening] = useState(false);
   const [appliedTpl, setAppliedTpl] = useState<string | null>(null);
+  const [myTemplates] = useDayTemplates();
   const statusTimer = useRef<number>(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const recRef = useRef<{ stop: () => void } | null>(null);
@@ -240,7 +243,11 @@ useSwipe({
 
   const applyTemplate = (idx: number) => {
     const tpl = TEMPLATES[idx];
-    const texts = tpl.tasks[lang];
+    applyTpl(tpl.id, tpl.tasks[lang], tpl.prompt[lang]);
+  };
+
+  // общий для встроенных и своих шаблонов: задачи шаблона и заготовка текста
+  const applyTpl = (tplId: string, texts: string[], prompt: string) => {
     setTasks((m) => {
       const prev = m[date] ?? [];
       const merged: Task[] = texts.map((text) => {
@@ -255,12 +262,12 @@ useSwipe({
     });
     setNotes((m) => {
       const curTxt = m[date] ?? "";
-      const prompt = tpl.prompt[lang];
+      if (!prompt) return m;
       if (!curTxt.trim()) return { ...m, [date]: prompt };
       if (curTxt.includes(prompt.slice(0, 24))) return m;
       return { ...m, [date]: curTxt + "\n\n" + prompt };
     });
-    setAppliedTpl(tpl.id);
+    setAppliedTpl(tplId);
     window.setTimeout(() => setAppliedTpl(null), 1400);
     showToast(t("toastTpl"));
     bumpStatus();
@@ -395,6 +402,15 @@ useSwipe({
               </button>
             );
           })}
+          {myTemplates.map((tpl) => {
+            const applied = appliedTpl === tpl.id;
+            return (
+              <button key={tpl.id} onClick={() => applyTpl(tpl.id, tpl.tasks, tpl.prompt)} className={`flex h-9 items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold transition-all duration-200 active:scale-95 ${applied ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-ink)]" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] hover:-translate-y-0.5 hover:border-[var(--accent)] hover:text-[var(--accent-deep)]"}`}>
+                {applied ? <CheckIcon className="animate-checkpop h-4 w-4" /> : <span aria-hidden className="text-[14px] leading-none">{tpl.emoji}</span>}
+                {tpl.name}
+              </button>
+            );
+          })}
         </div>
 
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
@@ -450,6 +466,8 @@ useSwipe({
               ))}
             </ul>
           </div>
+
+          <PluginWidgets date={date} lang={lang} />
 
           <FactOfDay lang={lang} onSave={(f) => {
             setNotes((m) => {
