@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { Lang, TKey } from "../i18n";
 import type { BgId, WritingFontId } from "../store";
 import { FONT_STACKS, hashPin } from "../store";
+import type { Task } from "../store";
 import { biometricSupported, registerBiometric } from "../lib/biometric";
 import { makeDevice } from "../device-strings";
 import { THEMES } from "../themes";
@@ -28,6 +29,7 @@ import { isLocalMode } from "../lib/sync";
 import { createPortal } from "react-dom";
 import AuthScreen from "./AuthScreen";
 import NotificationSettings from "./NotificationSettings";
+import GoogleCalendarSettings from "./GoogleCalendarSettings";
 
 interface SettingsViewProps {
   theme: ThemeId;
@@ -52,6 +54,7 @@ interface SettingsViewProps {
   t: (k: TKey) => string;
   notesCount: number;
   tasksCount: number;
+  tasks: Record<string, Task[]>;
   showToast: (msg: string) => void;
 }
 
@@ -156,6 +159,7 @@ export default function SettingsView(props: SettingsViewProps) {
     t,
     notesCount,
     tasksCount,
+    tasks,
     showToast,
   } = props;
 
@@ -401,6 +405,7 @@ export default function SettingsView(props: SettingsViewProps) {
 
         {/* Privacy */}
         <NotificationSettings lang={lang} signedIn={Boolean(user)} />
+        <GoogleCalendarSettings lang={lang} signedIn={Boolean(user)} tasks={tasks} showToast={showToast} />
 
         <Section icon={<LockIcon className="h-4.5 w-4.5" />} title={t("secPrivacy")} sub={t("secPrivacySub")} delay={300}>
           <div className="mb-3 flex items-center gap-2">
