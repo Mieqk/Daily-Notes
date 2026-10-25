@@ -5,6 +5,8 @@ import { fromISO, shiftISO, todayISO } from "../store";
 import { useSyncedStored, mergeById, mergeLog, preferRemote } from "../lib/fitnessSync";
 import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
 import CoachChat, { SEG, type CoachItem } from "./CoachChat";
+import DayCalendar from "./DayCalendar";
+import { makeUI } from "../ui-strings";
 
 interface WSet { id: string; kg: number; reps: number; done: boolean }
 interface WEx { id: string; name: string; sets: WSet[] }
@@ -38,7 +40,7 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
   const l = L[lang] ?? L.en;
   const [log, setLog] = useSyncedStored<Record<string, WEx[]>>("workoutLog", {}, mergeLog<WEx>());
   const [tpls, setTpls] = useSyncedStored<Tpl[]>("workoutTpl", [], mergeById<Tpl>((t) => t.name.trim().toLowerCase()));
-  const [view, setView] = useState<"coach" | "day">("coach");
+  const [view, setView] = useState<"coach" | "day" | "calendar">("coach");
   const [date, setDate] = useState(todayISO());
   const [name, setName] = useState("");
   const [tplName, setTplName] = useState("");
@@ -124,20 +126,23 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
     const kg = it.kg || prev[prev.length - 1]?.kg || 0;
     return blank(it.name, Array.from({ length: it.sets ?? 3 }, () => ({ kg, reps: it.reps ?? 10 })));
   })]);
+  const setsByDay = Object.fromEntries(Object.entries(log).map(([iso, exs]) => [iso, exs.reduce((a, e) => a + e.sets.filter((x) => x.done).length, 0)]));
   const dateLabel = date === todayISO() ? l.today : new Intl.DateTimeFormat(localeOf(lang), { weekday: "short", day: "numeric", month: "short" }).format(fromISO(date));
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
       {/* переключатель закреплён сверху отдельной плашкой: в длинном чате до него не нужно долго листать */}
       <div className="sticky -top-4 z-20 sm:-top-6">
-        <div className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
-          {(["coach", "day"] as const).map((v) => (
-            <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`h-9 rounded-lg text-[13px] font-semibold transition-all ${view === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>{SEG[lang][v]}</button>
+        <div className="grid grid-cols-3 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
+          {(["coach", "day", "calendar"] as const).map((v) => (
+            <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`h-9 rounded-lg text-[13px] font-semibold transition-all ${view === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>{v === "calendar" ? makeUI(lang)("viewCalendar") : SEG[lang][v]}</button>
           ))}
         </div>
       </div>
 
-      {view === "coach" ? (
+      {view === "calendar" ? (
+        <DayCalendar valueByDay={setsByDay} summary={(days) => (days.length ? `${l.setsDone}: ${days.reduce((a, d) => a + setsByDay[d], 0)}` : null)} selected={date} onPick={(iso) => { setDate(iso); setView("day"); }} lang={lang} />
+      ) : view === "coach" ? (
         <>
           <div className="text-[13px] text-[var(--ink-soft)]">
             {dateLabel}: <b className="text-[var(--ink)]">{day.length}</b> {l.exercises.toLowerCase()} · <b className="text-[var(--ink)]">{doneSets.length}</b> {l.setsDone.toLowerCase()} · <b className="text-[var(--ink)]">{Math.round(volume)}</b> {l.kg}

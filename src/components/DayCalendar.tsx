@@ -6,16 +6,19 @@ import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
 import { makeUI } from "../ui-strings";
 
 interface Props {
-  /** ккал по дням (только дни с записями) */
-  kcalByDay: Record<string, number>;
-  goal: number;
+  /** число в клетке по дням (только дни с записями): ккал, подходы */
+  valueByDay: Record<string, number>;
+  /** цель на день: заливка считается от неё; без цели заливка идёт от максимума месяца */
+  goal?: number;
+  /** строка под календарём, например среднее за месяц */
+  summary?: (visible: string[]) => string | null;
   selected: string;
   onPick: (iso: string) => void;
   lang: Lang;
 }
 
-/** Месяц питания: в каждой клетке ккал за день, заливка по доле от цели. Нажатие открывает день. */
-export default function NutritionCalendar({ kcalByDay, goal, selected, onPick, lang }: Props) {
+/** Месяц: в каждой клетке число за день, заливка по доле от цели (или от максимума). Нажатие открывает день. */
+export default function DayCalendar({ valueByDay, goal, summary, selected, onPick, lang }: Props) {
   const u = makeUI(lang);
   const locale = localeOf(lang);
   const today = todayISO();
@@ -40,11 +43,11 @@ export default function NutritionCalendar({ kcalByDay, goal, selected, onPick, l
   ];
   while (cells.length % 7 !== 0) cells.push(null);
 
-  const logged = cells.filter((iso): iso is string => Boolean(iso && kcalByDay[iso] > 0));
-  const avg = logged.length ? Math.round(logged.reduce((a, iso) => a + kcalByDay[iso], 0) / logged.length) : 0;
+  const logged = cells.filter((iso): iso is string => Boolean(iso && valueByDay[iso] > 0));
+  const scale = goal && goal > 0 ? goal : Math.max(1, ...logged.map((iso) => valueByDay[iso]));
+  const summaryText = summary?.(logged) ?? null;
   const shift = (n: number) => setCursor(new Date(year, month + n, 1));
   const navBtn = "grid h-10 w-10 place-items-center rounded-xl border border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] transition-all duration-150 hover:border-[var(--ink-faint)] hover:text-[var(--ink)] active:scale-90";
-  const safeGoal = goal > 0 ? goal : 2000;
 
   return (
     <div className="animate-rise rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
@@ -66,8 +69,8 @@ export default function NutritionCalendar({ kcalByDay, goal, selected, onPick, l
         ))}
         {cells.map((iso, i) => {
           if (!iso) return <div key={`e${i}`} />;
-          const kcal = kcalByDay[iso] ?? 0;
-          const share = Math.min(1, kcal / safeGoal);
+          const kcal = valueByDay[iso] ?? 0;
+          const share = Math.min(1, kcal / scale);
           const isToday = iso === today;
           const dark = share >= 0.6;
           return (
@@ -89,7 +92,7 @@ export default function NutritionCalendar({ kcalByDay, goal, selected, onPick, l
         })}
       </div>
 
-      {avg > 0 && <p className="mt-4 text-[12.5px] text-[var(--ink-soft)]">Ø <b className="text-[var(--ink)]">{avg}</b> / {safeGoal}</p>}
+      {summaryText && <p className="mt-4 text-[12.5px] text-[var(--ink-soft)]">{summaryText}</p>}
     </div>
   );
 }
