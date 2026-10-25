@@ -16,6 +16,10 @@ import type { SleepData } from "../store";
 import FriendsSection, { GroupLabel, EmptyState } from "./FriendsSection";
 import { makeUI } from "../ui-strings";
 import { makeChat } from "../chat-strings";
+import { makePresence } from "../presence-strings";
+import { localeOf } from "../i18n";
+import PresenceDot from "./PresenceDot";
+import { PRESENCE_COLOR, PRESENCE_MODES, cachePresenceMode, PRESENCE_MODE_EVENT, type PresenceMode, type PresenceState } from "../lib/presence";
 import FriendChat from "./FriendChat";
 
 interface FriendsViewProps {
@@ -38,6 +42,9 @@ interface Profile {
   friend_code: string | null;
   status_emoji: string | null;
   status_text: string | null;
+  presence_mode?: PresenceMode | null;
+  presence_state?: PresenceState | null;
+  last_seen_at?: string | null;
 }
 
 interface Friendship {
@@ -150,6 +157,29 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread
   const [viewId, setViewId] = useState<string | null>(null);
   const u = makeUI(lang);
   const chat = makeChat(lang);
+  const pr = makePresence(lang);
+  const [modeBusy, setModeBusy] = useState(false);
+
+  const setMode = async (mode: PresenceMode) => {
+    if (modeBusy || me?.presence_mode === mode) return;
+    setModeBusy(true);
+    const { error } = await supabase!.from("profiles").update({ presence_mode: mode }).eq("id", userId);
+    setModeBusy(false);
+    if (error) { setMsg({ kind: "err", text: pr("failed") }); return; }
+    cachePresenceMode(mode);
+    window.dispatchEvent(new Event(PRESENCE_MODE_EVENT));
+    setMe((m) => (m ? { ...m, presence_mode: mode } : m));
+  };
+
+  const presenceText = (p: Profile): string | null => {
+    if (!p.presence_state) return null;
+    if (p.presence_state !== "offline") return p.presence_state === "online" ? pr("online") : p.presence_state === "away" ? pr("away") : pr("dnd");
+    if (!p.last_seen_at) return pr("offline");
+    const mins = Math.max(1, Math.round((Date.now() - new Date(p.last_seen_at).getTime()) / 60_000));
+    const rtf = new Intl.RelativeTimeFormat(localeOf(lang), { numeric: "auto" });
+    const t = mins < 60 ? rtf.format(-mins, "minute") : mins < 1440 ? rtf.format(-Math.round(mins / 60), "hour") : rtf.format(-Math.round(mins / 1440), "day");
+    return pr("seen").replace("{t}", t);
+  };
   const [chatWith, setChatWith] = useState<Profile | null>(null);
   const [thanksTo, setThanksTo] = useState<string | null>(null);
   const [thanksText, setThanksText] = useState("");
@@ -212,6 +242,19 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread
   };
 
   useEffect(() => { load(); }, [userId]);
+
+  // статус друзей в сети обновляется раз в минуту
+  useEffect(() => {
+    const id = window.setInterval(async () => {
+      if (document.hidden) return;
+      const ids = friends.map((f) => f.profile.id);
+      if (ids.length === 0) return;
+      const fresh = await fetchProfiles<Profile>(ids);
+      const byId = new Map(fresh.map((x) => [x.id, x]));
+      setFriends((prev) => prev.map((f) => ({ ...f, profile: byId.get(f.profile.id) ?? f.profile })));
+    }, 60_000);
+    return () => window.clearInterval(id);
+  }, [friends]);
 
   const copyCode = async () => {
     if (!me?.friend_code) return;
@@ -279,9 +322,17 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread
 
   const person = (p: Profile) => (
     <span className="flex min-w-0 items-center gap-2.5">
-      <span className="h-10 w-10 shrink-0 overflow-hidden rounded-xl">{avaNode(p, "20px")}</span>
+      <span className="relative h-10 w-10 shrink-0">
+        <span className="block h-full w-full overflow-hidden rounded-xl">{avaNode(p, "20px")}</span>
+        <PresenceDot state={p.presence_state} label={presenceText(p) ?? undefined} />
+      </span>
       <span className="min-w-0">
         <span className="block truncate text-[14px] font-semibold">{p.display_name || p.friend_code || "—"}</span>
+        {presenceText(p) && (
+          <span className="block truncate text-[11.5px] font-medium" style={{ color: p.presence_state === "offline" ? "var(--ink-faint)" : PRESENCE_COLOR[p.presence_state!] }}>
+            {presenceText(p)}
+          </span>
+        )}
         <span className="block truncate text-[11.5px] text-[var(--ink-faint)]">
           {p.status_emoji || p.status_text ? (
             <>{p.status_emoji} {p.status_text}</>
@@ -305,6 +356,29 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread
 
       {/* блоки раскладываются в две колонки, на телефоне в одну */}
       <div className="gap-4 lg:columns-2 [&>*]:break-inside-avoid">
+      {/* ===== Мой статус в сети ===== */}
+      <FriendsSection icon="🟢" title={pr("title")} hint={pr("hint")}>
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label={pr("title")}>
+          {PRESENCE_MODES.map((m) => {
+            const active = (me?.presence_mode ?? "auto") === m;
+            const color = m === "auto" ? PRESENCE_COLOR.online : m === "away" ? PRESENCE_COLOR.away : m === "dnd" ? PRESENCE_COLOR.dnd : PRESENCE_COLOR.offline;
+            return (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                aria-pressed={active}
+                disabled={modeBusy}
+                className={`flex h-11 items-center gap-2 rounded-xl border px-3 text-left text-[13px] font-semibold transition-all active:scale-95 ${active ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "border-[var(--line)] text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}
+              >
+                <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
+                <span className="truncate">{pr(m)}</span>
+              </button>
+            );
+          })}
+        </div>
+        {me?.presence_mode === "dnd" && <p className="mt-2.5 text-[12px] leading-snug text-[var(--ink-faint)]">{pr("dndNote")}</p>}
+      </FriendsSection>
+
       {/* ===== Добавить друга ===== */}
       <FriendsSection icon="➕" title={t("addFriend")} hint={t("addHint")}>
         <button
@@ -442,7 +516,7 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread
         <FriendChat
           userId={userId}
           lang={lang}
-          friend={{ id: chatWith.id, name: chatWith.display_name || chatWith.friend_code || "—", avatar: chatWith.avatar, avatar_url: chatWith.avatar_url }}
+          friend={{ id: chatWith.id, name: chatWith.display_name || chatWith.friend_code || "—", avatar: chatWith.avatar, avatar_url: chatWith.avatar_url, presence: presenceText(chatWith), presenceState: chatWith.presence_state ?? null }}
           onClose={() => setChatWith(null)}
         />
       )}

@@ -3,6 +3,7 @@ import type { Lang } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { friendNotificationsEnabled, notify, registerServiceWorker } from "../lib/notify";
 import { PUSH_SYNC_EVENT, syncPush } from "../lib/push";
+import { PRESENCE_MODE_EVENT } from "../lib/presence";
 import { makeSocial } from "../social-strings";
 import { makeChat } from "../chat-strings";
 import { todayISO } from "../store";
@@ -43,7 +44,11 @@ export function useNotifications(userId: string | null, lang: Lang, reminder: Re
     const sync = () => { syncPush(userId, { lang, reminderEnabled: reminder.enabled, reminderTime: reminder.time }); };
     sync();
     window.addEventListener(PUSH_SYNC_EVENT, sync);
-    return () => window.removeEventListener(PUSH_SYNC_EVENT, sync);
+    window.addEventListener(PRESENCE_MODE_EVENT, sync);
+    return () => {
+      window.removeEventListener(PUSH_SYNC_EVENT, sync);
+      window.removeEventListener(PRESENCE_MODE_EVENT, sync);
+    };
   }, [userId, lang, reminder.enabled, reminder.time]);
 
   useEffect(() => {

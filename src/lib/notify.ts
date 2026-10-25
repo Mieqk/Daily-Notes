@@ -1,3 +1,5 @@
+import { cachedPresenceMode } from "./presence";
+
 const PREF_KEY = "dn.notifyFriends";
 
 export const notificationsSupported = () => typeof window !== "undefined" && "Notification" in window;
@@ -5,7 +7,9 @@ export const notificationsSupported = () => typeof window !== "undefined" && "No
 export const notificationPermission = (): NotificationPermission | "unsupported" =>
   notificationsSupported() ? Notification.permission : "unsupported";
 
+/** Уведомления от друзей: включены в настройках и не стоит режим «Не беспокоить». */
 export function friendNotificationsEnabled(): boolean {
+  if (cachedPresenceMode() === "dnd") return false;
   try { return localStorage.getItem(PREF_KEY) !== "0"; } catch { return true; }
 }
 export function setFriendNotifications(on: boolean) {
