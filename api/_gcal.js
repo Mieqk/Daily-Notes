@@ -58,10 +58,11 @@ async function tokenRequest(params) {
 export const exchangeCode = (cfg, code, redirect) =>
   tokenRequest({ code, client_id: cfg.clientId, client_secret: cfg.clientSecret, redirect_uri: redirect, grant_type: "authorization_code" });
 
-/** Возвращает access_token или null (если доступ отозван — токен недействителен). */
+/** Возвращает { token } или { revoked: true }, если доступ отозван; при временном сбое Google оба поля пусты. */
 export async function accessToken(cfg, refreshToken) {
   const { ok, json } = await tokenRequest({ refresh_token: refreshToken, client_id: cfg.clientId, client_secret: cfg.clientSecret, grant_type: "refresh_token" });
-  return ok ? json.access_token : null;
+  if (ok && json.access_token) return { token: json.access_token };
+  return json?.error === "invalid_grant" ? { revoked: true } : {};
 }
 
 export const revoke = (token) =>
@@ -100,26 +101,43 @@ function eventBody(id, t) {
   };
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Запрос к Calendar API; при превышении лимита запросов (403/429 с rate-причиной) пару раз повторяет с паузой. */
 async function gfetch(token, method, url, body) {
-  const r = await fetch(url, { method, headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
-  return r;
+  for (let attempt = 0; ; attempt++) {
+    const r = await fetch(url, { method, headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+    if (r.status !== 403 && r.status !== 429) return r;
+    const reason = (await r.clone().json().catch(() => null))?.error?.errors?.[0]?.reason || "";
+    const limited = r.status === 429 || /rateLimit|quotaExceeded/i.test(reason);
+    if (!limited) return r;
+    if (attempt >= 2) return { status: 429, ok: false };
+    await sleep(1000 * (attempt + 1));
+  }
 }
 
-/** Создаёт или обновляет событие. Ошибка 401/403 пробрасывается как «нет доступа». */
-export async function upsertEvent(token, id, t) {
+const result = (r) => (r.status === 401 || r.status === 403 ? "auth" : r.ok ? "ok" : "fail");
+
+/**
+ * Создаёт или обновляет событие. Для новой задачи сразу POST, для уже отправленной PUT (экономит запрос).
+ * 401/403 без признаков лимита означает, что доступ отозван.
+ */
+export async function upsertEvent(token, id, t, known) {
   const body = eventBody(id, t);
-  let r = await gfetch(token, "PUT", `${API}/${id}`, body);
-  if (r.status === 404) {
+  let r;
+  if (known) {
+    r = await gfetch(token, "PUT", `${API}/${id}`, body);
+    if (r.status === 404) r = await gfetch(token, "POST", API, body);
+  } else {
     r = await gfetch(token, "POST", API, body);
-    // 409: событие с таким id когда-то было удалено, PUT с status=confirmed его восстановит
+    // 409: событие с таким id уже есть или когда-то было удалено; PUT с status=confirmed обновит или восстановит
     if (r.status === 409) r = await gfetch(token, "PUT", `${API}/${id}`, body);
   }
-  if (r.status === 401 || r.status === 403) return "auth";
-  return r.ok ? "ok" : "fail";
+  return r.status === 429 ? "fail" : result(r);
 }
 
 export async function deleteEvent(token, id) {
   const r = await gfetch(token, "DELETE", `${API}/${id}`);
-  if (r.status === 401 || r.status === 403) return "auth";
-  return r.ok || r.status === 404 || r.status === 410 ? "ok" : "fail";
+  if (r.status === 404 || r.status === 410) return "ok";
+  return r.status === 429 ? "fail" : result(r);
 }

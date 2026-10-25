@@ -12,7 +12,9 @@ export function useGcalSync(userId: string | null, tasks: Record<string, Task[]>
   const schedule = (delay: number) => {
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(async () => {
-      if (!gcalEnabled() || busy.current) return;
+      if (!gcalEnabled()) return;
+      // предыдущая отправка ещё идёт: пробуем позже, иначе правка потерялась бы до следующего изменения
+      if (busy.current) { schedule(2000); return; }
       busy.current = true;
       try { await gcalSync(tasksRef.current); } finally { busy.current = false; }
     }, delay);

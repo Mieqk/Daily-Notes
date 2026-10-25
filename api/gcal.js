@@ -5,6 +5,8 @@
 import { SCOPE, accessToken, config, deleteEvent, emailFromIdToken, eventId, exchangeCode, hashTask, makeState, readState, redirectUri, revoke, upsertEvent } from "./_gcal.js";
 
 const MAX_TASKS = 400;
+// Столько обращений к Google за один вызов, чтобы уложиться в maxDuration; остальное клиент догонит повторным вызовом
+const MAX_OPS = 60;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const hits = new Map();
 function tooMany(key) {
@@ -42,11 +44,12 @@ async function callback(req, res, cfg) {
 }
 
 async function sync(cfg, userId, conn, tasks, from) {
-  const token = await accessToken(cfg, conn.refresh_token);
-  if (!token) {
+  const { token, revoked } = await accessToken(cfg, conn.refresh_token);
+  if (revoked) {
     await cfg.admin.from("calendar_connections").delete().eq("user_id", userId);
     return { status: 401, body: { error: "revoked" } };
   }
+  if (!token) return { status: 502, body: { error: "google unavailable" } };
 
   const synced = { ...(conn.synced || {}) };
   const incoming = new Map();
@@ -56,33 +59,43 @@ async function sync(cfg, userId, conn, tasks, from) {
   const upserts = [...incoming.values()].filter((t) => synced[t.id]?.h !== hashTask(t));
   const removals = Object.entries(synced).filter(([id, v]) => !incoming.has(id) && v.d >= from);
 
+  const jobsAll = [
+    ...upserts.map((t) => ({ t })),
+    ...removals.map(([id, v]) => ({ id, v })),
+  ];
+  const batch = jobsAll.slice(0, MAX_OPS);
+  const more = jobsAll.length > MAX_OPS;
+
   let created = 0, removed = 0, failed = 0, authLost = false;
   const run = async (jobs) => {
     for (let i = 0; i < jobs.length && !authLost; i += 5) {
       await Promise.all(jobs.slice(i, i + 5).map((j) => j()));
     }
   };
-  await run([
-    ...upserts.map((t) => async () => {
-      const r = await upsertEvent(token, eventId(userId, t.id), t);
-      if (r === "ok") { synced[t.id] = { e: eventId(userId, t.id), d: t.date, h: hashTask(t) }; created++; }
-      else if (r === "auth") authLost = true;
-      else failed++;
-    }),
-    ...removals.map(([id, v]) => async () => {
-      const r = await deleteEvent(token, v.e);
-      if (r === "ok") { delete synced[id]; removed++; }
-      else if (r === "auth") authLost = true;
-      else failed++;
-    }),
-  ]);
+  await run(
+    batch.map((j) => async () => {
+      if (j.t) {
+        const t = j.t;
+        const id = eventId(userId, t.id);
+        const r = await upsertEvent(token, id, t, Boolean(synced[t.id]));
+        if (r === "ok") { synced[t.id] = { e: id, d: t.date, h: hashTask(t) }; created++; }
+        else if (r === "auth") authLost = true;
+        else failed++;
+      } else {
+        const r = await deleteEvent(token, j.v.e);
+        if (r === "ok") { delete synced[j.id]; removed++; }
+        else if (r === "auth") authLost = true;
+        else failed++;
+      }
+    })
+  );
 
   if (authLost) {
     await cfg.admin.from("calendar_connections").delete().eq("user_id", userId);
     return { status: 401, body: { error: "revoked" } };
   }
   await cfg.admin.from("calendar_connections").update({ synced, last_sync: new Date().toISOString() }).eq("user_id", userId);
-  return { status: 200, body: { created, removed, failed, total: incoming.size } };
+  return { status: 200, body: { created, removed, failed, more: more && failed === 0, total: incoming.size } };
 }
 
 export default async function handler(req, res) {
@@ -123,7 +136,7 @@ export default async function handler(req, res) {
 
   if (action === "disconnect") {
     // События остаются в календаре (там могут быть правки пользователя), удаляем только доступ
-    const at = await accessToken(cfg, conn.refresh_token);
+    const { token: at } = await accessToken(cfg, conn.refresh_token);
     await revoke(at || conn.refresh_token);
     await cfg.admin.from("calendar_connections").delete().eq("user_id", me);
     return res.status(200).json({ ok: true });
