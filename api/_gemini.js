@@ -97,100 +97,148 @@ export async function generateText(key, prompt, generationConfig = {}, diag = []
   return null;
 }
 
-// Потоковый вариант: onDelta получает куски текста по мере генерации.
-// Модели перебираются, только пока не пришёл первый кусок (opts.firstByteMs на модель); дальше ответ дочитывается
-// до конца или до opts.deadlineMs. Возвращает { model, text } или null, если ни одна модель не начала отвечать.
 // Список моделей запрашиваем сразу при загрузке функции, параллельно с разбором запроса
 if (process.env.GEMINI_API_KEY && !process.env.GEMINI_BASE_URL) listFlashModels(process.env.GEMINI_API_KEY, "v1beta");
 
+// Один потоковый запрос к модели: отдаёт куски текста (без частей с размышлениями).
+async function* streamPieces(key, version, model, prompt, generationConfig, thinking, signal) {
+  let r;
+  const variants = [...thinking, null];
+  const known = thinkingOk.get(model);
+  // принятый раньше вариант идёт первым, остальные остаются запасными
+  const first = known === undefined ? 0 : known === -1 ? variants.length - 1 : known;
+  const order = [first, ...variants.map((_, i) => i).filter((i) => i !== first)];
+  let used = -1;
+  for (const i of order) {
+    const v = variants[i];
+    used = v ? i : -1;
+    r = await fetch(`${BASE}/${version}/models/${model}:streamGenerateContent?alt=sse`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: v ? { ...generationConfig, thinkingConfig: v } : generationConfig }),
+      signal,
+    });
+    if (r.ok) break;
+    const data = await r.json().catch(() => ({}));
+    r.errorMessage = data?.error?.message || "unknown";
+    if (r.status !== 400 || !/think/i.test(r.errorMessage)) break;
+  }
+  if (!r.ok) {
+    if (r.status === 404 && model !== "gemini-flash-latest") deadModels.add(model);
+    throw new Error(`HTTP ${r.status} — ${r.errorMessage}`);
+  }
+  thinkingOk.set(model, used);
+  const reader = r.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) return;
+    buf += dec.decode(value, { stream: true });
+    let nl;
+    while ((nl = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (!line.startsWith("data:")) continue;
+      let chunk;
+      try {
+        chunk = JSON.parse(line.slice(5));
+      } catch {
+        continue;
+      }
+      const parts = chunk?.candidates?.[0]?.content?.parts || [];
+      const piece = parts.filter((p) => !p.thought).map((p) => p.text || "").join("");
+      if (piece) yield piece;
+    }
+  }
+}
+
+// Потоковый вариант: onDelta получает куски текста по мере генерации.
+// Модели перебираются, только пока не пришёл первый кусок (opts.firstByteMs на попытку); дальше ответ дочитывается
+// до конца или до opts.deadlineMs. opts.hedgeMs: если первая попытка молчит дольше, параллельно запускается такая же
+// вторая, и побеждает та, что заговорит раньше (у Gemini время до первого слова сильно скачет).
+// Возвращает { model, text } или null, если ни одна модель не начала отвечать.
 export async function streamText(key, prompt, generationConfig = {}, diag = [], opts = {}, onDelta = () => {}) {
   const errors = diag;
   const started = Date.now();
-  const { firstByteMs = 12_000, deadlineMs = 50_000, thinking = [], preferLite = false } = opts;
+  const { firstByteMs = 12_000, deadlineMs = 50_000, thinking = [], preferLite = false, hedgeMs = 0 } = opts;
   const { version, models } = await pickModels(key, preferLite);
+  const queue = [...models];
+  const live = new Set();
+  const left = () => deadlineMs - (Date.now() - started);
 
-  for (const model of models) {
-    const left = deadlineMs - (Date.now() - started);
-    if (left < 2000) {
-      errors.push("deadline exceeded");
-      break;
-    }
+  const launch = (model) => {
     const ctl = new AbortController();
-    const overall = setTimeout(() => ctl.abort(), left);
-    let firstTimer = setTimeout(() => ctl.abort(), Math.min(firstByteMs, left));
-    let text = "";
-    try {
-      let r;
-      const variants = [...thinking, null];
-      const known = thinkingOk.get(model);
-      // принятый раньше вариант идёт первым, остальные остаются запасными
-      const first = known === undefined ? 0 : known === -1 ? variants.length - 1 : known;
-      const order = [first, ...variants.map((_, i) => i).filter((i) => i !== first)];
-      let used = -1;
-      for (const i of order) {
-        const v = variants[i];
-        used = v ? i : -1;
-        r = await fetch(`${BASE}/${version}/models/${model}:streamGenerateContent?alt=sse`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: v ? { ...generationConfig, thinkingConfig: v } : generationConfig }),
-          signal: ctl.signal,
-        });
-        if (r.ok) break;
-        const data = await r.json().catch(() => ({}));
-        r.errorMessage = data?.error?.message || "unknown";
-        if (r.status !== 400 || !/think/i.test(r.errorMessage)) break;
+    const a = { model, ctl, overall: setTimeout(() => ctl.abort(), left()), first: setTimeout(() => ctl.abort(), Math.min(firstByteMs, left())) };
+    a.gen = streamPieces(key, version, model, prompt, generationConfig, thinking, ctl.signal);
+    a.next = a.gen.next().then((r) => ({ a, r }), (e) => ({ a, e }));
+    live.add(a);
+  };
+  const drop = (a) => {
+    clearTimeout(a.overall);
+    clearTimeout(a.first);
+    a.ctl.abort();
+    live.delete(a);
+  };
+
+  let winner = null;
+  let firstPiece = "";
+  let hedged = false;
+  while (!winner) {
+    if (!live.size) {
+      if (!queue.length) break;
+      if (left() < 2000) {
+        errors.push("deadline exceeded");
+        break;
       }
-      if (!r.ok) {
-        if (r.status === 404 && model !== "gemini-flash-latest") deadModels.add(model);
-        errors.push(`${model}: HTTP ${r.status} — ${r.errorMessage}`);
-        continue;
-      }
-      thinkingOk.set(model, used);
-      const reader = r.body.getReader();
-      const dec = new TextDecoder();
-      let buf = "";
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        let nl;
-        while ((nl = buf.indexOf("\n")) >= 0) {
-          const line = buf.slice(0, nl).trim();
-          buf = buf.slice(nl + 1);
-          if (!line.startsWith("data:")) continue;
-          let chunk;
-          try {
-            chunk = JSON.parse(line.slice(5));
-          } catch {
-            continue;
-          }
-          const parts = chunk?.candidates?.[0]?.content?.parts || [];
-          const piece = parts.filter((p) => !p.thought).map((p) => p.text || "").join("");
-          if (!piece) continue;
-          if (firstTimer) {
-            clearTimeout(firstTimer);
-            firstTimer = null;
-            if (opts.timing) opts.timing.firstMs = Date.now() - started;
-          }
-          text += piece;
-          onDelta(piece);
-        }
-      }
-      if (!text) {
-        errors.push(`${model}: empty response`);
-        continue;
-      }
-      return { model, text };
-    } catch (e) {
-      // оборвалось посреди ответа: отдаём то, что успело прийти, вместо смены модели
-      if (text) return { model, text, cut: true };
-      errors.push(`${model}: ${e.name === "AbortError" ? "timeout" : e.message}`);
-    } finally {
-      clearTimeout(overall);
-      if (firstTimer) clearTimeout(firstTimer);
+      launch(queue.shift());
+      hedged = false;
     }
+    const races = [...live].map((a) => a.next);
+    let hedgeTimer;
+    if (hedgeMs && !hedged && live.size === 1 && left() > hedgeMs + 2000) {
+      races.push(new Promise((res) => (hedgeTimer = setTimeout(() => res({ hedge: true }), hedgeMs))));
+    }
+    const got = await Promise.race(races);
+    clearTimeout(hedgeTimer);
+    if (got.hedge) {
+      hedged = true;
+      launch([...live][0].model);
+      continue;
+    }
+    const { a, r, e } = got;
+    if (e || r.done) {
+      // вторая копия той же модели не повторяет уже записанную ошибку
+      const msg = `${a.model}: ${e ? (e.name === "AbortError" ? "timeout" : e.message) : "empty response"}`;
+      if (!errors.includes(msg)) errors.push(msg);
+      drop(a);
+      continue;
+    }
+    winner = a;
+    firstPiece = r.value;
   }
-  console.error("gemini stream: all models failed", errors);
-  return null;
+  for (const a of [...live]) if (a !== winner) drop(a);
+  if (!winner) {
+    console.error("gemini stream: all models failed", errors);
+    return null;
+  }
+
+  clearTimeout(winner.first);
+  if (opts.timing) opts.timing.firstMs = Date.now() - started;
+  let text = firstPiece;
+  onDelta(firstPiece);
+  try {
+    for (;;) {
+      const { value, done } = await winner.gen.next();
+      if (done) break;
+      text += value;
+      onDelta(value);
+    }
+    return { model: winner.model, text };
+  } catch {
+    // оборвалось посреди ответа: отдаём то, что успело прийти, вместо смены модели
+    return { model: winner.model, text, cut: true };
+  } finally {
+    clearTimeout(winner.overall);
+  }
 }

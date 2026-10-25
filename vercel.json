@@ -2,8 +2,15 @@
   "buildCommand": "npm install --legacy-peer-deps && npm run build",
   "framework": "vite",
   "installCommand": "npm install --legacy-peer-deps",
+  "regions": [
+    "fra1"
+  ],
   "functions": {
-    "api/coach.js": { "maxDuration": 60 },
-    "api/insights.js": { "maxDuration": 60 }
+    "api/coach.js": {
+      "maxDuration": 60
+    },
+    "api/insights.js": {
+      "maxDuration": 60
+    }
   }
 }
