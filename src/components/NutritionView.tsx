@@ -5,6 +5,8 @@ import { fromISO, shiftISO, todayISO } from "../store";
 import { useSyncedStored, mergeById, mergeLog, preferRemote } from "../lib/fitnessSync";
 import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
 import CoachChat, { SEG, type CoachItem } from "./CoachChat";
+import NutritionCalendar from "./NutritionCalendar";
+import { makeUI } from "../ui-strings";
 
 interface Per100 { kcal: number; p: number; f: number; c: number }
 interface Food extends Per100 { id: string; name: string; grams: number }
@@ -117,7 +119,7 @@ export default function NutritionView({ lang }: { lang: Lang }) {
   const [log, setLog] = useSyncedStored<Record<string, Entry[]>>("foodLog", {}, mergeLog<Entry>());
   const [goal, setGoal] = useSyncedStored<number>("foodGoal", 2000, preferRemote);
   const [date, setDate] = useState(todayISO());
-  const [view, setView] = useState<"coach" | "day">("coach");
+  const [view, setView] = useState<"coach" | "day" | "calendar">("coach");
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", kcal: "", p: "", f: "", c: "", grams: "100" });
   const [msg, setMsg] = useState<string | null>(null);
@@ -186,6 +188,7 @@ export default function NutritionView({ lang }: { lang: Lang }) {
     setDay([...entries, ...newEntries]);
     mergeFoods(newFoods);
   };
+  const kcalByDay = Object.fromEntries(Object.entries(log).map(([iso, list]) => [iso, list.reduce((a, e) => a + calc(e).kcal, 0)]));
   const dateLabel = date === todayISO() ? l.today : new Intl.DateTimeFormat(localeOf(lang), { weekday: "short", day: "numeric", month: "short" }).format(fromISO(date));
   const field = (key: keyof typeof form, label: string, numeric = true) => (
     <label className="flex flex-col gap-1 text-[11px] font-semibold text-[var(--ink-faint)]">
@@ -198,14 +201,16 @@ export default function NutritionView({ lang }: { lang: Lang }) {
     <div className="mx-auto flex max-w-xl flex-col gap-6">
       {/* переключатель закреплён сверху отдельной плашкой: в длинном чате до него не нужно долго листать */}
       <div className="sticky -top-4 z-20 sm:-top-6">
-        <div className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
-          {(["coach", "day"] as const).map((v) => (
-            <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`h-9 rounded-lg text-[13px] font-semibold transition-all ${view === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>{SEG[lang][v]}</button>
+        <div className="grid grid-cols-3 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
+          {(["coach", "day", "calendar"] as const).map((v) => (
+            <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`h-9 rounded-lg text-[13px] font-semibold transition-all ${view === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>{v === "calendar" ? makeUI(lang)("viewCalendar") : SEG[lang][v]}</button>
           ))}
         </div>
       </div>
 
-      {view === "coach" ? (
+      {view === "calendar" ? (
+        <NutritionCalendar kcalByDay={kcalByDay} goal={safeGoal} selected={date} onPick={(iso) => { setDate(iso); setView("day"); }} lang={lang} />
+      ) : view === "coach" ? (
         <>
           <div className="flex items-baseline justify-between text-[13px] text-[var(--ink-soft)]">
             <span>{dateLabel}: <b className="text-[var(--ink)]">{total.kcal}</b> / {safeGoal} {l.kcal}</span>
