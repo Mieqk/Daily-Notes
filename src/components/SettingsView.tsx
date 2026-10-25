@@ -10,6 +10,8 @@ import { THEMES } from "../themes";
 import type { ThemeId } from "../themes";
 import { BG_IMAGES } from "../bg";
 import LookEditor from "./LookEditor";
+import ThemeShare from "./ThemeShare";
+import { makeThemeStrings } from "../theme-strings";
 import { makeLook } from "../look-strings";
 import type { Look } from "../look";
 import {
@@ -35,6 +37,7 @@ import NotificationSettings from "./NotificationSettings";
 import GoogleCalendarSettings from "./GoogleCalendarSettings";
 
 interface SettingsViewProps {
+  userId: string | null;
   look: Look;
   onLook: (l: Look) => void;
   theme: ThemeId;
@@ -178,6 +181,7 @@ export default function SettingsView(props: SettingsViewProps) {
   }, [user]);
   
   const {
+    userId,
     look,
     onLook,
     theme,
@@ -276,6 +280,11 @@ export default function SettingsView(props: SettingsViewProps) {
         {/* Look editor */}
         <Section icon={<PaletteIcon className="h-4.5 w-4.5" />} title={makeLook(lang)("lkTitle")} sub={makeLook(lang)("lkSub")} delay={30}>
           <LookEditor look={look} onLook={onLook} theme={theme} onTheme={onTheme} lang={lang} />
+        </Section>
+
+        {/* Обмен темами и галерея */}
+        <Section icon={<PaletteIcon className="h-4.5 w-4.5" />} title={makeThemeStrings(lang)("glTitle")} sub={makeThemeStrings(lang)("glSub")} delay={60}>
+          <ThemeShare look={look} onLook={onLook} theme={theme} onTheme={onTheme} lang={lang} userId={userId} showToast={showToast} />
         </Section>
 
         {/* Writing font */}
