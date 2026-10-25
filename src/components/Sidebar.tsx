@@ -44,6 +44,8 @@ interface SidebarProps {
   hasEntry: (iso: string) => boolean;
   hasPin: boolean;
   onLock: () => void;
+  /** непрочитанные сообщения чата, показываются у вкладки «Друзья» */
+  friendsBadge?: number;
 }
 
 type MenuId = "theme" | "lang" | null;
@@ -193,6 +195,7 @@ export default function Sidebar({
   hasEntry,
   hasPin,
   onLock,
+  friendsBadge = 0,
 }: SidebarProps) {
   const [menu, setMenu] = useState<MenuId>(null);
   const toggle = (m: Exclude<MenuId, null>) => setMenu((cur) => (cur === m ? null : m));
@@ -359,6 +362,9 @@ export default function Sidebar({
             >
               <Icon className="h-5 w-5 shrink-0" />
               <span className="flex-1 text-left">{t(key)}</span>
+{id === "friends" && friendsBadge > 0 && (
+                <span className="rounded-full bg-[var(--danger)] px-2 py-0.5 text-[11px] font-bold text-white">{friendsBadge}</span>
+              )}
               {id === "notes" && notesCount > 0 && (
                 <span
                   className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${

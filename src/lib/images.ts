@@ -9,7 +9,7 @@ export interface ProcessedImage {
 const MAX_AVATAR = 256;
 const MAX_BANNER = 1280;
 
-function loadImage(file: File): Promise<HTMLImageElement> {
+export function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();

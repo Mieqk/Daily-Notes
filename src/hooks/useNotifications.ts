@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { friendNotificationsEnabled, notify, registerServiceWorker } from "../lib/notify";
 import { PUSH_SYNC_EVENT, syncPush } from "../lib/push";
 import { makeSocial } from "../social-strings";
+import { makeChat } from "../chat-strings";
 import { todayISO } from "../store";
 
 interface Reminder { time: string; enabled: boolean }
@@ -13,6 +14,8 @@ export function useNotifications(userId: string | null, lang: Lang, reminder: Re
   const s = makeSocial(lang);
   const sRef = useRef(s);
   sRef.current = s;
+  const cRef = useRef(makeChat(lang));
+  cRef.current = makeChat(lang);
 
   useEffect(() => { registerServiceWorker(); }, []);
 
@@ -49,6 +52,13 @@ export function useNotifications(userId: string | null, lang: Lang, reminder: Re
       .channel("friend-notify")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "gratitude", filter: `to_user=eq.${userId}` }, (p) => {
         if (friendNotificationsEnabled()) notify(sRef.current("ntThanks"), String((p.new as { text?: string }).text ?? ""), "dn-thanks");
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `recipient=eq.${userId}` }, (p) => {
+        // открытая вкладка сообщение и так показывает; уведомляем, только когда её не видно
+        if (!document.hidden || !friendNotificationsEnabled()) return;
+        const row = p.new as { body?: string | null; media_type?: string | null };
+        const c = cRef.current;
+        notify(c("newMsg"), row.body || (row.media_type === "video" ? c("video") : c("photo")), "dn-chat");
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "sos_signals" }, (p) => {
         const row = p.new as { user_id?: string; message?: string | null };

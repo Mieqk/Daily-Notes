@@ -64,8 +64,8 @@ export async function unsubscribePush() {
   } catch { /* ignore */ }
 }
 
-/** Просит сервер разослать пуш друзьям о только что созданной благодарности или SOS. */
-export async function sendPushEvent(kind: "gratitude" | "sos", id: string) {
+/** Просит сервер разослать пуш друзьям о только что созданной благодарности, SOS или сообщении чата. */
+export async function sendPushEvent(kind: "gratitude" | "sos" | "chat", id: string) {
   if (!supabase || !pushSupported()) return;
   try {
     const { data } = await supabase.auth.getSession();
