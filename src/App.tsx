@@ -431,7 +431,7 @@ export default function App() {
       </div>
 
       {toast && (
-        <div key={toast.id} className="animate-rise fixed bottom-6 left-1/2 z-[70] -translate-x-1/2">
+        <div key={toast.id} className="animate-rise fixed left-1/2 z-[70] -translate-x-1/2" style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
           <div className="flex items-center gap-2.5 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-4 py-2.5 text-[13.5px] font-semibold" style={{ boxShadow: "var(--shadow)" }}>
             <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />{toast.msg}
           </div>

@@ -3,12 +3,18 @@ import type { Lang } from "../i18n";
 import { friendNotificationsEnabled, notificationPermission, notify, requestNotifications, setFriendNotifications } from "../lib/notify";
 import { PUSH_SYNC_EVENT, pushSupported } from "../lib/push";
 import { makeSocial } from "../social-strings";
+import { makePwa } from "../pwa-strings";
+import { needsIosInstall } from "../lib/pwa";
+import IosInstallGuide from "./IosInstallGuide";
 
 /** Карточка настроек уведомлений: разрешение браузера, вести от друзей, проверка. */
 export default function NotificationSettings({ lang, signedIn }: { lang: Lang; signedIn: boolean }) {
   const s = makeSocial(lang);
   const [perm, setPerm] = useState(notificationPermission());
   const [friends, setFriends] = useState(friendNotificationsEnabled());
+  const [guide, setGuide] = useState(false);
+  const iosNeedsInstall = needsIosInstall();
+  const pwa = makePwa(lang);
 
   const enable = async () => {
     setPerm(await requestNotifications());
@@ -17,15 +23,18 @@ export default function NotificationSettings({ lang, signedIn }: { lang: Lang; s
   const toggleFriends = () => { const next = !friends; setFriends(next); setFriendNotifications(next); window.dispatchEvent(new Event(PUSH_SYNC_EVENT)); };
 
   const status =
-    perm === "unsupported" ? s("ntUnsupported") : perm === "denied" ? s("ntDenied") : perm === "granted" ? s("ntOn") : s("ntSub");
+    iosNeedsInstall ? pwa("iosPushNeed") : perm === "unsupported" ? s("ntUnsupported") : perm === "denied" ? s("ntDenied") : perm === "granted" ? s("ntOn") : s("ntSub");
 
   return (
     <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
       <h3 className="text-[15px] font-bold">🔔 {s("ntTitle")}</h3>
-      <p className={`mt-1 text-[12.5px] ${perm === "denied" || perm === "unsupported" ? "text-[var(--danger)]" : "text-[var(--ink-soft)]"}`}>{status}</p>
+      <p className={`mt-1 text-[12.5px] ${!iosNeedsInstall && (perm === "denied" || perm === "unsupported") ? "text-[var(--danger)]" : "text-[var(--ink-soft)]"}`}>{status}</p>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {perm === "default" && (
+        {iosNeedsInstall && (
+          <button onClick={() => setGuide(true)} className="h-10 rounded-lg bg-[var(--accent)] px-4 text-[13px] font-semibold text-[var(--accent-ink)] transition-all active:scale-95">{pwa("iosPushOpen")}</button>
+        )}
+        {!iosNeedsInstall && perm === "default" && (
           <button onClick={enable} className="h-10 rounded-lg bg-[var(--accent)] px-4 text-[13px] font-semibold text-[var(--accent-ink)] transition-all active:scale-95">{s("ntEnable")}</button>
         )}
         {perm === "granted" && (
@@ -43,6 +52,7 @@ export default function NotificationSettings({ lang, signedIn }: { lang: Lang; s
         </div>
       )}
       <p className="mt-3 text-[11.5px] leading-relaxed text-[var(--ink-faint)]">{pushSupported() && signedIn ? s("ntNotePush") : s("ntNote")}</p>
+      {guide && <IosInstallGuide lang={lang} onClose={() => setGuide(false)} />}
     </div>
   );
 }
