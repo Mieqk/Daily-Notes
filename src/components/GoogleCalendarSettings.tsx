@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Lang } from "../i18n";
 import { makeGcal } from "../gcal-strings";
-import { gcalConnect, gcalDisconnect, gcalStatus, gcalSync } from "../lib/gcal";
+import { gcalConnect, gcalDisconnect, gcalLastError, gcalStatus, gcalSync } from "../lib/gcal";
 import type { GcalStatus } from "../lib/gcal";
 import type { Task } from "../store";
 
@@ -69,7 +69,10 @@ export default function GoogleCalendarSettings({ lang, signedIn, tasks, showToas
       {!signedIn ? (
         <p className="mt-3 text-[12.5px] text-[var(--ink-faint)]">{g("gcNeedLogin")}</p>
       ) : unavailable ? (
-        <p className="mt-3 text-[12.5px] text-[var(--danger)]">{g("gcUnavailable")}</p>
+        <>
+          <p className="mt-3 text-[12.5px] text-[var(--danger)]">{g("gcUnavailable")}</p>
+          {gcalLastError && <p className="mt-1 break-all font-mono text-[11px] text-[var(--ink-faint)]">{gcalLastError}</p>}
+        </>
       ) : status?.connected ? (
         <>
           <p className="mt-3 text-[13px] font-semibold">{status.email ? g("gcConnected").replace("{email}", status.email) : g("gcConnectedNoMail")}</p>

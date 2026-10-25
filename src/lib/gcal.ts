@@ -19,14 +19,20 @@ export const setGcalEnabled = (on: boolean) => {
   window.dispatchEvent(new Event(GCAL_CHANGED));
 };
 
+/** Причина последнего сбоя запроса (код ответа и текст ошибки сервера), чтобы показать её в настройках. */
+export let gcalLastError = "";
+
 async function call<T>(body: Record<string, unknown>): Promise<{ ok: boolean; status: number; data: T | null }> {
   const { data } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
   const token = data.session?.access_token;
-  if (!token) return { ok: false, status: 401, data: null };
+  if (!token) { gcalLastError = "no session"; return { ok: false, status: 401, data: null }; }
   try {
     const r = await fetch("/api/gcal", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-    return { ok: r.ok, status: r.status, data: (await r.json().catch(() => null)) as T | null };
-  } catch {
+    const json = (await r.json().catch(() => null)) as (T & { error?: string }) | null;
+    gcalLastError = r.ok && json ? "" : `HTTP ${r.status}${json?.error ? `: ${json.error}` : ""}`;
+    return { ok: r.ok, status: r.status, data: json };
+  } catch (e) {
+    gcalLastError = `network: ${e instanceof Error ? e.message : "fetch failed"}`;
     return { ok: false, status: 0, data: null };
   }
 }
