@@ -18,7 +18,9 @@ export default function FriendsSection({ icon, title, hint, count, action, accen
       className={`animate-rise overflow-hidden rounded-2xl border bg-[var(--panel)] ${accent ? "border-[var(--accent)]/40" : "border-[var(--line)]"} ${className}`}
       style={{ boxShadow: "var(--shadow-sm)" }}
     >
-      <header className="flex items-center gap-3 px-4 pb-3 pt-4">
+      {/* на узком экране кнопка действия переезжает под заголовок, а не сжимает его */}
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pb-3 pt-4">
+        <div className="flex min-w-0 flex-1 basis-[12rem] items-center gap-3">
         {icon && (
           <span aria-hidden className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--accent-soft)] text-[17px]">{icon}</span>
         )}
@@ -31,7 +33,8 @@ export default function FriendsSection({ icon, title, hint, count, action, accen
           </h3>
           {hint && <p className="mt-0.5 text-[12px] leading-snug text-[var(--ink-faint)]">{hint}</p>}
         </div>
-        {action}
+        </div>
+        {action && <div className="ml-[2.375rem] shrink-0">{action}</div>}
       </header>
       <div className="px-4 pb-4">{children}</div>
     </section>

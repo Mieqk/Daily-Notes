@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { ChangeEvent, KeyboardEvent } from "react";
+import type { KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
 import { supabase } from "../lib/supabase";
@@ -235,7 +236,8 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
   const canSend = !busy && (text.trim().length > 0 || pending !== null);
   const title = c("title").replace("{name}", friend.name);
 
-  return (
+  // через портал: у предков в «Друзьях» есть анимации с transform, из-за них fixed обрезался бы по их рамке
+  return createPortal(
     <div className="fixed inset-0 z-[90] flex items-end justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
       <button className="animate-fadein absolute inset-0 bg-black/45" aria-label={c("close")} onClick={onClose} />
       <div
@@ -325,6 +327,7 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
