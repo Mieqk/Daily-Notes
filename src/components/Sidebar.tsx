@@ -72,7 +72,7 @@ const LANGS: { id: Lang; badge: string; native: string }[] = [
 
 /* ================= Mini calendar ================= */
 
-function MiniCalendar({
+export function MiniCalendar({
   selected,
   onPick,
   hasEntry,
@@ -151,7 +151,7 @@ function MiniCalendar({
             <button
               key={iso}
               onClick={() => onPick(iso)}
-              className={`relative grid h-7 place-items-center rounded-md text-[11.5px] font-medium transition-all duration-150 active:scale-90 ${
+              className={`relative grid h-7 short:h-6 place-items-center rounded-md text-[11.5px] font-medium transition-all duration-150 active:scale-90 ${
                 iso === selected
                   ? "bg-[var(--accent)] text-[var(--accent-ink)]"
                   : iso === today
@@ -320,7 +320,7 @@ export default function Sidebar({
   );
 
   return (
-    <aside className="relative z-30 hidden w-[300px] shrink-0 flex-col gap-5 overflow-visible border-r border-[var(--line)] bg-[var(--panel)] px-5 pb-5 pt-6 md:flex">
+    <aside className="relative z-30 hidden w-[300px] shrink-0 flex-col gap-5 overflow-visible border-r border-[var(--line)] bg-[var(--panel)] px-5 pb-5 pt-6 short:gap-3 short:pb-3 short:pt-4 md:flex">
       {/* Logo */}
       <div className="flex items-center gap-3 px-1">
         <span
@@ -337,8 +337,10 @@ export default function Sidebar({
         </span>
       </div>
 
+      {/* Разделы и календарь прокручиваются, если окно невысокое: так календарь не уезжает за край */}
+      <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-5 short:gap-3 overflow-y-auto overflow-x-hidden px-1 pb-1">
       {/* Nav */}
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col gap-1 short:gap-0.5">
         <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-faint)]">
           {t("sections")}
         </div>
@@ -348,7 +350,7 @@ export default function Sidebar({
             <button
               key={id}
               onClick={() => onTab(id)}
-              className={`group flex h-10.5 w-full items-center gap-3 rounded-xl px-3.5 text-[14.5px] font-medium transition-all duration-200 ${
+              className={`group flex h-10.5 w-full shrink-0 items-center gap-3 rounded-xl px-3.5 text-[14.5px] font-medium transition-all duration-200 short:h-9 ${
                 active
                   ? "bg-[var(--accent)] text-[var(--accent-ink)]"
                   : "text-[var(--ink-soft)] hover:translate-x-0.5 hover:bg-[var(--hover)] hover:text-[var(--ink)]"
@@ -375,7 +377,7 @@ export default function Sidebar({
 
       {/* Calendar + streak card */}
       <div
-        className="mt-auto rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-4"
+        className="mt-auto shrink-0 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-4 short:p-3"
         style={{ boxShadow: "var(--shadow-sm)" }}
       >
         <MiniCalendar
@@ -384,7 +386,7 @@ export default function Sidebar({
           hasEntry={hasEntry}
           lang={lang}
         />
-        <div className="mt-3 flex items-center gap-2.5 border-t border-[var(--line)] pt-3">
+        <div className="mt-3 flex items-center gap-2.5 border-t border-[var(--line)] pt-3 short:mt-2 short:pt-2">
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
             <FlameIcon className="h-4.5 w-4.5" />
           </span>
@@ -399,7 +401,7 @@ export default function Sidebar({
             <span className="text-[11px] leading-snug text-[var(--ink-faint)]">{t("streakZero")}</span>
           )}
         </div>
-        <div className="mt-2.5 flex items-center gap-1.5">
+        <div className="mt-2.5 flex items-center gap-1.5 [@media(max-height:820px)]:hidden">
           {weekMarks.map((marked, i) => (
             <span
               key={i}
@@ -413,14 +415,15 @@ export default function Sidebar({
             />
           ))}
         </div>
-        <div className="mt-1.5 hidden text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)] lg:block">
+        <div className="mt-1.5 hidden text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--ink-faint)] lg:block short:lg:hidden">
           {t("weekLabel")}
         </div>
       </div>
+      </div>
 
       {/* Footer: theme & language buttons with dropdowns */}
-      <div className="flex flex-col gap-2.5">
-        <div className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-faint)]">
+      <div className="flex shrink-0 flex-col gap-2.5 short:gap-1">
+        <div className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-faint)] short:hidden">
           {t("personalize")}
         </div>
         {menuButton(
@@ -448,7 +451,7 @@ export default function Sidebar({
             {t("lockBtn")}
           </button>
         )}
-        <p className="px-1 text-[11px] leading-relaxed text-[var(--ink-faint)]">{t("storageHint")}</p>
+        <p className="px-1 text-[11px] leading-relaxed text-[var(--ink-faint)] short:hidden">{t("storageHint")}</p>
       </div>
     </aside>
   );

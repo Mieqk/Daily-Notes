@@ -394,7 +394,7 @@ export default function App() {
 
       <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col">
         <header className="flex min-h-[74px] shrink-0 py-2 items-center gap-4 border-b border-[var(--line)] px-4 sm:px-8">
-          <MobileMenu tab={tab} onTab={setTab} t={t} lang={lang} />
+          <MobileMenu tab={tab} onTab={setTab} t={t} lang={lang} selectedDate={date} onPickDate={openDate} hasEntry={hasEntry} />
           <div className="min-w-0">
             <h1 className="font-display truncate py-0.5 text-xl font-bold leading-snug tracking-tight sm:text-2xl">{tabMeta[tab].title}</h1>
             <p className="hidden truncate text-xs text-[var(--ink-faint)] sm:block">{tabMeta[tab].sub}</p>

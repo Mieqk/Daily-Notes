@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Невысокие экраны ноутбуков: боковая панель становится компактнее, чтобы календарь помещался */
+@custom-variant short (@media (max-height: 960px));
+
 /* ============ Theme tokens ============ */
 :root,
 [data-theme="day"] {

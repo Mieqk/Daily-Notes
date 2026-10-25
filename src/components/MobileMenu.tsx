@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import { CalendarIcon, PlanIcon, StatsIcon, NotebookIcon, SleepIcon, FoodIcon, DumbbellIcon, GearIcon, UsersIcon, XIcon } from "../icons";
 import type { Tab } from "../store";
 import type { Lang, TKey } from "../i18n";
+import { MiniCalendar } from "./Sidebar";
 
 interface MobileMenuProps {
   tab: Tab;
   onTab: (tab: Tab) => void;
   t: (k: TKey) => string;
   lang: Lang;
+  selectedDate: string;
+  onPickDate: (iso: string) => void;
+  hasEntry: (iso: string) => boolean;
 }
 
 const TABS = [
@@ -33,7 +37,7 @@ const L: Record<Lang, { menu: string; close: string }> = {
 };
 
 /** Телефон: кнопка-«бургер» в шапке и выдвижное меню разделов вместо нижней полосы. */
-export default function MobileMenu({ tab, onTab, t, lang }: MobileMenuProps) {
+export default function MobileMenu({ tab, onTab, t, lang, selectedDate, onPickDate, hasEntry }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
   const l = L[lang] ?? L.en;
 
@@ -75,7 +79,7 @@ export default function MobileMenu({ tab, onTab, t, lang }: MobileMenuProps) {
                     key={id}
                     onClick={() => { onTab(id); setOpen(false); }}
                     aria-current={active ? "page" : undefined}
-                    className={`flex h-12 items-center gap-3 rounded-xl px-3.5 text-left text-[15px] font-semibold transition-colors ${
+                    className={`flex h-12 shrink-0 items-center gap-3 rounded-xl px-3.5 text-left text-[15px] font-semibold transition-colors ${
                       active ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"
                     }`}
                   >
@@ -84,6 +88,10 @@ export default function MobileMenu({ tab, onTab, t, lang }: MobileMenuProps) {
                   </button>
                 );
               })}
+              {/* Тот же календарик, что в боковой панели на компьютере: выбор дня сразу открывает его */}
+              <div className="mt-3 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-3.5">
+                <MiniCalendar selected={selectedDate} onPick={(iso) => { onPickDate(iso); setOpen(false); }} hasEntry={hasEntry} lang={lang} />
+              </div>
             </div>
           </nav>
         </div>
