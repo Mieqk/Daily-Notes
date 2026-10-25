@@ -11,6 +11,9 @@
     },
     "api/fact.js": {
       "maxDuration": 30
+    },
+    "api/gcal.js": {
+      "maxDuration": 30
     }
   }
 }

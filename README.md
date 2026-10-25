@@ -295,6 +295,15 @@ APK собирает GitHub Actions (`.github/workflows/android-apk.yml`) и к�
 - [✅] Ачивки за дружбу (8 достижений в своём профиле: друзья, ответы, благодарности, поддержка, капсула)
 - [✅] Социальные тексты (друзья, парные привычки, челленджи, воспоминания, ачивки, профиль, факт дня, уведомления) переведены на все 7 языков
 
+### 📅 Google Календарь: настройка
+
+1. Выполните в Supabase → SQL Editor миграцию `supabase/migrations/20261101_google_calendar.sql`.
+2. В [Google Cloud Console](https://console.cloud.google.com/) в проекте приложения включите **Google Calendar API** (APIs & Services → Library).
+3. APIs & Services → [OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent) → Data Access → Add or remove scopes: добавьте `.../auth/calendar.events` (а также `openid` и `email`). Пока приложение в режиме Testing, добавьте свой адрес в **Test users**.
+4. APIs & Services → [Credentials](https://console.cloud.google.com/apis/credentials) → Create credentials → OAuth client ID → Web application. В **Authorized redirect URIs** впишите `https://daily-notes-io.vercel.app/api/gcal`.
+5. Переменные в Vercel (Settings → Environment Variables): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (+ уже заданные `SUPABASE_URL` и `SUPABASE_SERVICE_ROLE_KEY`). Необязательно: `GOOGLE_REDIRECT_URI`, если адрес отличается от домена сайта. Затем сделайте Redeploy.
+6. В приложении: Настройки → Google Календарь → Подключить. В режиме Testing Google показывает «приложение не проверено» (Advanced → Go to …), а доступ истекает через 7 дней; для постоянной работы переведите приложение в In production (для scope календаря Google потребует проверку).
+
 ### 🔔 Фоновые пуши: настройка
 
 1. Выполните в Supabase → SQL Editor миграцию `supabase/migrations/20261029_push_subscriptions.sql`.
@@ -321,7 +330,8 @@ APK собирает GitHub Actions (`.github/workflows/android-apk.yml`) и к�
 - [✅] Расширенная аналитика сна (тренды за 7/30 дней, регулярность, долг сна; фазы сна недоступны без данных с устройств)
 - [📋] AI-инсайты по записям (паттерны, рекомендации)
 - [✅] Экспорт статистики в PDF/Markdown
-- [📋] Интеграция с календарями (Google Calendar, Outlook)
+- [✅] Интеграция с Google Calendar (задачи → события на весь день, односторонняя синхронизация)
+- [📋] Интеграция с Outlook и Apple Calendar (.ics-подписка)
 
 ### 🎨 Кастомизация и сообщество
 - [✅] Кастомные эмодзи настроения

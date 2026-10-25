@@ -26,6 +26,7 @@ import MobileBottomNav from "./components/MobileBottomNav";
 import FriendsView from "./components/FriendsView";
 import AccountMenu from "./components/AccountMenu";
 import { useNotifications } from "./hooks/useNotifications";
+import { useGcalSync } from "./hooks/useGcalSync";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
 import { isLocalMode, setLocalMode, performInitialSync, mergeLocalIntoRemote, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, deleteAllRemote, flushPendingSync, type SyncStatus } from "./lib/sync";
@@ -82,6 +83,7 @@ export default function App() {
   localRef.current = { notes, tasks, moods, tags, photos, sleep };
 
   useNotifications(userId, lang, reminder);
+  useGcalSync(userId, tasks);
 
   const now = useNow(1000);
   const locale = localeOf(lang);
@@ -403,7 +405,7 @@ export default function App() {
             </div>
           )}
           {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} moodEmoji={moodEmoji} sleep={sleep} streak={streak} notesCount={notesCount} />}
-          {tab === "settings" && <SettingsView theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={(h) => { setPinHash(h); if (!h) setBioId(null); }} bioId={bioId} onBioChange={setBioId} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} showToast={showToast} />}
+          {tab === "settings" && <SettingsView theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={(h) => { setPinHash(h); if (!h) setBioId(null); }} bioId={bioId} onBioChange={setBioId} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} tasks={tasks} showToast={showToast} />}
         </main>
       </div>
 
