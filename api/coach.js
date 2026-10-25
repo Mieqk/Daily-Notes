@@ -1,4 +1,4 @@
-import { generateText } from "./_gemini.js";
+import { streamText } from "./_gemini.js";
 
 // Чат-помощник (тренер или диетолог). Приватность: приходят только последние реплики диалога и короткая сводка
 // за сегодня, которую собирает клиент (ккал или упражнения). Записей дневника, имён и идентификаторов нет.
@@ -27,46 +27,51 @@ const num = (v, min, max, digits = 0) => {
 };
 const clean = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 
-function parseReply(text, mode) {
-  const m = text.match(/\{[\s\S]*\}/);
-  if (!m) return null;
-  let obj;
-  try {
-    obj = JSON.parse(m[0]);
-  } catch {
-    return null;
-  }
-  const reply = clean(obj?.reply, 1500);
-  if (!reply) return null;
-  const raw = Array.isArray(obj?.items) ? obj.items.slice(0, 12) : [];
-  const items = raw
+const MARK = "###ITEMS";
+
+function sanitizeItems(raw, mode) {
+  return (Array.isArray(raw) ? raw.slice(0, 12) : [])
     .map((x) =>
       mode === "food"
         ? { name: clean(x?.name, 60), grams: num(x?.grams, 1, 5000), kcal: num(x?.kcal, 0, 10000), protein: num(x?.protein, 0, 1000, 1), fat: num(x?.fat, 0, 1000, 1), carbs: num(x?.carbs, 0, 1000, 1) }
         : { name: clean(x?.name, 60), sets: num(x?.sets, 1, 10), reps: num(x?.reps, 1, 100), kg: num(x?.kg ?? 0, 0, 500) ?? 0 },
     )
     .filter((x) => (mode === "food" ? x.name && x.grams && x.kcal !== null && x.protein !== null && x.fat !== null && x.carbs !== null : x.name && x.sets && x.reps));
-  return { reply, items };
 }
 
-const SCHEMAS = {
-  food: {
-    type: "OBJECT",
-    properties: {
-      reply: { type: "STRING" },
-      items: { type: "ARRAY", items: { type: "OBJECT", properties: { name: { type: "STRING" }, grams: { type: "NUMBER" }, kcal: { type: "NUMBER" }, protein: { type: "NUMBER" }, fat: { type: "NUMBER" }, carbs: { type: "NUMBER" } }, required: ["name", "grams", "kcal", "protein", "fat", "carbs"] } },
-    },
-    required: ["reply"],
-  },
-  workout: {
-    type: "OBJECT",
-    properties: {
-      reply: { type: "STRING" },
-      items: { type: "ARRAY", items: { type: "OBJECT", properties: { name: { type: "STRING" }, sets: { type: "INTEGER" }, reps: { type: "INTEGER" }, kg: { type: "INTEGER" } }, required: ["name", "sets", "reps"] } },
-    },
-    required: ["reply"],
-  },
+const tryJson = (s) => {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return undefined;
+  }
 };
+
+// Ответ модели: сначала текст для человека, затем (если есть что добавить) строка ###ITEMS и JSON-массив.
+// На случай, если модель всё же ответила JSON-объектом {reply, items}, разбираем и его.
+export function parseReply(text, mode) {
+  const t = text.trim();
+  if (t.startsWith("{") || t.startsWith("```")) {
+    const obj = tryJson((t.match(/\{[\s\S]*\}/) || [""])[0]);
+    if (obj && typeof obj.reply === "string") return { reply: clean(obj.reply, 1500), items: sanitizeItems(obj.items, mode) };
+  }
+  const at = t.indexOf(MARK);
+  const reply = (at >= 0 ? t.slice(0, at) : t).replace(/```\s*$/, "").trim().slice(0, 1500);
+  let items = [];
+  if (at >= 0) {
+    const arr = (t.slice(at + MARK.length).match(/\[[\s\S]*\]/) || [""])[0];
+    items = sanitizeItems(tryJson(arr), mode);
+  }
+  return reply ? { reply, items } : null;
+}
+
+// Сколько текста уже можно показать: всё до маркера, а хвост, похожий на начало маркера, придерживаем.
+function visibleLength(text) {
+  const at = text.indexOf(MARK);
+  if (at >= 0) return at;
+  for (let k = Math.min(MARK.length - 1, text.length); k > 0; k--) if (MARK.startsWith(text.slice(-k))) return text.length - k;
+  return text.length;
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -105,39 +110,57 @@ export default async function handler(req, res) {
       : "You are a friendly, practical personal trainer inside a workout-log app. You build workouts, explain technique, suggest progression and answer training questions.";
   const itemsRule =
     mode === "food"
-      ? 'When the user says what they ate or asks you to calculate foods, or you suggest a meal, put each food in "items" with name, grams, and kcal/protein/fat/carbs for the whole portion (not per 100 g). Otherwise leave "items" empty.'
-      : 'When you propose a workout or exercises to do, put them in "items" (4 to 8 exercises, in order) with name, sets, reps and kg (use 0 for kg: the user fills in weights; for timed exercises use seconds as reps). Otherwise leave "items" empty.';
+      ? 'When the user says what they ate or asks you to calculate foods, or you suggest a meal, list each food as an item with name, grams, and kcal/protein/fat/carbs for the whole portion (not per 100 g).'
+      : 'When you propose a workout or exercises to do, list them as items (4 to 8 exercises, in order) with name, sets, reps and kg (use 0 for kg: the user fills in weights; for timed exercises use seconds as reps).';
   const prompt =
     `${persona} Talk like a helpful human coach: warm, direct, short (usually 2 to 5 sentences), no headings or markdown. Ask one clarifying question when you really need it (goal, level, equipment, time, injuries). ` +
     `Do not diagnose or give medical advice; for pain, injury or health conditions suggest seeing a professional. Never invent facts about the user. Always reply in ${LANG_NAMES[lang]}.\n` +
     `Move the conversation forward: never repeat or merely reword something you already said or proposed earlier in this conversation (check the "items you already proposed" notes). If the user asks for something new, different or harder, propose genuinely different ${mode === "food" ? "foods or meals" : "exercises, structure or training method"}. Do not end every message with a question; ask only when the answer would change your advice.\n` +
     `${itemsRule}\n` +
-    `Reply with ONLY a JSON object {"reply": string, "items": array}.\n` +
+    `Format: write your reply as plain text first. Only if you have items, then add a line with exactly ${MARK} followed by a JSON array of the items, e.g. ${mode === "food" ? '[{"name":"Rice","grams":150,"kcal":195,"protein":4,"fat":0.4,"carbs":43}]' : '[{"name":"Squat","sets":3,"reps":10,"kg":0}]'}. Never mention the ${MARK} line or the JSON in your text.\n` +
     (context ? `Today's summary from the app: ${context}\n` : "") +
     `Conversation so far:\n${messages.map((m) => `${m.role}: ${m.text}`).join("\n")}\nAssistant:`;
 
+  // Потоковый ответ (NDJSON): {"d": кусок текста}… затем {"done": true, reply, items}. Текст появляется сразу,
+  // а не после всей генерации. Если ни одна модель не начала отвечать, приходит обычная JSON-ошибка.
   const diag = [];
-  const out = await generateText(key, prompt, {
-    temperature: 0.9,
-    maxOutputTokens: 4096,
-    responseMimeType: "application/json",
-    responseSchema: SCHEMAS[mode],
-  }, diag, {
-    // функция живёт 60 секунд (vercel.json): на всё про всё 40, чтобы ответить ошибкой, а не 504
-    timeoutMs: 14_000,
-    deadlineMs: 40_000,
+  let sent = 0;
+  let open = false;
+  let full = "";
+  const startStream = () => {
+    open = true;
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store, no-transform");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders?.();
+  };
+  const out = await streamText(key, prompt, { temperature: 0.9, maxOutputTokens: 4096 }, diag, {
+    // функция живёт 60 секунд (vercel.json): первый кусок ждём до 12 с на модель, весь ответ не дольше 50 с
+    firstByteMs: 12_000,
+    deadlineMs: 50_000,
     thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
+  }, (piece) => {
+    full += piece;
+    const vis = visibleLength(full);
+    if (vis <= sent) return;
+    if (!open) startStream();
+    res.write(JSON.stringify({ d: full.slice(sent, vis) }) + "\n");
+    sent = vis;
   });
-  if (!out) return res.status(500).json({ error: "ai failed", detail: diag.join(" | ").slice(0, 400) });
 
+  if (!out) {
+    if (open) return res.end(JSON.stringify({ error: "ai failed", detail: diag.join(" | ").slice(0, 400) }) + "\n");
+    return res.status(500).json({ error: "ai failed", detail: diag.join(" | ").slice(0, 400) });
+  }
   const parsed = parseReply(out.text, mode);
   if (!parsed) {
     console.error("coach: unparseable model reply", out.model, out.text.slice(0, 300));
+    if (open) return res.end(JSON.stringify({ error: "bad reply", detail: `${out.model}: ${out.text.slice(0, 120)}` }) + "\n");
     return res.status(422).json({ error: "bad reply", detail: `${out.model}: ${out.text.slice(0, 120)}` });
   }
-
-  res.setHeader("Cache-Control", "no-store");
-  return res.json({ ...parsed, model: out.model });
+  if (!open) startStream();
+  return res.end(JSON.stringify({ done: true, ...parsed, model: out.model, cut: !!out.cut }) + "\n");
 }
 
 function safeParse(s) {

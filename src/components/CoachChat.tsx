@@ -47,10 +47,12 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
   const [msgs, setMsgs] = useStored<Msg[]>(`dn.coach.${mode}`, []);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  // текст ответа, который ещё печатается (приходит потоком); в историю попадает целиком, когда ответ готов
+  const [live, setLive] = useState("");
   const [error, setError] = useState<{ msg: string; detail?: string } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" }); }, [msgs.length, busy]);
+  useEffect(() => { endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" }); }, [msgs.length, busy, live]);
 
   const send = async (raw: string) => {
     const t = raw.trim();
@@ -69,15 +71,51 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lang, mode, context, messages: next.slice(-14).map((m) => ({ role: m.role, text: m.text, items: m.items?.map((it) => ({ name: it.name })) })) }),
       });
-      clearTimeout(timer);
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok || typeof d?.reply !== "string") throw Object.assign(new Error("bad"), { detail: d?.detail || `HTTP ${r.status}` });
-      setMsgs([...next, { id: uid(), role: "assistant" as const, text: d.reply, items: Array.isArray(d.items) && d.items.length ? d.items : undefined }].slice(-40));
+      const type = r.headers.get("Content-Type") || "";
+      if (!r.ok || !r.body || !type.includes("ndjson")) {
+        clearTimeout(timer);
+        const d = await r.json().catch(() => ({}));
+        throw Object.assign(new Error("bad"), { detail: d?.detail || `HTTP ${r.status}` });
+      }
+      const reader = r.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      let acc = "";
+      type Fin = { reply?: string; items?: CoachItem[]; error?: string; detail?: string };
+      let fin = null as Fin | null;
+      try {
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let nl;
+          while ((nl = buf.indexOf("\n")) >= 0) {
+            const line = buf.slice(0, nl).trim();
+            buf = buf.slice(nl + 1);
+            if (!line) continue;
+            let ev: Fin & { d?: string; done?: boolean };
+            try { ev = JSON.parse(line); } catch { continue; }
+            if (typeof ev.d === "string") { acc += ev.d; setLive(acc); }
+            else if (ev.done || ev.error) fin = ev;
+          }
+        }
+      } catch (e) {
+        // связь оборвалась посреди ответа: оставляем то, что успело прийти
+        if (!acc) throw e;
+      } finally {
+        clearTimeout(timer);
+      }
+      const reply = typeof fin?.reply === "string" && fin.reply ? fin.reply : acc.trim();
+      if (!reply) throw Object.assign(new Error("bad"), { detail: fin?.detail || "empty reply" });
+      const items = Array.isArray(fin?.items) && fin.items.length ? fin.items : undefined;
+      setMsgs([...next, { id: uid(), role: "assistant" as const, text: reply, items }].slice(-40));
+      if (fin?.error) setError({ msg: l.err, detail: fin.detail });
     } catch (e) {
       const err = e as { detail?: string; name?: string };
       setError({ msg: l.err, detail: err.name === "AbortError" ? "timeout" : err.detail });
     } finally {
       setBusy(false);
+      setLive("");
     }
   };
 
@@ -126,7 +164,13 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
             </div>
           </div>
         ))}
-        {busy && <div className="text-[12.5px] text-[var(--ink-faint)]" role="status">{l.thinking}</div>}
+        {busy && live && (
+          <div className="flex items-end gap-2">
+            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[13px] font-bold text-[var(--accent-ink)]" aria-hidden="true">{l.name[0]}</div>
+            <div className={`${bubble} rounded-bl-md border border-[var(--line)] bg-[var(--panel)]`} aria-live="polite">{live}<span className="ml-0.5 inline-block w-[0.5ch] animate-pulse">▍</span></div>
+          </div>
+        )}
+        {busy && !live && <div className="text-[12.5px] text-[var(--ink-faint)]" role="status">{l.thinking}</div>}
         {error && (
           <div className="text-[12.5px] font-semibold text-red-400" role="alert">
             {error.msg}
