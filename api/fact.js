@@ -41,8 +41,8 @@ export default async function handler(req, res) {
   const avoidEn = avoid ? ` Do not repeat this fact: "${avoid}".` : "";
   const prompt =
     lang === "ru"
-      ? `Придумай один короткий малоизвестный факт на тему: ${topic} (переведи тему на русский). Выбирай необычные факты, не самые популярные.${avoidRu} Ответь только самим фактом, одним-двумя предложениями, без вступлений и подписей. [${nonce}]`
-      : `Come up with one short little-known fact about: ${topic}. Pick an unusual one, not the most popular.${avoidEn} Reply in ${LANG_NAMES[lang] || "English"} with only the fact itself, one or two sentences, no intro or labels. [${nonce}]`;
+      ? `Придумай один короткий малоизвестный факт на тему: ${topic} (тему не называй). Выбирай необычные факты, не самые популярные.${avoidRu} Ответь только самим фактом, одним-двумя предложениями, без вступлений и подписей. [${nonce}]`
+      : `Come up with one short little-known fact about: ${topic}. Pick an unusual one, not the most popular.${avoidEn} Reply in ${LANG_NAMES[lang] || "English"} with only the fact itself, one or two sentences, no intro, topic or labels. [${nonce}]`;
 
   // общий вызов: свежий список моделей, lite первыми (короткий текст, важна скорость), без размышлений и с тайм-аутами
   const errors = [];
@@ -54,7 +54,13 @@ export default async function handler(req, res) {
   });
   if (out) {
     res.setHeader("Cache-Control", "no-store");
-    return res.json({ fact: out.text.replace(/^["«]|["»]$/g, "").trim(), model: out.model });
+    // lite-модели любят начинать с «Тема: …» или «Факт:»: убираем такие подписи и кавычки
+    const fact = out.text
+      .replace(/^\s*(тема|тэма|topic|thema|sujet|tema)\s*:[^\n]*\n+/i, "")
+      .replace(/^\s*(факт|fact|fakt|fait|dato|hecho)\s*:\s*/i, "")
+      .replace(/^["«]|["»]$/g, "")
+      .trim();
+    return res.json({ fact: fact || out.text.trim(), model: out.model });
   }
 
   return res.status(500).json({ error: "ai failed", detail: errors.join(" | ").slice(0, 400) });
