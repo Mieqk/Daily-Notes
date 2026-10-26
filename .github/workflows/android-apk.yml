@@ -39,9 +39,10 @@ jobs:
 
       - name: Add Capacitor and Android project
         run: |
-          npm install --no-save "@capacitor/core@$CAP_VERSION" "@capacitor/cli@$CAP_VERSION" "@capacitor/android@$CAP_VERSION" "@capacitor/app@$CAP_VERSION" "@capacitor/browser@$CAP_VERSION"
+          npm install --legacy-peer-deps "@capacitor/core@$CAP_VERSION" "@capacitor/cli@$CAP_VERSION" "@capacitor/android@$CAP_VERSION" "@capacitor/app@$CAP_VERSION" "@capacitor/browser@$CAP_VERSION"
           npx cap add android
           npx cap sync android
+          grep -o "capacitor-[a-z-]*" android/capacitor.settings.gradle | sort -u
 
       # Возврат из браузера после входа через Google: ссылка io.vercel.dailynotes://auth открывает приложение.
       - name: Add OAuth deep link
