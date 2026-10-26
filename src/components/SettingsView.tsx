@@ -38,6 +38,8 @@ import { createPortal } from "react-dom";
 import AuthScreen from "./AuthScreen";
 import NotificationSettings from "./NotificationSettings";
 import GoogleCalendarSettings from "./GoogleCalendarSettings";
+import E2eeSettings from "./E2eeSettings";
+import { makeE2ee } from "../e2ee-strings";
 
 interface SettingsViewProps {
   userId: string | null;
@@ -571,6 +573,14 @@ export default function SettingsView(props: SettingsViewProps) {
           </div>
         </Section>
       </div>
+
+      {user && userId && (
+        <div className="mt-5">
+          <Section icon={<LockIcon className="h-4.5 w-4.5" />} title={makeE2ee(lang)("title")} sub={makeE2ee(lang)("sub")} delay={320}>
+            <E2eeSettings userId={userId} lang={lang} showToast={showToast} />
+          </Section>
+        </div>
+      )}
 
       {/* Account Section - shown when user is logged in or in local mode */}
       <div className="mt-5">

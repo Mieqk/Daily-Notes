@@ -26,6 +26,9 @@ import WorkoutView from "./components/WorkoutView";
 import InstallPrompt from "./components/InstallPrompt";
 import NewPasswordScreen from "./components/NewPasswordScreen";
 import AuthScreen from "./components/AuthScreen";
+import E2eeGate from "./components/E2eeGate";
+import { initE2ee, useE2eeStatus, encryptionActive, convertAllRemote, openEntry } from "./lib/e2ee";
+import { makeE2ee } from "./e2ee-strings";
 import MobileMenu from "./components/MobileMenu";
 import FriendsView from "./components/FriendsView";
 import AccountMenu from "./components/AccountMenu";
@@ -37,7 +40,7 @@ import CallOverlay from "./components/CallOverlay";
 import { useGcalSync } from "./hooks/useGcalSync";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
-import { isLocalMode, setLocalMode, performInitialSync, mergeLocalIntoRemote, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, deleteAllRemote, flushPendingSync, type SyncStatus } from "./lib/sync";
+import { isLocalMode, setLocalMode, performInitialSync, mergeLocalIntoRemote, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, deleteAllRemote, flushPendingSync, decodeTitle, decodeNote, type SyncStatus } from "./lib/sync";
 
 const FONT_SCALES = ["93.75%", "100%", "109%"];
 
@@ -55,6 +58,10 @@ const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 export default function App() {
   const { user, loading: authLoading, recovery } = useAuth();
   const userId = user?.id ?? null;
+  const e2eeStatus = useE2eeStatus();
+  // Пока не ясно, включено ли шифрование (или ключ закрыт), на сервер ничего не пишем и с сервера не читаем
+  const e2eeReady = e2eeStatus === 'off' || e2eeStatus === 'unavailable' || e2eeStatus === 'unlocked';
+  useEffect(() => { if (userId) void initE2ee(userId); }, [userId]);
 
   const [tab, setTab] = useStored<Tab>("dn.tab", "daily");
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
@@ -131,6 +138,7 @@ export default function App() {
     if (!authLoading && userId) {
       setLocalMode(false);
       setShowAuth(false);
+      if (!e2eeReady) return;
       let cancelled = false;
 
       const load = async (attempt: number) => {
@@ -175,6 +183,9 @@ export default function App() {
             tags: clone(data.tags), photos: clone(data.photos), sleep: clone(data.sleep),
           };
           initialLoadDone.current = true;
+          // старые открытые строки (до включения шифрования или с другого устройства) дошифровываем
+          if (remote.plainRows > 0 && encryptionActive()) void convertAllRemote(userId, true).catch((e) => console.error('[E2EE] background encrypt failed', e));
+          if (remote.unreadable > 0) showToast(makeE2ee(lang)('unreadable'));
         } else if (attempt < 5) {
           window.setTimeout(() => { if (!cancelled) load(attempt + 1); }, 2000);
         } else {
@@ -191,19 +202,22 @@ export default function App() {
     } else if (!authLoading && !userId) {
       setShowAuth(true);
     }
-  }, [userId, authLoading]);
+  }, [userId, authLoading, e2eeReady]);
 
   useEffect(() => {
     if (!userId || isLocalMode() || !supabase) return;
 
     const channel = supabase
       .channel('db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'entries', filter: `user_id=eq.${userId}` }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entries', filter: `user_id=eq.${userId}` }, async (payload) => {
         const entry = payload.new as Record<string, any>;
         if (!entry || !entry.date) return;
         const nowMs = Date.now();
         if (nowMs - (lastUpdateTime.current[entry.date] || 0) < 3000) return;
 
+        const body = await openEntry(userId, entry as { date: string; content?: string | null; tags?: string[] | null; photos?: unknown });
+        if (!body) return;
+        entry.content = body.c; entry.tags = body.t; entry.photos = body.p;
         setNotes((prev) => ({ ...prev, [entry.date]: entry.content || '' }));
         if (entry.mood !== null && entry.mood !== undefined) setMoods((prev) => ({ ...prev, [entry.date]: entry.mood }));
         if (Array.isArray(entry.tags)) setTags((prev) => ({ ...prev, [entry.date]: entry.tags }));
@@ -227,17 +241,23 @@ export default function App() {
         if (!supabase) return;
         const { data } = await supabase.from('tasks').select('*').eq('user_id', userId).eq('date', d);
         if (data) {
-          const mapped = data.map((task) => ({ id: task.id, text: task.title, done: task.completed }));
+          const mapped: Task[] = [];
+          for (const task of data) {
+            const text = await decodeTitle(userId, task);
+            if (text !== null) mapped.push({ id: task.id, text, done: task.completed });
+          }
           setTasks((prev) => ({ ...prev, [d]: mapped }));
           if (remoteSnapshot.current) remoteSnapshot.current.tasks[d] = clone(mapped);
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sleep_logs', filter: `user_id=eq.${userId}` }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sleep_logs', filter: `user_id=eq.${userId}` }, async (payload) => {
         const s = payload.new as Record<string, any>;
         if (!s || !s.date) return;
         const nowMs = Date.now();
         if (nowMs - (lastUpdateTime.current[`sleep-${s.date}`] || 0) < 3000) return;
-        const val = { hours: Number(s.hours) || 0, quality: s.quality || 0, bedtime: s.sleep_start || '', waketime: s.sleep_end || '', awakenings: Number(s.awakenings) || 0, note: s.note || '' };
+        const note = await decodeNote(userId, s as { date: string; note: string | null });
+        if (note === null) return;
+        const val = { hours: Number(s.hours) || 0, quality: s.quality || 0, bedtime: s.sleep_start || '', waketime: s.sleep_end || '', awakenings: Number(s.awakenings) || 0, note };
         setSleep((prev) => ({ ...prev, [s.date]: val }));
         if (remoteSnapshot.current) remoteSnapshot.current.sleep[s.date] = clone(val);
       })
@@ -378,6 +398,8 @@ export default function App() {
 
   if (recovery) return <NewPasswordScreen lang={lang} />;
   if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-[var(--bg)]"><div className="animate-pulse text-[var(--ink-faint)]">{makeUI(lang)('loading')}</div></div>;
+  if (userId && (e2eeStatus === 'locked' || e2eeStatus === 'error')) return <E2eeGate userId={userId} lang={lang} status={e2eeStatus} />;
+
   if (showAuth) return <AuthScreen lang={lang} onContinueLocally={() => { setLocalMode(true); setShowAuth(false); }} theme={theme} onTheme={handleThemeChange} />;
 
   const syncBadge = userId ? (

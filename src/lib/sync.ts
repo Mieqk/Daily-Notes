@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { SleepData, Task } from '../store';
+import { canSync, encryptionActive, isSealed, openEntry, openText, sealEntry, sealText, sleepAad, taskAad } from './e2ee';
 
 export function isLocalMode(): boolean {
   return localStorage.getItem('dn.localMode') === 'true';
@@ -25,6 +26,15 @@ export function subscribeToSyncStatus(listener: (status: SyncStatus) => void) {
 function setSyncStatus(status: SyncStatus) {
   currentSyncStatus = status;
   syncStatusListeners.forEach(l => l(status));
+}
+
+/** Название задачи из строки базы; null, если расшифровать не вышло. */
+export async function decodeTitle(userId: string, row: { id: string; title: string }): Promise<string | null> {
+  try { return await openText(row.title ?? '', taskAad(userId, row.id)); } catch { return null; }
+}
+
+export async function decodeNote(userId: string, row: { date: string; note: string | null }): Promise<string | null> {
+  try { return await openText(row.note ?? '', sleepAad(userId, row.date)); } catch { return null; }
 }
 
 export async function performInitialSync(userId: string) {
@@ -57,11 +67,16 @@ export async function performInitialSync(userId: string) {
     const sleep: Record<string, SleepData> = {};
 
     const writtenOn: Record<string, boolean> = {};
+    let unreadable = 0;
+    let plainRows = 0;
     for (const entry of remoteEntries) {
-      notes[entry.date] = entry.content || '';
+      const body = await openEntry(userId, entry);
+      if (!body) { unreadable += 1; continue; }
+      if (!isSealed(entry.content) && (body.c.trim() || body.t.length || body.p.length)) plainRows += 1;
+      notes[entry.date] = body.c;
       if (entry.mood !== null && entry.mood !== undefined) moods[entry.date] = entry.mood;
-      if (entry.tags && entry.tags.length > 0) tags[entry.date] = entry.tags;
-      if (entry.photos && Array.isArray(entry.photos)) photos[entry.date] = entry.photos;
+      if (body.t.length > 0) tags[entry.date] = body.t;
+      if (body.p.length > 0) photos[entry.date] = body.p;
       const ref = entry.created_at || entry.updated_at;
       if (ref) {
         const d = new Date(ref);
@@ -71,23 +86,29 @@ export async function performInitialSync(userId: string) {
     }
 
     for (const task of remoteTasks) {
+      const text = await decodeTitle(userId, task);
+      if (text === null) { unreadable += 1; continue; }
       if (!tasks[task.date]) tasks[task.date] = [];
-      tasks[task.date].push({ id: task.id, text: task.title, done: task.completed });
+      tasks[task.date].push({ id: task.id, text, done: task.completed });
+      if (!isSealed(task.title) && task.title) plainRows += 1;
     }
 
     for (const s of remoteSleep) {
+      const note = await decodeNote(userId, s);
+      if (note === null) { unreadable += 1; continue; }
+      if (!isSealed(s.note) && s.note) plainRows += 1;
       sleep[s.date] = {
         hours: Number(s.hours) || 0,
         quality: s.quality || 0,
         bedtime: s.sleep_start || '',
         waketime: s.sleep_end || '',
         awakenings: Number(s.awakenings) || 0,
-        note: s.note || '',
+        note,
       };
     }
 
     setSyncStatus('synced');
-    return { notes, tasks, moods, tags, photos, sleep, settings: remoteSettings, writtenOn };
+    return { notes, tasks, moods, tags, photos, sleep, settings: remoteSettings, writtenOn, unreadable, plainRows };
   } catch (error) {
     console.error('[SYNC] Initial sync failed:', error);
     setSyncStatus('error');
@@ -123,13 +144,18 @@ function debounceByKey<A extends unknown[]>(fn: (...args: A) => void | Promise<v
 }
 
 const debouncedUpsertEntry = debounceByKey(async (userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) => {
-  if (isLocalMode() || !supabase) return;
-  const { error } = await supabase.from('entries').upsert({ user_id: userId, date, content, mood, tags, photos, updated_at: new Date().toISOString() }, { onConflict: 'user_id,date' });
+  if (isLocalMode() || !supabase || !canSync()) return;
+  let row: { content: string; tags: string[]; photos: string[] } = { content, tags, photos };
+  if (encryptionActive()) {
+    const hasBody = content.trim() || tags.length > 0 || photos.length > 0;
+    row = { content: hasBody ? await sealEntry(userId, date, { c: content, t: tags, p: photos }) : '', tags: [], photos: [] };
+  }
+  const { error } = await supabase.from('entries').upsert({ user_id: userId, date, ...row, mood, updated_at: new Date().toISOString() }, { onConflict: 'user_id,date' });
   if (error) console.error('[SYNC] Failed to sync entry:', error);
 }, 2000, (userId, date) => `${userId}:${date}`);
 
 const debouncedUpsertTasks = debounceByKey(async (userId: string, date: string, tasks: Task[]) => {
-  if (isLocalMode() || !supabase) return;
+  if (isLocalMode() || !supabase || !canSync()) return;
   const { data: existing, error: selErr } = await supabase.from('tasks').select('id').eq('user_id', userId).eq('date', date);
   if (selErr) { console.error('[SYNC] Failed to read tasks:', selErr); return; }
   const toDelete = (existing ?? []).map((t) => t.id).filter((id) => !tasks.find((t) => t.id === id));
@@ -138,14 +164,15 @@ const debouncedUpsertTasks = debounceByKey(async (userId: string, date: string, 
     if (delErr) { console.error('[SYNC] Failed to delete tasks:', delErr); return; }
   }
   if (tasks.length === 0) return;
-  const tasksToUpsert = tasks.map((t) => ({ user_id: userId, date, id: t.id, title: t.text, completed: t.done }));
+  const tasksToUpsert = await Promise.all(tasks.map(async (t) => ({ user_id: userId, date, id: t.id, title: encryptionActive() && t.text ? await sealText(t.text, taskAad(userId, t.id)) : t.text, completed: t.done })));
   const { error } = await supabase.from('tasks').upsert(tasksToUpsert);
   if (error) console.error('[SYNC] Failed to sync tasks:', error);
 }, 2000, (userId, date) => `${userId}:${date}`);
 
 const debouncedUpsertSleep = debounceByKey(async (userId: string, date: string, sleepData: SleepData) => {
-  if (isLocalMode() || !supabase) return;
-  const { error } = await supabase.from('sleep_logs').upsert({ user_id: userId, date, sleep_start: sleepData.bedtime || '', sleep_end: sleepData.waketime || '', hours: sleepData.hours || 0, quality: sleepData.quality || 0, awakenings: sleepData.awakenings || 0, note: sleepData.note || '' }, { onConflict: 'user_id,date' });
+  if (isLocalMode() || !supabase || !canSync()) return;
+  const note = encryptionActive() && sleepData.note ? await sealText(sleepData.note, sleepAad(userId, date)) : sleepData.note || '';
+  const { error } = await supabase.from('sleep_logs').upsert({ user_id: userId, date, sleep_start: sleepData.bedtime || '', sleep_end: sleepData.waketime || '', hours: sleepData.hours || 0, quality: sleepData.quality || 0, awakenings: sleepData.awakenings || 0, note }, { onConflict: 'user_id,date' });
   if (error) console.error('[SYNC] Failed to sync sleep:', error);
 }, 2000, (userId, date) => `${userId}:${date}`);
 
