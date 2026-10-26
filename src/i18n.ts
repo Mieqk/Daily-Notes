@@ -136,7 +136,7 @@ const ru = {
   secData: "Данные",
   secDataSub: "всё хранится только у вас",
   exportMd: "Экспорт Markdown",
-  exportJson: "Экспорт JSON",
+  exportJson: "Резервная копия (JSON)",
   clearBtn: "Стереть все данные",
   clearTitle: "Стереть всё безвозвратно?",
   clearText:
@@ -349,7 +349,7 @@ const en: Record<TKey, string> = {
   secData: "Data",
   secDataSub: "everything stays on your device",
   exportMd: "Export Markdown",
-  exportJson: "Export JSON",
+  exportJson: "Backup (JSON)",
   clearBtn: "Erase all data",
   clearTitle: "Erase everything?",
   clearText:
@@ -560,7 +560,7 @@ const be: Record<TKey, string> = {
   secData: "Дадзеныя",
   secDataSub: "усё захоўваецца толькі ў вас",
   exportMd: "Экспарт Markdown",
-  exportJson: "Экспарт JSON",
+  exportJson: "Рэзервовая копія (JSON)",
   clearBtn: "Сцерці ўсе дадзеныя",
   clearTitle: "Сцерці ўсё беззваротна?",
   clearText:
@@ -771,7 +771,7 @@ const uk: Record<TKey, string> = {
   secData: "Дані",
   secDataSub: "все зберігається тільки у вас",
   exportMd: "Експорт Markdown",
-  exportJson: "Експорт JSON",
+  exportJson: "Резервна копія (JSON)",
   clearBtn: "Стерти всі дані",
   clearTitle: "Стерти все безповоротно?",
   clearText:
@@ -982,7 +982,7 @@ const de: Record<TKey, string> = {
   secData: "Daten",
   secDataSub: "alles bleibt auf Ihrem Gerät",
   exportMd: "Markdown exportieren",
-  exportJson: "JSON exportieren",
+  exportJson: "Backup (JSON)",
   clearBtn: "Alle Daten löschen",
   clearTitle: "Alles löschen?",
   clearText:
@@ -1193,7 +1193,7 @@ const fr: Record<TKey, string> = {
   secData: "Données",
   secDataSub: "tout reste sur votre appareil",
   exportMd: "Exporter Markdown",
-  exportJson: "Exporter JSON",
+  exportJson: "Sauvegarde (JSON)",
   clearBtn: "Effacer toutes les données",
   clearTitle: "Tout effacer ?",
   clearText:
@@ -1404,7 +1404,7 @@ const es: Record<TKey, string> = {
   secData: "Datos",
   secDataSub: "todo permanece en tu dispositivo",
   exportMd: "Exportar Markdown",
-  exportJson: "Exportar JSON",
+  exportJson: "Copia de seguridad (JSON)",
   clearBtn: "Borrar todos los datos",
   clearTitle: "¿Borrar todo?",
   clearText:
