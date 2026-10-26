@@ -109,7 +109,9 @@ if (process.env.GEMINI_API_KEY && !process.env.GEMINI_BASE_URL) listFlashModels(
 
 // Один потоковый запрос к модели: отдаёт куски текста (без частей с размышлениями).
 // images — необязательные картинки [{mime, data(base64)}]: уходят перед текстом как inlineData (мультимодальный ввод).
-async function* streamPieces(key, version, model, prompt, generationConfig, thinking, signal, images = []) {
+// tools — необязательные инструменты модели (например, [{ google_search: {} }]); meta.sources наполняется
+// ссылками из groundingMetadata ответа (при поиске Google).
+async function* streamPieces(key, version, model, prompt, generationConfig, thinking, signal, images = [], tools, meta = { sources: [] }) {
   const parts = [...images.map((im) => ({ inlineData: { mimeType: im.mime, data: im.data } })), { text: prompt }];
   let r;
   const variants = [...thinking, null];
@@ -124,7 +126,7 @@ async function* streamPieces(key, version, model, prompt, generationConfig, thin
     r = await fetch(`${BASE}/${version}/models/${model}:streamGenerateContent?alt=sse`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({ contents: [{ parts }], generationConfig: v ? { ...generationConfig, thinkingConfig: v } : generationConfig }),
+      body: JSON.stringify({ contents: [{ parts }], ...(tools ? { tools } : {}), generationConfig: v ? { ...generationConfig, thinkingConfig: v } : generationConfig }),
       signal,
     });
     if (r.ok) break;
@@ -156,6 +158,10 @@ async function* streamPieces(key, version, model, prompt, generationConfig, thin
       } catch {
         continue;
       }
+      for (const g of chunk?.candidates?.[0]?.groundingMetadata?.groundingChunks || []) {
+        if (g?.web?.uri) meta.sources.push({ url: g.web.uri, title: g.web.title || "" });
+      }
+      if (chunk?.candidates?.[0]?.groundingMetadata?.webSearchQueries?.length) meta.searched = true;
       const parts = chunk?.candidates?.[0]?.content?.parts || [];
       const piece = parts.filter((p) => !p.thought).map((p) => p.text || "").join("");
       if (piece) yield piece;
@@ -180,7 +186,8 @@ export async function streamText(key, prompt, generationConfig = {}, diag = [], 
   const launch = (model) => {
     const ctl = new AbortController();
     const a = { model, ctl, overall: setTimeout(() => ctl.abort(), left()), first: setTimeout(() => ctl.abort(), Math.min(firstByteMs, left())) };
-    a.gen = streamPieces(key, version, model, prompt, generationConfig, thinking, ctl.signal, opts.images);
+    a.meta = { sources: [] };
+    a.gen = streamPieces(key, version, model, prompt, generationConfig, thinking, ctl.signal, opts.images, opts.tools, a.meta);
     a.next = a.gen.next().then((r) => ({ a, r }), (e) => ({ a, e }));
     live.add(a);
   };
@@ -245,10 +252,10 @@ export async function streamText(key, prompt, generationConfig = {}, diag = [], 
       text += value;
       onDelta(value);
     }
-    return { model: winner.model, text };
+    return { model: winner.model, text, sources: winner.meta.sources, searched: !!winner.meta.searched };
   } catch {
     // оборвалось посреди ответа: отдаём то, что успело прийти, вместо смены модели
-    return { model: winner.model, text, cut: true };
+    return { model: winner.model, text, cut: true, sources: winner.meta.sources, searched: !!winner.meta.searched };
   } finally {
     clearTimeout(winner.overall);
   }
