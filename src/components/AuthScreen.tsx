@@ -6,7 +6,7 @@ import type { ThemeId } from '../themes';
 import { THEMES } from '../themes';
 import type { Lang } from '../i18n';
 import { makeUI } from '../ui-strings';
-import { isNativeApp, signInWithGoogleNative } from '../lib/nativeAuth';
+import { isNativeApp, signInWithGoogleNative, NATIVE_AUTH_ERROR } from '../lib/nativeAuth';
 
 interface AuthScreenProps {
   onContinueLocally: () => void;
@@ -33,6 +33,12 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    const onError = (e: Event) => setError(String((e as CustomEvent).detail));
+    window.addEventListener(NATIVE_AUTH_ERROR, onError);
+    return () => window.removeEventListener(NATIVE_AUTH_ERROR, onError);
+  }, []);
 
   const handleGoogleSignIn = async () => {
     if (!supabase) {
