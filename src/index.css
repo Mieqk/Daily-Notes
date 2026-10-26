@@ -383,6 +383,13 @@ body {
   }
 }
 
+/* страница не должна «плыть» по масштабу на телефонах: ни от щипка и двойного тапа, ни от автоувеличения шрифта */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: pan-x pan-y;
+}
+
 /* ============ Touch-оптимизация ============ */
 @media (hover: none) {
   button, a, input, textarea {
