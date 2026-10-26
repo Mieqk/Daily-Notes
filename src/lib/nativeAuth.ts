@@ -6,6 +6,15 @@ export const NATIVE_REDIRECT = 'io.vercel.dailynotes://auth';
 /** Событие window с текстом ошибки возврата из браузера; экран входа показывает его под кнопкой. */
 export const NATIVE_AUTH_ERROR = 'native-auth-error';
 
+/** Журнал шагов входа для экрана входа в APK (на телефоне нет консоли): window.__nativeAuthLog. */
+export const NATIVE_AUTH_LOG = 'native-auth-log';
+export function nativeLog(message: string): void {
+  const w = window as unknown as { __nativeAuthLog?: string[] };
+  const line = `${new Date().toLocaleTimeString()} ${message}`;
+  w.__nativeAuthLog = [...(w.__nativeAuthLog ?? []), line].slice(-12);
+  window.dispatchEvent(new Event(NATIVE_AUTH_LOG));
+}
+
 interface CapacitorGlobal {
   isNativePlatform?: () => boolean;
   Plugins?: Record<string, any>;
@@ -34,6 +43,7 @@ export const isNativeApp = () => Boolean(cap()?.isNativePlatform?.());
 /** Вход через Google: Google не пускает OAuth во встроенный WebView, поэтому открываем системный браузер. */
 export async function signInWithGoogleNative(): Promise<string | null> {
   if (!supabase) return 'Supabase not configured';
+  nativeLog('вход: открываю браузер');
   try {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -42,7 +52,9 @@ export async function signInWithGoogleNative(): Promise<string | null> {
     if (error || !data?.url) return error?.message ?? 'No OAuth url';
     try {
       await callNative('Browser', 'open', { url: data.url });
-    } catch {
+      nativeLog('вход: браузер открыт');
+    } catch (e) {
+      nativeLog(`вход: браузер не открылся (${e instanceof Error ? e.message : String(e)}), пробую напрямую`);
       // Плагин Browser недоступен: внешний адрес Capacitor откроет в системном браузере.
       window.location.href = data.url;
     }
@@ -57,11 +69,15 @@ export function initNativeAuthListener(): () => void {
   const c = cap();
   if (!isNativeApp() || !supabase) return () => {};
   const client = supabase;
+  nativeLog(`слушатель: addListener=${typeof c?.addListener}, nativePromise=${typeof c?.nativePromise}`);
+  const onVisible = () => { if (document.visibilityState === 'visible') nativeLog('приложение снова на экране'); };
+  document.addEventListener('visibilitychange', onVisible);
   const fail = (message: string) => {
     (window as unknown as { __nativeAuthMsg?: string }).__nativeAuthMsg = message;
     window.dispatchEvent(new CustomEvent(NATIVE_AUTH_ERROR, { detail: message }));
   };
   const onOpen = async (event: { url: string }) => {
+    nativeLog(`appUrlOpen: ${String(event?.url).split(/[#?]/)[0]}`);
     if (!event?.url?.startsWith(NATIVE_REDIRECT)) return;
     try {
       const url = new URL(event.url.replace('#', '?'));
@@ -73,6 +89,7 @@ export function initNativeAuthListener(): () => void {
       let result: { error: { message: string } | null } | null = null;
       if (access_token && refresh_token) result = await client.auth.setSession({ access_token, refresh_token });
       else if (code) result = await client.auth.exchangeCodeForSession(code);
+      nativeLog(`токены: access=${Boolean(access_token)} refresh=${Boolean(refresh_token)} code=${Boolean(code)} ошибка=${authError ?? 'нет'}; сессия=${result ? (result.error ? 'ошибка' : 'есть') : 'нет'}`);
       if (result?.error) fail(result.error.message);
       else if (!result) fail(authError ?? `Нет токена во ссылке возврата (${[...url.searchParams.keys()].join(', ') || 'пусто'})`);
     } catch (e) {
@@ -82,11 +99,11 @@ export function initNativeAuthListener(): () => void {
     }
   };
   // Если страница перезагрузилась, пока шёл вход, ссылка возврата приходит как стартовая.
-  callNative('App', 'getLaunchUrl').then((r) => r?.url && onOpen(r)).catch(() => {});
+  callNative('App', 'getLaunchUrl').then((r) => { nativeLog(`стартовая ссылка: ${r?.url ? String(r.url).split(/[#?]/)[0] : 'нет'}`); if (r?.url) onOpen(r); }).catch((e) => nativeLog(`getLaunchUrl: ${e instanceof Error ? e.message : String(e)}`));
   if (!c?.addListener) {
     fail('Слушатель возврата недоступен');
     return () => {};
   }
   const handle = c.addListener('App', 'appUrlOpen', onOpen);
-  return () => handle.remove();
+  return () => { handle.remove(); document.removeEventListener('visibilitychange', onVisible); };
 }
