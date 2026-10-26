@@ -35,6 +35,8 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded
   }, [theme]);
 
   useEffect(() => {
+    const pending = (window as unknown as { __nativeAuthMsg?: string }).__nativeAuthMsg;
+    if (pending) setError(pending);
     const onError = (e: Event) => setError(String((e as CustomEvent).detail));
     window.addEventListener(NATIVE_AUTH_ERROR, onError);
     return () => window.removeEventListener(NATIVE_AUTH_ERROR, onError);

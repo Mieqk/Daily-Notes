@@ -57,11 +57,15 @@ export function initNativeAuthListener(): () => void {
   const c = cap();
   if (!isNativeApp() || !supabase) return () => {};
   const client = supabase;
-  const fail = (message: string) => window.dispatchEvent(new CustomEvent(NATIVE_AUTH_ERROR, { detail: message }));
+  const fail = (message: string) => {
+    (window as unknown as { __nativeAuthMsg?: string }).__nativeAuthMsg = message;
+    window.dispatchEvent(new CustomEvent(NATIVE_AUTH_ERROR, { detail: message }));
+  };
   const onOpen = async (event: { url: string }) => {
     if (!event?.url?.startsWith(NATIVE_REDIRECT)) return;
     try {
       const url = new URL(event.url.replace('#', '?'));
+      fail(`Ссылка возврата получена (${[...url.searchParams.keys()].join(', ') || 'без параметров'})`);
       const access_token = url.searchParams.get('access_token');
       const refresh_token = url.searchParams.get('refresh_token');
       const code = url.searchParams.get('code');
@@ -79,7 +83,10 @@ export function initNativeAuthListener(): () => void {
   };
   // Если страница перезагрузилась, пока шёл вход, ссылка возврата приходит как стартовая.
   callNative('App', 'getLaunchUrl').then((r) => r?.url && onOpen(r)).catch(() => {});
-  if (!c?.addListener) return () => {};
+  if (!c?.addListener) {
+    fail('Слушатель возврата недоступен');
+    return () => {};
+  }
   const handle = c.addListener('App', 'appUrlOpen', onOpen);
   return () => handle.remove();
 }
