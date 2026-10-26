@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
 import { fromISO, shiftISO, todayISO } from "../store";
@@ -113,7 +114,7 @@ const inputCls = "h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--pa
 const btnCls = "flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[12px] font-semibold text-[var(--ink-soft)] transition-all duration-150 hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95 disabled:opacity-60";
 const primaryCls = "flex h-11 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] px-4 text-[13px] font-bold text-[var(--accent-ink)] transition-all duration-150 active:scale-95 disabled:opacity-50";
 
-export default function NutritionView({ lang }: { lang: Lang }) {
+export default function NutritionView({ lang, barHost }: { lang: Lang; barHost?: HTMLElement | null }) {
   const l = L[lang] ?? L.en;
   const [foods, setFoods] = useSyncedStored<Food[]>("foods", [], mergeById<Food>((f) => f.name.trim().toLowerCase()));
   const [log, setLog] = useSyncedStored<Record<string, Entry[]>>("foodLog", {}, mergeLog<Entry>());
@@ -199,14 +200,14 @@ export default function NutritionView({ lang }: { lang: Lang }) {
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
-      {/* переключатель закреплён сверху отдельной плашкой: в длинном чате до него не нужно долго листать */}
-      <div className="sticky top-[34px] z-20 bg-[var(--bg)] pb-2 sm:top-[26px]">
+      {/* переключатель живёт в закреплённом блоке «Хобби» (портал), чтобы обе плашки были в одной подложке */}
+      {barHost && createPortal(
         <div className="grid grid-cols-3 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
           {(["coach", "day", "calendar"] as const).map((v) => (
             <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`h-9 rounded-lg text-[13px] font-semibold transition-all ${view === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>{v === "calendar" ? makeUI(lang)("viewCalendar") : SEG[lang][v]}</button>
           ))}
         </div>
-      </div>
+        , barHost)}
 
       {view === "calendar" ? (
         <DayCalendar valueByDay={kcalByDay} goal={safeGoal} summary={(days) => (days.length ? `Ø ${Math.round(days.reduce((a, d) => a + kcalByDay[d], 0) / days.length)} / ${safeGoal} ${l.kcal}` : null)} selected={date} onPick={(iso) => { setDate(iso); setView("day"); }} lang={lang} />
