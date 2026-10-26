@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { Lang } from "../i18n";
 import { useStored } from "../store";
+import { MAX_PHOTOS, MAX_VIDEO_SEC, prepareAiMedia, type AiAttachment, type AiMediaError } from "../lib/aiMedia";
 
 export type CoachMode = "food" | "workout" | "hobby";
 export interface CoachItem { name: string; grams?: number; kcal?: number; protein?: number; fat?: number; carbs?: number; sets?: number; reps?: number; kg?: number }
-interface Msg { id: string; role: "user" | "assistant"; text: string; items?: CoachItem[]; added?: boolean }
+interface Msg { id: string; role: "user" | "assistant"; text: string; items?: CoachItem[]; added?: boolean; /** превью вложений пользователя (маленькие картинки; сами файлы не хранятся) */ thumbs?: string[]; video?: boolean }
 
 interface S {
   name: string; hello: string; ph: string; send: string; thinking: string; err: string; details: string; add: string; added: string; clear: string; off: string;
@@ -40,6 +41,17 @@ const L: Record<CoachMode, Record<string, S>> = {
   },
 };
 
+interface AS { attach: string; preparing: string; note: string; remove: string; video: string; errors: Record<AiMediaError | "limit", string> }
+const A: Record<Lang, AS> = {
+  ru: { attach: "Прикрепить фото или видео", preparing: "Готовлю вложение…", note: "Фото и кадры из видео (без звука) тоже уйдут в Google Gemini.", remove: "Убрать вложение", video: "Видео", errors: { "not-media": "Можно прикрепить только фото или видео.", "too-big": "Файл слишком большой.", "too-long": `Видео длиннее ${MAX_VIDEO_SEC} секунд. Обрежьте его.`, unreadable: "Не удалось открыть файл.", limit: `Можно до ${MAX_PHOTOS} фото или одно видео.` } },
+  en: { attach: "Attach a photo or video", preparing: "Preparing the attachment…", note: "Photos and frames from videos (no sound) are sent to Google Gemini too.", remove: "Remove attachment", video: "Video", errors: { "not-media": "Only photos and videos can be attached.", "too-big": "The file is too big.", "too-long": `The video is longer than ${MAX_VIDEO_SEC} seconds. Trim it.`, unreadable: "Couldn't open the file.", limit: `Up to ${MAX_PHOTOS} photos or one video.` } },
+  be: { attach: "Прымацаваць фота або відэа", preparing: "Рыхтую ўкладанне…", note: "Фота і кадры з відэа (без гуку) таксама пойдуць у Google Gemini.", remove: "Прыбраць укладанне", video: "Відэа", errors: { "not-media": "Можна прымацаваць толькі фота або відэа.", "too-big": "Файл занадта вялікі.", "too-long": `Відэа даўжэйшае за ${MAX_VIDEO_SEC} секунд. Абрэжце яго.`, unreadable: "Не атрымалася адкрыць файл.", limit: `Можна да ${MAX_PHOTOS} фота або адно відэа.` } },
+  uk: { attach: "Прикріпити фото або відео", preparing: "Готую вкладення…", note: "Фото й кадри з відео (без звуку) також підуть до Google Gemini.", remove: "Прибрати вкладення", video: "Відео", errors: { "not-media": "Можна прикріпити лише фото або відео.", "too-big": "Файл завеликий.", "too-long": `Відео довше за ${MAX_VIDEO_SEC} секунд. Обріжте його.`, unreadable: "Не вдалося відкрити файл.", limit: `Можна до ${MAX_PHOTOS} фото або одне відео.` } },
+  de: { attach: "Foto oder Video anhängen", preparing: "Anhang wird vorbereitet…", note: "Fotos und Einzelbilder aus Videos (ohne Ton) werden ebenfalls an Google Gemini gesendet.", remove: "Anhang entfernen", video: "Video", errors: { "not-media": "Es können nur Fotos und Videos angehängt werden.", "too-big": "Die Datei ist zu groß.", "too-long": `Das Video ist länger als ${MAX_VIDEO_SEC} Sekunden. Kürze es.`, unreadable: "Die Datei konnte nicht geöffnet werden.", limit: `Bis zu ${MAX_PHOTOS} Fotos oder ein Video.` } },
+  fr: { attach: "Joindre une photo ou une vidéo", preparing: "Préparation de la pièce jointe…", note: "Les photos et des images extraites des vidéos (sans le son) sont aussi envoyées à Google Gemini.", remove: "Retirer la pièce jointe", video: "Vidéo", errors: { "not-media": "Seules les photos et les vidéos peuvent être jointes.", "too-big": "Le fichier est trop volumineux.", "too-long": `La vidéo dépasse ${MAX_VIDEO_SEC} secondes. Raccourcis-la.`, unreadable: "Impossible d’ouvrir le fichier.", limit: `Jusqu’à ${MAX_PHOTOS} photos ou une vidéo.` } },
+  es: { attach: "Adjuntar foto o vídeo", preparing: "Preparando el adjunto…", note: "Las fotos y fotogramas de vídeos (sin sonido) también se envían a Google Gemini.", remove: "Quitar adjunto", video: "Vídeo", errors: { "not-media": "Solo se pueden adjuntar fotos y vídeos.", "too-big": "El archivo es demasiado grande.", "too-long": `El vídeo dura más de ${MAX_VIDEO_SEC} segundos. Recórtalo.`, unreadable: "No se pudo abrir el archivo.", limit: `Hasta ${MAX_PHOTOS} fotos o un vídeo.` } },
+};
+
 const uid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
 interface Props {
@@ -59,6 +71,11 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
   // текст ответа, который ещё печатается (приходит потоком); в историю попадает целиком, когда ответ готов
   const [live, setLive] = useState("");
   const [error, setError] = useState<{ msg: string; detail?: string } | null>(null);
+  const a = A[lang] ?? A.en;
+  const [files, setFiles] = useState<AiAttachment[]>([]);
+  const [preparing, setPreparing] = useState(false);
+  const [fileErr, setFileErr] = useState("");
+  const pick = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   // листаем только <main>: scrollIntoView сдвигал и внешние контейнеры, и шапка уезжала вверх
@@ -80,12 +97,39 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
   }, [on]);
   const toTop = () => rootRef.current?.closest("main")?.scrollTo({ top: 0, behavior: "smooth" });
 
+  const attach = async (list: FileList | null) => {
+    const picked = Array.from(list ?? []);
+    if (pick.current) pick.current.value = "";
+    if (!picked.length) return;
+    setFileErr("");
+    setPreparing(true);
+    try {
+      let cur = files;
+      for (const f of picked) {
+        const video = f.type.startsWith("video/");
+        // одно видео (это набор кадров) или несколько фото, но не вместе
+        if (video ? cur.length > 0 : cur.length >= MAX_PHOTOS || cur.some((x) => x.kind === "video")) { setFileErr(a.errors.limit); break; }
+        try {
+          cur = [...cur, await prepareAiMedia(f)];
+          setFiles(cur);
+        } catch (e) {
+          setFileErr(a.errors[(e as Error).message as AiMediaError] ?? a.errors.unreadable);
+        }
+      }
+    } finally {
+      setPreparing(false);
+    }
+  };
+
   const send = async (raw: string) => {
     const t = raw.trim();
-    if (!t || busy || !on) return;
-    const next: Msg[] = [...msgs, { id: uid(), role: "user" as const, text: t.slice(0, 600) }].slice(-40);
+    const sending = files;
+    if ((!t && !sending.length) || busy || preparing || !on) return;
+    const next: Msg[] = [...msgs, { id: uid(), role: "user" as const, text: t.slice(0, 600), ...(sending.length ? { thumbs: sending.map((x) => x.thumb), video: sending[0].kind === "video" } : {}) }].slice(-40);
     setMsgs(next);
     setText("");
+    setFiles([]);
+    setFileErr("");
     setBusy(true);
     setError(null);
     try {
@@ -95,7 +139,12 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
         signal: ctl.signal,
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lang, mode, context, messages: next.slice(-14).map((m) => ({ role: m.role, text: m.text, items: m.items?.map((it) => ({ name: it.name })) })) }),
+        body: JSON.stringify({
+          lang, mode, context,
+          messages: next.slice(-14).map((m) => ({ role: m.role, text: m.text, attached: m.thumbs?.length, items: m.items?.map((it) => ({ name: it.name })) })),
+          // сами картинки уходят только с текущей репликой
+          ...(sending.length ? { images: sending.flatMap((x) => x.images), video: sending[0].kind === "video" } : {}),
+        }),
       });
       // тип ответа не проверяем: прокси и WebView могут его менять, а построчный разбор понимает и обычный JSON
       if (!r.ok || !r.body) {
@@ -168,7 +217,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
       <div className="flex flex-col items-center gap-4 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-6 text-center" style={{ boxShadow: "var(--shadow-sm)" }}>
         <div className="grid h-12 w-12 place-items-center rounded-full bg-[var(--accent)] text-[18px] font-bold text-[var(--accent-ink)]" aria-hidden="true">{l.name[0]}</div>
         <p className="text-[13.5px] leading-relaxed">{l.hello}</p>
-        <p className="text-[12px] leading-relaxed text-[var(--ink-soft)]">{l.consent}</p>
+        <p className="text-[12px] leading-relaxed text-[var(--ink-soft)]">{l.consent} {a.note}</p>
         <button onClick={() => setOn(true)} className="flex h-11 items-center justify-center rounded-lg bg-[var(--accent)] px-5 text-[13px] font-bold text-[var(--accent-ink)] active:scale-95">{l.enable}</button>
       </div>
     );
@@ -185,7 +234,13 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
           <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex items-end gap-2"}>
             {m.role === "assistant" && <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[13px] font-bold text-[var(--accent-ink)]" aria-hidden="true">{l.name[0]}</div>}
             <div className={`${bubble} ${m.role === "user" ? "rounded-br-md bg-[var(--accent)] text-[var(--accent-ink)]" : "flex flex-col gap-3 rounded-bl-md border border-[var(--line)] bg-[var(--panel)]"}`}>
-              <span>{m.text}</span>
+              {m.thumbs && (
+                <div className="flex flex-wrap gap-1.5">
+                  {m.thumbs.map((th, i) => <img key={i} src={th} alt="" className="h-16 w-16 rounded-lg object-cover" />)}
+                  {m.video && <span className="self-end rounded-md bg-black/30 px-1.5 py-0.5 text-[11px] font-bold">▶ {a.video}</span>}
+                </div>
+              )}
+              {m.text && <span>{m.text}</span>}
               {m.items && (
                 <div className="flex flex-col gap-2 rounded-lg bg-[var(--panel-2)] p-2.5">
                   <ul className="flex flex-col gap-1 text-[12.5px]">{m.items.map((it, i) => <li key={i}>{describe(it)}</li>)}</ul>
@@ -202,6 +257,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
           </div>
         )}
         {busy && !live && <div className="text-[12.5px] text-[var(--ink-faint)]" role="status">{l.thinking}</div>}
+        {fileErr && <div className="text-[12.5px] font-semibold text-red-400" role="alert">{fileErr}</div>}
         {error && (
           <div className="text-[12.5px] font-semibold text-red-400" role="alert">
             {error.msg}
@@ -217,12 +273,30 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
         </div>
       )}
 
-      <div className="sticky bottom-2 z-10 flex gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1.5" style={{ boxShadow: "var(--shadow-sm)" }}>
+      <div className="sticky bottom-2 z-10 flex flex-col gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1.5" style={{ boxShadow: "var(--shadow-sm)" }}>
+      {(files.length > 0 || preparing) && (
+        <div className="flex items-center gap-2 px-0.5 pt-0.5">
+          {files.map((f) => (
+            <div key={f.id} className="relative">
+              <img src={f.thumb} alt="" className="h-14 w-14 rounded-lg object-cover" />
+              {f.kind === "video" && <span className="absolute bottom-0.5 left-0.5 rounded bg-black/60 px-1 text-[10px] font-bold text-white">▶</span>}
+              <button onClick={() => setFiles((p) => p.filter((x) => x.id !== f.id))} aria-label={a.remove} title={a.remove} className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-[var(--ink)] text-[11px] font-bold leading-none text-[var(--bg)]">×</button>
+            </div>
+          ))}
+          {preparing && <span className="text-[12px] text-[var(--ink-faint)]" role="status">{a.preparing}</span>}
+        </div>
+      )}
+      <div className="flex gap-1.5">
         {showUp && (
           <button onClick={toTop} aria-label={UP[lang] ?? UP.en} title={UP[lang] ?? UP.en} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel)] text-[16px] font-bold text-[var(--ink-soft)] transition-all hover:border-[var(--accent)] active:scale-95">↑</button>
         )}
+        <input ref={pick} type="file" accept="image/*,video/*" multiple hidden onChange={(e) => attach(e.target.files)} />
+        <button onClick={() => pick.current?.click()} disabled={busy || preparing} aria-label={a.attach} title={a.attach} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)] transition-all hover:border-[var(--accent)] active:scale-95 disabled:opacity-50">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m21.4 11.6-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8" /></svg>
+        </button>
         <input className="h-11 min-w-0 flex-1 rounded-lg border border-transparent bg-[var(--panel-2)] px-3 text-[13.5px] text-[var(--ink)] outline-none focus:border-[var(--accent)]" value={text} maxLength={600} placeholder={l.ph} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(text); }} />
-        <button onClick={() => send(text)} disabled={busy || !text.trim()} className="flex h-11 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] px-4 text-[13px] font-bold text-[var(--accent-ink)] transition-all active:scale-95 disabled:opacity-50">{l.send}</button>
+        <button onClick={() => send(text)} disabled={busy || preparing || (!text.trim() && !files.length)} className="flex h-11 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] px-4 text-[13px] font-bold text-[var(--accent-ink)] transition-all active:scale-95 disabled:opacity-50">{l.send}</button>
+      </div>
       </div>
 
       <div className="flex justify-between px-1 pb-2 text-[12px] font-semibold leading-relaxed text-[var(--ink-faint)]">
