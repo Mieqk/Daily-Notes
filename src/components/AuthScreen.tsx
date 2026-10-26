@@ -6,7 +6,7 @@ import type { ThemeId } from '../themes';
 import { THEMES } from '../themes';
 import type { Lang } from '../i18n';
 import { makeUI } from '../ui-strings';
-import { isNativeApp, signInWithGoogleNative, NATIVE_AUTH_ERROR } from '../lib/nativeAuth';
+import { isNativeApp, signInWithGoogleNative, NATIVE_AUTH_ERROR, NATIVE_AUTH_LOG } from '../lib/nativeAuth';
 
 interface AuthScreenProps {
   onContinueLocally: () => void;
@@ -49,6 +49,13 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded
     const onError = (e: Event) => setError(String((e as CustomEvent).detail));
     window.addEventListener(NATIVE_AUTH_ERROR, onError);
     return () => window.removeEventListener(NATIVE_AUTH_ERROR, onError);
+  }, []);
+
+  const [nativeLines, setNativeLines] = useState<string[]>(() => (window as unknown as { __nativeAuthLog?: string[] }).__nativeAuthLog ?? []);
+  useEffect(() => {
+    const onLog = () => setNativeLines([...((window as unknown as { __nativeAuthLog?: string[] }).__nativeAuthLog ?? [])]);
+    window.addEventListener(NATIVE_AUTH_LOG, onLog);
+    return () => window.removeEventListener(NATIVE_AUTH_LOG, onLog);
   }, []);
 
   const handleGoogleSignIn = async () => {
@@ -338,6 +345,9 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded
             </svg>
             {u("google")}
           </button>
+          {isNativeApp() && nativeLines.length > 0 && (
+            <pre className="mt-3 whitespace-pre-wrap break-words rounded-lg bg-[var(--panel-2)] p-2 text-[10.5px] leading-snug text-[var(--ink-soft)]">{nativeLines.join("\n")}</pre>
+          )}
 
           <div className="mt-6 text-center">
             {isResetMode ? (
