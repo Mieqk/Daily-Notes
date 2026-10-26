@@ -266,6 +266,13 @@ export const FoodIcon = ({ className = "h-5 w-5" }: IconProps) => (
   </svg>
 );
 
+export const SparkIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
+    <path d="M19 16l.7 1.8L21.5 18.5l-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z" />
+  </svg>
+);
+
 export const DumbbellIcon = ({ className = "h-5 w-5" }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} {...base}>
     <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" />
