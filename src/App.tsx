@@ -10,6 +10,7 @@ import type { Look } from "./look";
 import type { BgId, Tab, Task, SleepData, WritingFontId } from "./store";
 import { verifyBiometric } from "./lib/biometric";
 import { makeDevice } from "./device-strings";
+import { buildBackup } from "./lib/backup";
 import { buildMarkdown, downloadText, hashPin, shiftISO, toISO, todayISO, useNow, useStored } from "./store";
 import { BG_IMAGES } from "./bg";
 import Sidebar from "./components/Sidebar";
@@ -384,7 +385,7 @@ export default function App() {
     setNotes({}); setTasks({}); setMoods({}); setTags({}); setPhotos({}); setSleep({}); setDate(todayISO());
   };
   const exportMd = () => downloadText("daily-notes.md", buildMarkdown(Object.fromEntries(Object.entries(notes).map(([d, v]) => [d, isSealed(capsules, d) ? `(${u("capUntil").replace("{date}", capsules[d])})` : v])), tasks, moods, tags, lang), "text/markdown;charset=utf-8");
-  const exportJson = () => downloadText("daily-notes.json", JSON.stringify({ notes, tasks, moods, tags, reminder, moodEmoji, writingFont, theme, lang, bg, sleep }, null, 2), "application/json;charset=utf-8");
+  const exportJson = () => downloadText(`daily-notes-backup-${todayISO()}.json`, JSON.stringify(buildBackup(localStorage), null, 2), "application/json;charset=utf-8");
   const openDate = (iso: string) => { setDate(iso); setTab("daily"); };
   const pinLen = pinHash ? Math.max(4, parseInt(pinHash.slice(-1), 36) || 4) : 4;
 
