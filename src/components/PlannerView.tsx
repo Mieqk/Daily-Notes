@@ -92,7 +92,7 @@ export default function PlannerView({ tasks, setTasks, onOpen, lang, showToast }
   const inRange = (iso: string) => Boolean(range && iso >= range[0] && iso <= range[1]);
 
   return (
-    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
       <div className={`animate-rise ${card}`} style={{ boxShadow: "var(--shadow-sm)" }}>
         <div className="mb-2 flex flex-wrap items-center gap-3">
           <button onClick={() => setCursor(new Date(year, month - 1, 1))} className={navBtn} aria-label="previous month"><ArrowLeftIcon className="h-4 w-4" /></button>
@@ -189,7 +189,7 @@ export default function PlannerView({ tasks, setTasks, onOpen, lang, showToast }
                           <button onClick={() => toggle(d, x.id)} className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 ${x.done ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-ink)]" : "border-[var(--line)] hover:border-[var(--accent)]"}`} aria-label="toggle task">
                             {x.done && <CheckIcon className="h-3 w-3" />}
                           </button>
-                          <span className={`min-w-0 flex-1 text-[13px] ${x.done ? "text-[var(--ink-faint)] line-through" : ""}`}>{x.text}</span>
+                          <span className={`min-w-0 flex-1 break-words text-[13px] ${x.done ? "text-[var(--ink-faint)] line-through" : ""}`}>{x.text}</span>
                           <button onClick={() => remove(d, x.id)} className="grid h-6 w-6 place-items-center rounded-md text-[var(--ink-faint)] opacity-60 hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] sm:opacity-0 sm:group-hover:opacity-100" aria-label="delete task"><TrashIcon className="h-3.5 w-3.5" /></button>
                         </li>
                       ))}
