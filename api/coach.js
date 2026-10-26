@@ -29,6 +29,23 @@ const clean = (v, max) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, m
 
 const MARK = "###ITEMS";
 
+// Фото для модели (клиент сжимает их в JPEG; видео приходит кадрами). Тело запроса на Vercel не больше 4,5 МБ.
+const MAX_IMAGES = 6;
+const MAX_IMAGE_B64 = 900_000;
+const MAX_TOTAL_B64 = 3_400_000;
+function sanitizeImages(raw) {
+  let total = 0;
+  const out = [];
+  for (const x of Array.isArray(raw) ? raw.slice(0, MAX_IMAGES) : []) {
+    const data = typeof x?.data === "string" ? x.data : "";
+    if (!data || data.length > MAX_IMAGE_B64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(data)) continue;
+    if (total + data.length > MAX_TOTAL_B64) break;
+    total += data.length;
+    out.push({ mime: "image/jpeg", data });
+  }
+  return out;
+}
+
 function sanitizeItems(raw, mode) {
   return (Array.isArray(raw) ? raw.slice(0, 12) : [])
     .map((x) =>
@@ -91,15 +108,20 @@ export default async function handler(req, res) {
   const lang = LANG_NAMES[body.lang] ? body.lang : "en";
   const mode = body.mode === "food" ? "food" : "workout";
   const context = clean(body.context, 900);
+  const images = sanitizeImages(body.images);
+  const fromVideo = body.video === true && images.length > 0;
   const messages = (Array.isArray(body.messages) ? body.messages : [])
     .slice(-14)
-    .map((m) => {
+    .map((m, i, arr) => {
       const role = m?.role === "assistant" ? "Assistant" : "User";
       // что помощник уже предлагал: без этого он повторяет прежние упражнения и блюда
       const proposed = role === "Assistant" && Array.isArray(m?.items)
         ? m.items.slice(0, 12).map((x) => clean(x?.name, 60)).filter(Boolean).join("; ")
         : "";
-      return { role, text: clean(m?.text, 600) + (proposed ? ` [items you already proposed: ${proposed}]` : "") };
+      // вложения прошлых реплик не пересылаются: модели достаточно знать, что они были
+      const earlier = role === "User" && i < arr.length - 1 && num(m?.attached, 1, 10) ? " [the user attached photos or a video here; they are not shown anymore]" : "";
+      const text = clean(m?.text, 600) || (role === "User" && i === arr.length - 1 && images.length ? "(no text, just the attached media)" : "");
+      return { role, text: text + earlier + (proposed ? ` [items you already proposed: ${proposed}]` : "") };
     })
     .filter((m) => m.text);
   if (!messages.length || messages[messages.length - 1].role !== "User") return res.status(400).json({ error: "empty" });
@@ -118,6 +140,9 @@ export default async function handler(req, res) {
     `Move the conversation forward: never repeat or merely reword something you already said or proposed earlier in this conversation (check the "items you already proposed" notes). If the user asks for something new, different or harder, propose genuinely different ${mode === "food" ? "foods or meals" : "exercises, structure or training method"}. Do not end every message with a question; ask only when the answer would change your advice.\n` +
     `${itemsRule}\n` +
     `Format: write your reply as plain text first. Only if you have items, then add a line with exactly ${MARK} followed by a JSON array of the items, e.g. ${mode === "food" ? '[{"name":"Rice","grams":150,"kcal":195,"protein":4,"fat":0.4,"carbs":43}]' : '[{"name":"Squat","sets":3,"reps":10,"kg":0}]'}. Never mention the ${MARK} line or the JSON in your text.\n` +
+    (images.length
+      ? `The user's last message comes with ${fromVideo ? `${images.length} frames sampled evenly from a short video, in order (there is no audio)` : `${images.length} photo${images.length > 1 ? "s" : ""}`}. Look at ${fromVideo ? "them as one video" : "them"} and use what you see: ${mode === "food" ? "identify the foods, estimate portions in grams and calories/macros, and list them as items; say so if the portion is hard to judge" : "check exercise technique and posture, equipment or physique as asked, give concrete corrections; do not diagnose injuries"}. Never guess who a person is. If the media is unclear, say what you could not see.\n`
+      : "") +
     (context ? `Today's summary from the app: ${context}\n` : "") +
     `Conversation so far:\n${messages.map((m) => `${m.role}: ${m.text}`).join("\n")}\nAssistant:`;
 
@@ -141,6 +166,7 @@ export default async function handler(req, res) {
     // функция живёт 60 секунд (vercel.json): первый кусок ждём до 12 с на модель, весь ответ не дольше 50 с
     firstByteMs: 12_000,
     deadlineMs: 50_000,
+    images,
     thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
     // для чата важнее быстрый первый ответ: сначала lite-модели, полные flash в запасе
     preferLite: true,
