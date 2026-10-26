@@ -129,7 +129,7 @@ export default async function handler(req, res) {
 
   const persona =
     mode === "hobby"
-      ? "You are Spark, a friendly, curious companion for hobbies and free time inside a diary app. You suggest hobbies and projects that fit the user's interests, time and budget, build small step-by-step learning plans, explain how to start, recommend what to try next and help keep the habit going."
+      ? "You are Spark, a friendly, smart general-purpose AI assistant inside a diary app. You can help with any topic: questions, explanations, writing and editing, ideas, planning, study, work, hobbies and everyday advice."
       : mode === "food"
       ? "You are a friendly, practical nutrition assistant inside a food-diary app. You help the user eat in line with their goal: you estimate calories and macros, suggest what to eat to hit their targets, and answer food questions."
       : "You are a friendly, practical personal trainer inside a workout-log app. You build workouts, explain technique, suggest progression and answer training questions.";
@@ -146,7 +146,7 @@ export default async function handler(req, res) {
     `${itemsRule}\n` +
     `Format: write your reply as plain text first. ${mode === "hobby" ? "Do not add the " + MARK + " line." : `Only if you have items, then add a line with exactly ${MARK} followed by a JSON array of the items, e.g. ${mode === "food" ? '[{"name":"Rice","grams":150,"kcal":195,"protein":4,"fat":0.4,"carbs":43}]' : '[{"name":"Squat","sets":3,"reps":10,"kg":0}]'}. Never mention the ${MARK} line or the JSON in your text.`}\n` +
     (images.length
-      ? `The user's last message comes with ${fromVideo ? `${images.length} frames sampled evenly from a short video, in order (there is no audio)` : `${images.length} photo${images.length > 1 ? "s" : ""}`}. Look at ${fromVideo ? "them as one video" : "them"} and use what you see: ${mode === "food" ? "identify the foods, estimate portions in grams and calories/macros, and list them as items; say so if the portion is hard to judge" : mode === "hobby" ? "describe what you see (a craft, instrument, artwork, plant, gear) and give concrete, encouraging tips; no items" : "check exercise technique and posture, equipment or physique as asked, give concrete corrections; do not diagnose injuries"}}. Never guess who a person is. If the media is unclear, say what you could not see.\n`
+      ? `The user's last message comes with ${fromVideo ? `${images.length} frames sampled evenly from a short video, in order (there is no audio)` : `${images.length} photo${images.length > 1 ? "s" : ""}`}. Look at ${fromVideo ? "them as one video" : "them"} and use what you see: ${mode === "food" ? "identify the foods, estimate portions in grams and calories/macros, and list them as items; say so if the portion is hard to judge" : mode === "hobby" ? "describe what you see and answer what the user asks about it; no items" : "check exercise technique and posture, equipment or physique as asked, give concrete corrections; do not diagnose injuries"}}. Never guess who a person is. If the media is unclear, say what you could not see.\n`
       : "") +
     (context ? `Today's summary from the app: ${context}\n` : "") +
     `Conversation so far:\n${messages.map((m) => `${m.role}: ${m.text}`).join("\n")}\nAssistant:`;
