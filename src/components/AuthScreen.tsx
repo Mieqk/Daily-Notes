@@ -20,6 +20,15 @@ interface AuthScreenProps {
 export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded = false, lang }: AuthScreenProps) {
   const u = makeUI(lang);
   const { signUp, signIn, resetPassword } = useAuth();
+  /** Понятный текст вместо английского сообщения Supabase; незнакомые ошибки показываем как есть. */
+  const friendly = (message: string): string => {
+    const m = message.toLowerCase();
+    if (m.includes('failed to fetch') || m.includes('network') || m.includes('load failed')) return u("errNetwork");
+    if (m.includes('rate limit') || m.includes('too many') || m.includes('for security purposes')) return u("errRate");
+    if (m.includes('weak password') || m.includes('password should')) return u("errWeakPw");
+    if (m.includes('provider is not enabled') || m.includes('unsupported provider')) return u("errGoogle");
+    return message;
+  };
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,7 +60,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded
     setLoading(true);
     if (isNativeApp()) {
       const nativeError = await signInWithGoogleNative();
-      if (nativeError) setError(nativeError);
+      if (nativeError) setError(friendly(nativeError));
       setLoading(false);
       return;
     }
@@ -60,7 +69,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded
       options: { redirectTo: window.location.origin },
     });
     if (error) {
-      setError(error.message);
+      setError(friendly(error.message));
       setLoading(false);
     }
   };
@@ -97,13 +106,13 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded
         } else if (error.message.includes('Email not confirmed')) {
           setError(u("confirmEmail"));
         } else {
-          setError(error.message);
+          setError(friendly(error.message));
         }
       }
     } else if (isResetMode) {
       const { error } = await resetPassword(email);
       if (error) {
-        setError(error.message);
+        setError(friendly(error.message));
       } else {
         setSuccessMessage(u("resetSent"));
         setIsResetMode(false);
@@ -116,7 +125,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded
         } else if (error.message.includes('Invalid email')) {
           setError(u("badEmail"));
         } else {
-          setError(error.message);
+          setError(friendly(error.message));
         }
       } else {
         setSuccessMessage(u("checkMail"));
