@@ -99,7 +99,7 @@ export function parseReply(text, mode) {
 }
 
 // Сколько текста уже можно показать: всё до маркера, а хвост, похожий на начало маркера, придерживаем.
-function visibleLength(text) {
+export function visibleLength(text) {
   const at = text.indexOf(MARK);
   if (at >= 0) return at;
   for (let k = Math.min(MARK.length - 1, text.length); k > 0; k--) if (MARK.startsWith(text.slice(-k))) return text.length - k;

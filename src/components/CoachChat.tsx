@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Lang } from "../i18n";
 import { useStored } from "../store";
 import { MAX_PHOTOS, MAX_VIDEO_SEC, prepareAiMedia, type AiAttachment, type AiMediaError } from "../lib/aiMedia";
+import { parseStreamLine, type CoachFinal } from "../lib/aiStream";
 
 export type CoachMode = "food" | "workout" | "hobby";
 export interface CoachItem { name: string; grams?: number; kcal?: number; protein?: number; fat?: number; carbs?: number; sets?: number; reps?: number; kg?: number }
@@ -158,15 +159,12 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
       const dec = new TextDecoder();
       let buf = "";
       let acc = "";
-      type Fin = { reply?: string; items?: CoachItem[]; sources?: { title: string; url: string }[]; error?: string; detail?: string };
+      type Fin = Omit<CoachFinal, "items"> & { items?: CoachItem[] };
       let fin = null as Fin | null;
       const onLine = (raw: string) => {
-        const line = raw.trim();
-        if (!line) return;
-        let ev: Fin & { d?: string; done?: boolean };
-        try { ev = JSON.parse(line); } catch { return; }
-        if (typeof ev.d === "string") { acc += ev.d; setLive(acc); }
-        else if (ev.done || ev.error || typeof ev.reply === "string") fin = ev;
+        const ev = parseStreamLine(raw);
+        if (ev?.kind === "delta") { acc += ev.text; setLive(acc); }
+        else if (ev?.kind === "final") fin = ev.data as Fin;
       };
       try {
         for (;;) {
