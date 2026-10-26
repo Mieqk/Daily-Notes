@@ -38,7 +38,17 @@ const callNative = (name: string, method: string, options?: unknown): Promise<an
 };
 
 /** Страница открыта внутри Android-обёртки (Capacitor), а не в браузере. */
-export const isNativeApp = () => Boolean(cap()?.isNativePlatform?.());
+export const isNativeApp = () => {
+  const w = window as unknown as { androidBridge?: unknown };
+  return Boolean(cap()?.isNativePlatform?.() || w.androidBridge);
+};
+
+/** Признаки окружения для строки диагностики на экране входа (на телефоне нет консоли). */
+export function nativeEnv(): string {
+  const w = window as unknown as { androidBridge?: unknown };
+  const ua = navigator.userAgent;
+  return `режим=${isNativeApp() ? 'APK' : 'браузер'} Capacitor=${Boolean(cap())} isNativePlatform=${String(cap()?.isNativePlatform?.())} androidBridge=${Boolean(w.androidBridge)} wv=${/; wv\)/.test(ua)} standalone=${window.matchMedia?.('(display-mode: standalone)').matches ?? false}`;
+}
 
 /** Вход через Google: Google не пускает OAuth во встроенный WebView, поэтому открываем системный браузер. */
 export async function signInWithGoogleNative(): Promise<string | null> {
