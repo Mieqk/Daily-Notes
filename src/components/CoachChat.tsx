@@ -282,6 +282,24 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
       )}
 
       <div className="sticky bottom-2 z-10 flex flex-col gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1.5" style={{ boxShadow: "var(--shadow-sm)" }}>
+      <div className="flex flex-col gap-1 px-0.5 pt-0.5">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={web}
+          onClick={() => setWeb(!web)}
+          disabled={busy}
+          title={a.webHint}
+          className={`flex h-9 w-fit max-w-full items-center gap-2 rounded-full border pl-2.5 pr-1.5 text-[12.5px] font-bold transition-all duration-200 active:scale-95 disabled:opacity-60 ${web ? "border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] text-[var(--ink)]" : "border-[var(--line)] bg-[var(--panel-2)] text-[var(--ink-soft)] hover:border-[var(--accent)]"}`}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={web ? "text-[var(--accent)]" : ""}><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" /></svg>
+          <span className="truncate">{a.web}</span>
+          <span aria-hidden="true" className={`relative ml-0.5 h-5 w-9 shrink-0 rounded-full transition-colors duration-200 ${web ? "bg-[var(--accent)]" : "bg-[var(--hover)]"}`}>
+            <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all duration-200 ${web ? "left-[18px]" : "left-0.5"}`} />
+          </span>
+        </button>
+        {web && <p className="px-1 pb-0.5 text-[11.5px] leading-snug text-[var(--ink-faint)]">{a.webHint}</p>}
+      </div>
       {(files.length > 0 || preparing) && (
         <div className="flex items-center gap-2 px-0.5 pt-0.5">
           {files.map((f) => (
@@ -306,11 +324,6 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
         <button onClick={() => send(text)} disabled={busy || preparing || (!text.trim() && !files.length)} className="flex h-11 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] px-4 text-[13px] font-bold text-[var(--accent-ink)] transition-all active:scale-95 disabled:opacity-50">{l.send}</button>
       </div>
       </div>
-
-      <label className="flex items-start gap-2 px-1 text-[12px] leading-relaxed text-[var(--ink-soft)]">
-        <input type="checkbox" checked={web} onChange={(e) => setWeb(e.target.checked)} disabled={busy} className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]" />
-        <span><b className="font-semibold text-[var(--ink)]">{a.web}</b>{web ? ` — ${a.webHint}` : ""}</span>
-      </label>
 
       <div className="flex justify-between px-1 pb-2 text-[12px] font-semibold leading-relaxed text-[var(--ink-faint)]">
         <button onClick={() => { setMsgs([]); setError(null); }} disabled={!msgs.length || busy} className="hover:text-[var(--ink)] disabled:opacity-40">{l.clear}</button>
