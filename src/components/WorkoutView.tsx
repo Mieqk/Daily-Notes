@@ -132,7 +132,7 @@ export default function WorkoutView({ lang }: { lang: Lang }) {
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
       {/* переключатель закреплён сверху отдельной плашкой: в длинном чате до него не нужно долго листать */}
-      <div className="sticky -top-4 z-20 sm:-top-6">
+      <div className="sticky top-[30px] z-20 sm:top-[22px]">
         <div className="grid grid-cols-3 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
           {(["coach", "day", "calendar"] as const).map((v) => (
             <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`h-9 rounded-lg text-[13px] font-semibold transition-all ${view === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>{v === "calendar" ? makeUI(lang)("viewCalendar") : SEG[lang][v]}</button>

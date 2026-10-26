@@ -26,7 +26,7 @@ export default function HobbyView({ lang }: { lang: Lang }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="mx-auto grid w-full max-w-xl grid-cols-3 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
+      <div className="sticky -top-6 z-30 mx-auto sm:-top-8 grid w-full max-w-xl grid-cols-3 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
         {SUBS.map(({ id, icon: Icon }) => (
           <button key={id} role="tab" aria-selected={sub === id} onClick={() => setSub(id)} className={`flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-lg px-1.5 text-[13px] font-semibold transition-all ${sub === id ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>
             <Icon className="h-4 w-4 shrink-0" />
