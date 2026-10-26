@@ -134,7 +134,7 @@ export default function WorkoutView({ lang, barHost }: { lang: Lang; barHost?: H
     <div className="mx-auto flex max-w-xl flex-col gap-6">
       {/* переключатель живёт в закреплённом блоке «Хобби» (портал), чтобы обе плашки были в одной подложке */}
       {barHost && createPortal(
-        <div className="grid grid-cols-3 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
+        <div className="grid grid-cols-3 gap-1" role="tablist">
           {(["coach", "day", "calendar"] as const).map((v) => (
             <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} className={`h-9 rounded-lg text-[13px] font-semibold transition-all ${view === v ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>{v === "calendar" ? makeUI(lang)("viewCalendar") : SEG[lang][v]}</button>
           ))}
