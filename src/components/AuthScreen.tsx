@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { AlertIcon, CheckIcon, Eye, EyeOff, Mail, LockIcon, UserPlus, LogIn, Key, ArrowLeftIcon, Wifi, WifiOff } from '../icons';
@@ -38,6 +38,17 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded
   const [showPassword, setShowPassword] = useState(false);
   const [isResetMode, setIsResetMode] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  // Диагностика входа скрыта: открывается 7 быстрыми нажатиями на заголовок.
+  const [showDiag, setShowDiag] = useState(false);
+  const diagTaps = useRef<number[]>([]);
+  const tapTitle = () => {
+    const now = Date.now();
+    diagTaps.current = [...diagTaps.current.filter((t) => now - t < 3000), now];
+    if (diagTaps.current.length >= 7) {
+      diagTaps.current = [];
+      setShowDiag((v) => !v);
+    }
+  };
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -164,7 +175,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded
                 <UserPlus className="h-8 w-8 text-white" />
               )}
             </div>
-            <h1 className="font-display text-2xl font-bold tracking-tight text-white">
+            <h1 onClick={tapTitle} className="font-display text-2xl font-bold tracking-tight text-white select-none">
               Daily Notes
             </h1>
             <p className="mt-1 text-sm text-white/80">
@@ -345,7 +356,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded
             </svg>
             {u("google")}
           </button>
-          {/Android/i.test(navigator.userAgent) && (
+          {showDiag && (
             <pre className="mt-3 whitespace-pre-wrap break-words rounded-lg bg-[var(--panel-2)] p-2 text-[10.5px] leading-snug text-[var(--ink-soft)]">{[nativeEnv(), ...nativeLines].join("\n")}</pre>
           )}
 
