@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { Lang } from "../i18n";
 import { STRINGS } from "../i18n";
 import { useStored } from "../store";
@@ -20,6 +20,8 @@ const noop = () => {};
 /** «Хобби»: ИИ-компаньон «Искра» открывается первым, рядом «Питание» и «Тренировки». */
 export default function HobbyView({ lang }: { lang: Lang }) {
   const t = STRINGS[lang] ?? STRINGS.en;
+  // сюда «Питание» и «Тренировки» выносят свой переключатель: обе плашки в одной сплошной подложке, зазор не зависит от масштаба
+  const [barHost, setBarHost] = useState<HTMLElement | null>(null);
   const [saved, setSub] = useStored<Sub>("dn.hobbyTab", "ai");
   const sub: Sub = SUBS.some((s) => s.id === saved) ? saved : "ai";
   const label = (id: Sub) => (id === "ai" ? t.hobbyAi : id === "food" ? t.tabFood : t.tabWorkout);
@@ -36,12 +38,12 @@ export default function HobbyView({ lang }: { lang: Lang }) {
             </button>
           ))}
         </div>
-
+        <div ref={setBarHost} className="mx-auto w-full max-w-xl [&:not(:empty)]:mt-2" />
       </div>
 
       {sub === "ai" && <div className="mx-auto w-full max-w-xl"><CoachChat mode="hobby" lang={lang} context="" onApply={noop} /></div>}
-      {sub === "food" && <NutritionView lang={lang} />}
-      {sub === "workout" && <WorkoutView lang={lang} />}
+      {sub === "food" && <NutritionView lang={lang} barHost={barHost} />}
+      {sub === "workout" && <WorkoutView lang={lang} barHost={barHost} />}
     </div>
   );
 }
