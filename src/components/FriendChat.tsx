@@ -22,6 +22,9 @@ export interface ChatFriend { id: string; name: string; avatar: string | null; a
 const PAGE = 40;
 const POLL_MS = 15_000;
 const URL_TTL = 3600;
+const TMP = "tmp-";
+const LOCAL = "local:";
+const isTmp = (id: string) => id.startsWith(TMP);
 
 
 /** Личный чат с другом: текст, фото и видео. Новые сообщения приходят через Realtime, опрос страхует от обрыва связи. */
@@ -37,7 +40,6 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
   const [hasMore, setHasMore] = useState(false);
   const [text, setText] = useState("");
   const [pending, setPending] = useState<PendingMedia | null>(null);
-  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [selId, setSelId] = useState<string | null>(null);
@@ -45,6 +47,8 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
   const listRef = useRef<HTMLDivElement>(null);
   const stickRef = useRef(true);
   const requested = useRef(new Set<string>());
+  /** Локальные ссылки на вложения, которые ещё грузятся: показываем сразу, не дожидаясь сервера. */
+  const localUrls = useRef(new Map<string, string>());
 
   const pairFilter = `and(sender.eq.${userId},recipient.eq.${friend.id}),and(sender.eq.${friend.id},recipient.eq.${userId})`;
 
@@ -59,7 +63,7 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
       if (!prev || first) return latest;
       if (latest.length === 0) return prev;
       const cutoff = latest[0].created_at;
-      return [...prev.filter((m) => m.created_at < cutoff), ...latest];
+      return [...prev.filter((m) => isTmp(m.id) || m.created_at < cutoff), ...latest];
     });
     if (first) setHasMore(latest.length === PAGE);
   }, []);
@@ -117,7 +121,7 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
   // временные ссылки на вложения (бакет закрытый)
   useEffect(() => {
     if (!msgs) return;
-    const need = msgs.map((m) => m.media_path).filter((p): p is string => Boolean(p) && !urls[p!] && !requested.current.has(p!));
+    const need = msgs.map((m) => m.media_path).filter((p): p is string => Boolean(p) && !p!.startsWith(LOCAL) && !urls[p!] && !requested.current.has(p!));
     if (need.length === 0) return;
     need.forEach((p) => requested.current.add(p));
     supabase!.storage.from(CHAT_BUCKET).createSignedUrls(need, URL_TTL).then(({ data }) => {
@@ -169,36 +173,56 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
     if (el) stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
   };
 
-  const send = async () => {
+  const send = () => {
     const body = text.trim();
-    if (busy || (!body && !pending)) return;
-    setBusy(true);
+    const media = pending;
+    if (!body && !media) return;
+    // сообщение появляется сразу, а загрузка и запись идут в фоне
+    const tmpId = TMP + generateUUID();
+    if (media) localUrls.current.set(tmpId, URL.createObjectURL(media.file));
+    const temp: ChatMessage = {
+      id: tmpId, sender: userId, recipient: friend.id, body: body || null,
+      media_path: media ? LOCAL + tmpId : null, media_type: media ? media.kind : null,
+      created_at: new Date().toISOString(), read_at: null,
+    };
+    stickRef.current = true;
     setErr(null);
-    let path: string | null = null;
-    try {
-      let media_type: "image" | "video" | "audio" | null = null;
-      if (pending) {
-        path = await uploadMedia(userId, friend.id, await prepareMedia(pending.file));
-        media_type = pending.kind;
+    setMsgs((prev) => [...(prev ?? []), temp]);
+    setText("");
+    setPending(null);
+    const drop = () => {
+      const u = localUrls.current.get(tmpId);
+      if (u) { URL.revokeObjectURL(u); localUrls.current.delete(tmpId); }
+    };
+    void (async () => {
+      let path: string | null = null;
+      try {
+        if (media) path = await uploadMedia(userId, friend.id, await prepareMedia(media.file));
+        const { data, error } = await supabase!
+          .from("chat_messages")
+          .insert({ sender: userId, recipient: friend.id, body: body || null, media_path: path, media_type: media ? media.kind : null })
+          .select(CHAT_COLS)
+          .single();
+        if (error || !data) throw new Error("insert");
+        const row = data as ChatMessage;
+        setMsgs((prev) => {
+          if (!prev) return prev;
+          const rest = prev.filter((x) => x.id !== tmpId);
+          return rest.some((x) => x.id === row.id) ? rest : [...rest, row].sort((x, y) => (x.created_at < y.created_at ? -1 : 1));
+        });
+        drop();
+        sendPushEvent("chat", row.id);
+      } catch (e) {
+        removeMedia(path);
+        drop();
+        setMsgs((prev) => prev && prev.filter((x) => x.id !== tmpId));
+        // возвращаем набранное в поле, чтобы не печатать заново
+        setText((cur) => (cur ? cur : body));
+        if (media) setPending((cur) => cur ?? { ...media, preview: URL.createObjectURL(media.file) });
+        const msg = e instanceof Error ? e.message : "";
+        setErr(msg === "insert" ? c("failed") : m2(mediaErrorKey(msg)).replace("{mb}", msg === "too-big-audio" ? "10" : "25"));
       }
-      const { data, error } = await supabase!
-        .from("chat_messages")
-        .insert({ sender: userId, recipient: friend.id, body: body || null, media_path: path, media_type })
-        .select(CHAT_COLS)
-        .single();
-      if (error || !data) throw new Error("insert");
-      const row = data as ChatMessage;
-      stickRef.current = true;
-      setMsgs((prev) => (prev && !prev.some((x) => x.id === row.id) ? [...prev, row] : prev));
-      setText("");
-      setPending(null);
-      sendPushEvent("chat", row.id);
-    } catch (e) {
-      removeMedia(path);
-      const msg = e instanceof Error ? e.message : "";
-      setErr(msg === "insert" ? c("failed") : m2(mediaErrorKey(msg)).replace("{mb}", msg === "too-big-audio" ? "10" : "25"));
-    }
-    setBusy(false);
+    })();
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -233,7 +257,7 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
     <span className="grid h-full w-full place-items-center bg-[var(--accent-soft)] text-[18px]">{friend.avatar || "🙂"}</span>
   );
 
-  const canSend = !busy && (text.trim().length > 0 || pending !== null);
+  const canSend = text.trim().length > 0 || pending !== null;
   const title = c("title").replace("{name}", friend.name);
 
   // через портал: у предков в «Друзьях» есть анимации с transform, из-за них fixed обрезался бы по их рамке
@@ -273,14 +297,15 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
             const mine = m.sender === userId;
             const prev = msgs[i - 1];
             const newDay = !prev || dayLabel(prev.created_at) !== dayLabel(m.created_at);
-            const url = m.media_path ? urls[m.media_path] : undefined;
+            const sending = isTmp(m.id);
+            const url = m.media_path ? (sending ? localUrls.current.get(m.id) : urls[m.media_path]) : undefined;
             const selected = selId === m.id;
             return (
               <div key={m.id} className="flex flex-col">
                 {newDay && <p className="my-2 text-center text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--ink-faint)]">{dayLabel(m.created_at)}</p>}
                 <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
                   <div
-                    onClick={() => mine && setSelId(selected ? null : m.id)}
+                    onClick={() => mine && !sending && setSelId(selected ? null : m.id)}
                     className={`max-w-[82%] overflow-hidden rounded-2xl ${mine ? "cursor-pointer bg-[var(--accent)] text-[var(--accent-ink)]" : "border border-[var(--line)] bg-[var(--panel-2)]"}`}
                   >
                     {m.media_path && m.media_type && <MediaView url={url} type={m.media_type} className="rounded-none" />}
@@ -288,7 +313,9 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
                   </div>
                   <p className="mt-0.5 px-1 text-[10.5px] text-[var(--ink-faint)]">
                     {timeFmt.format(new Date(m.created_at))}
-                    {mine && <span aria-label={m.read_at ? c("seen") : c("sent")}> {m.read_at ? "✓✓" : "✓"}</span>}
+                    {mine && (sending
+                      ? <span aria-label={c("sending")}> 🕓</span>
+                      : <span aria-label={m.read_at ? c("seen") : c("sent")}> {m.read_at ? "✓✓" : "✓"}</span>)}
                   </p>
                   {mine && selected && (
                     <button
@@ -307,7 +334,7 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
         {err && <p className="shrink-0 bg-[var(--danger-soft)] px-4 py-2 text-[12.5px] font-semibold text-[var(--danger)]">{err}</p>}
 
         <div className="relative flex shrink-0 items-end gap-2 border-t border-[var(--line)] px-3 py-2.5">
-          <MediaAttach lang={lang} value={pending} onChange={setPending} onError={setErr} disabled={busy} floating />
+          <MediaAttach lang={lang} value={pending} onChange={setPending} onError={setErr} floating />
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -323,7 +350,7 @@ export default function FriendChat({ userId, friend, lang, onClose }: { userId: 
             disabled={!canSend}
             className="h-11 shrink-0 rounded-xl bg-[var(--accent)] px-4 text-[13px] font-semibold text-[var(--accent-ink)] active:scale-95 disabled:opacity-50"
           >
-            {busy ? c("sending") : c("send")}
+            {c("send")}
           </button>
         </div>
       </div>
