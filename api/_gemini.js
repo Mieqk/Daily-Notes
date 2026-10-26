@@ -108,7 +108,9 @@ export async function generateText(key, prompt, generationConfig = {}, diag = []
 if (process.env.GEMINI_API_KEY && !process.env.GEMINI_BASE_URL) listFlashModels(process.env.GEMINI_API_KEY, "v1beta");
 
 // Один потоковый запрос к модели: отдаёт куски текста (без частей с размышлениями).
-async function* streamPieces(key, version, model, prompt, generationConfig, thinking, signal) {
+// images — необязательные картинки [{mime, data(base64)}]: уходят перед текстом как inlineData (мультимодальный ввод).
+async function* streamPieces(key, version, model, prompt, generationConfig, thinking, signal, images = []) {
+  const parts = [...images.map((im) => ({ inlineData: { mimeType: im.mime, data: im.data } })), { text: prompt }];
   let r;
   const variants = [...thinking, null];
   const known = thinkingOk.get(model);
@@ -122,7 +124,7 @@ async function* streamPieces(key, version, model, prompt, generationConfig, thin
     r = await fetch(`${BASE}/${version}/models/${model}:streamGenerateContent?alt=sse`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: v ? { ...generationConfig, thinkingConfig: v } : generationConfig }),
+      body: JSON.stringify({ contents: [{ parts }], generationConfig: v ? { ...generationConfig, thinkingConfig: v } : generationConfig }),
       signal,
     });
     if (r.ok) break;
@@ -178,7 +180,7 @@ export async function streamText(key, prompt, generationConfig = {}, diag = [], 
   const launch = (model) => {
     const ctl = new AbortController();
     const a = { model, ctl, overall: setTimeout(() => ctl.abort(), left()), first: setTimeout(() => ctl.abort(), Math.min(firstByteMs, left())) };
-    a.gen = streamPieces(key, version, model, prompt, generationConfig, thinking, ctl.signal);
+    a.gen = streamPieces(key, version, model, prompt, generationConfig, thinking, ctl.signal, opts.images);
     a.next = a.gen.next().then((r) => ({ a, r }), (e) => ({ a, e }));
     live.add(a);
   };
