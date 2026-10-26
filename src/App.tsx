@@ -21,8 +21,7 @@ import SettingsView from "./components/SettingsView";
 import PlannerView from "./components/PlannerView";
 import LockScreen from "./components/LockScreen";
 import SleepView from "./components/SleepView";
-import NutritionView from "./components/NutritionView";
-import WorkoutView from "./components/WorkoutView";
+import HobbyView from "./components/HobbyView";
 import InstallPrompt from "./components/InstallPrompt";
 import NewPasswordScreen from "./components/NewPasswordScreen";
 import AuthScreen from "./components/AuthScreen";
@@ -63,6 +62,16 @@ export default function App() {
   const e2eeReady = e2eeStatus === 'off' || e2eeStatus === 'unavailable' || e2eeStatus === 'unlocked';
   useEffect(() => { if (userId) void initE2ee(userId); }, [userId]);
 
+  // «Питание» и «Тренировки» переехали внутрь «Хобби»: старое сохранённое значение открывает нужную подвкладку
+  useState(() => {
+    try {
+      const old = JSON.parse(localStorage.getItem("dn.tab") || '""');
+      if (old === "food" || old === "workout") {
+        localStorage.setItem("dn.hobbyTab", JSON.stringify(old));
+        localStorage.setItem("dn.tab", '"hobby"');
+      }
+    } catch { /* не критично */ }
+  });
   const [tab, setTab] = useStored<Tab>("dn.tab", "daily");
   const [theme, setTheme] = useStored<ThemeId>("dn.theme", "day");
   const [lookRaw, setLookRaw] = useStored<Look>("dn.look", DEFAULT_LOOK);
@@ -387,8 +396,7 @@ export default function App() {
     stats: { title: t("statsTitle"), sub: t("statsSub") },
     notes: { title: t("notesTitle"), sub: t("notesSub") },
     sleep: { title: t("sleepTitle"), sub: t("sleepSub") },
-    food: { title: t("foodTitle"), sub: t("foodSub") },
-    workout: { title: t("workoutTitle"), sub: t("workoutSub") },
+    hobby: { title: t("hobbyTitle"), sub: t("hobbySub") },
     friends: { title: t("friendsTitle"), sub: t("friendsSub") },
     settings: { title: t("settingsTitle"), sub: t("settingsSub") },
   };
@@ -443,8 +451,7 @@ export default function App() {
           {tab === "daily" && <DailyView userId={userId} capsules={capsules} setCapsules={setCapsules} date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} onWritingFont={setWritingFont} lang={lang} t={t} showToast={showToast} />}
           {tab === "stats" && <Suspense fallback={<div className="grid h-64 place-items-center text-sm text-[var(--ink-faint)]"><span className="animate-livedot h-2.5 w-2.5 rounded-full bg-[var(--accent)]" /></div>}><StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} /></Suspense>}
           {tab === "sleep" && <SleepView sleep={sleep} lang={lang} t={t} setSleep={(iso, data) => setSleep((prev) => { const next = { ...prev }; if (data) next[iso] = data; else delete next[iso]; return next; })} />}
-          {tab === "food" && <NutritionView lang={lang} />}
-          {tab === "workout" && <WorkoutView lang={lang} />}
+          {tab === "hobby" && <HobbyView lang={lang} />}
           {tab === "plan" && <PlannerView tasks={tasks} setTasks={setTasks} onOpen={openDate} lang={lang} showToast={showToast} />}
           {tab === "notes" && <NotesView capsules={capsules} notes={notes} tasks={tasks} moods={moods} tags={tags} photos={photos} moodEmoji={moodEmoji} writingFont={writingFont} onOpen={openDate} lang={lang} t={t} />}
           {tab === "friends" && !userId && (
