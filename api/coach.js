@@ -57,6 +57,21 @@ function sanitizeItems(raw, mode) {
     .filter((x) => (mode === "food" ? x.name && x.grams && x.kcal !== null && x.protein !== null && x.fat !== null && x.carbs !== null : x.name && x.sets && x.reps));
 }
 
+// Источники из ответа с поиском Google: только https, без повторов (у Gemini это ссылки-перенаправления, а в title домен сайта)
+function sanitizeSources(raw) {
+  const seen = new Set();
+  const out = [];
+  for (const x of raw || []) {
+    const url = String(x?.url || "");
+    const title = clean(x?.title, 60) || "link";
+    if (!/^https:\/\//.test(url) || url.length > 800 || seen.has(title.toLowerCase())) continue;
+    seen.add(title.toLowerCase());
+    out.push({ title, url });
+    if (out.length >= 5) break;
+  }
+  return out;
+}
+
 const tryJson = (s) => {
   try {
     return JSON.parse(s);
@@ -110,6 +125,9 @@ export default async function handler(req, res) {
   const mode = body.mode === "food" ? "food" : body.mode === "hobby" ? "hobby" : "workout";
   const context = clean(body.context, 900);
   const images = sanitizeImages(body.images);
+  // поиск Google включает пользователь переключателем в чате: он медленнее и расходует дневной лимит поиска
+  const wantWeb = body.web === true;
+  let web = wantWeb;
   const fromVideo = body.video === true && images.length > 0;
   const messages = (Array.isArray(body.messages) ? body.messages : [])
     .slice(-14)
@@ -148,6 +166,9 @@ export default async function handler(req, res) {
     (images.length
       ? `The user's last message comes with ${fromVideo ? `${images.length} frames sampled evenly from a short video, in order (there is no audio)` : `${images.length} photo${images.length > 1 ? "s" : ""}`}. Look at ${fromVideo ? "them as one video" : "them"} and use what you see: ${mode === "food" ? "identify the foods, estimate portions in grams and calories/macros, and list them as items; say so if the portion is hard to judge" : mode === "hobby" ? "describe what you see and answer what the user asks about it; no items" : "check exercise technique and posture, equipment or physique as asked, give concrete corrections; do not diagnose injuries"}}. Never guess who a person is. If the media is unclear, say what you could not see.\n`
       : "") +
+    (web
+      ? `You can search the web. Use it for anything that depends on current or specific facts: a particular product, brand or new release, its nutrition label (kcal, protein, fat, carbs per 100 g or per serving), prices, news. Prefer values from the manufacturer or a reliable source; say so when you could not find them or when the figures are approximate. Do not paste links or source names into the reply: the app shows the sources itself.\n`
+      : "") +
     (context ? `Today's summary from the app: ${context}\n` : "") +
     `Conversation so far:\n${messages.map((m) => `${m.role}: ${m.text}`).join("\n")}\nAssistant:`;
 
@@ -167,25 +188,36 @@ export default async function handler(req, res) {
     res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders?.();
   };
-  const out = await streamText(key, prompt, { temperature: 0.9, maxOutputTokens: 4096 }, diag, {
-    // функция живёт 60 секунд (vercel.json): первый кусок ждём до 12 с на модель, весь ответ не дольше 50 с
-    firstByteMs: 12_000,
-    deadlineMs: 50_000,
-    images,
-    thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
-    // для чата важнее быстрый первый ответ: сначала lite-модели, полные flash в запасе
-    preferLite: true,
-    // если модель молчит больше 2,5 с, параллельно шлём такой же запрос и берём того, кто ответит раньше
-    hedgeMs: 2500,
-    timing,
-  }, (piece) => {
+  const onDelta = (piece) => {
     full += piece;
     const vis = visibleLength(full);
     if (vis <= sent) return;
     if (!open) startStream();
     res.write(JSON.stringify({ d: full.slice(sent, vis) }) + "\n");
     sent = vis;
-  });
+  };
+  const run = (useWeb, deadlineMs) =>
+    streamText(key, prompt, { temperature: 0.9, maxOutputTokens: 4096 }, diag, {
+      // функция живёт 60 секунд (vercel.json): первый кусок ждём до 12 с на модель (с поиском дольше), весь ответ не дольше 50 с
+      firstByteMs: useWeb ? 18_000 : 12_000,
+      deadlineMs,
+      images,
+      thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
+      // для чата важнее быстрый первый ответ: сначала lite-модели, полные flash в запасе
+      preferLite: true,
+      // если модель молчит больше 2,5 с, параллельно шлём такой же запрос и берём того, кто ответит раньше
+      // (с поиском копию не шлём: каждый запрос с поиском тратит дневной лимит)
+      hedgeMs: useWeb ? 0 : 2500,
+      ...(useWeb ? { tools: [{ google_search: {} }] } : {}),
+      timing,
+    }, onDelta);
+  let out = await run(web, 50_000);
+  // модель не поддержала поиск, кончился его лимит или он затянулся: отвечаем без поиска, если ещё остаётся время
+  if (!out && web && !open && Date.now() - t0 < 32_000) {
+    diag.push("search off");
+    web = false;
+    out = await run(false, 50_000 - (Date.now() - t0));
+  }
 
   if (!out) {
     if (open) return res.end(JSON.stringify({ error: "ai failed", detail: diag.join(" | ").slice(0, 400) }) + "\n");
@@ -198,9 +230,9 @@ export default async function handler(req, res) {
     return res.status(422).json({ error: "bad reply", detail: `${out.model}: ${out.text.slice(0, 120)}` });
   }
   // только время и модель, без текста переписки: чтобы видеть в логах Vercel, где теряются секунды
-  console.log(`coach: ${out.model} first ${timing.firstMs ?? "-"}ms total ${Date.now() - t0}ms`);
+  console.log(`coach: ${out.model}${web ? (out.searched ? " web" : " web-unused") : ""} first ${timing.firstMs ?? "-"}ms total ${Date.now() - t0}ms`);
   if (!open) startStream();
-  return res.end(JSON.stringify({ done: true, ...parsed, model: out.model, cut: !!out.cut }) + "\n");
+  return res.end(JSON.stringify({ done: true, ...parsed, model: out.model, cut: !!out.cut, ...(web ? { sources: sanitizeSources(out.sources), searched: !!out.searched } : {}) }) + "\n");
 }
 
 function safeParse(s) {

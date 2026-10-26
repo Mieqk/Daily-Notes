@@ -5,7 +5,7 @@ import { MAX_PHOTOS, MAX_VIDEO_SEC, prepareAiMedia, type AiAttachment, type AiMe
 
 export type CoachMode = "food" | "workout" | "hobby";
 export interface CoachItem { name: string; grams?: number; kcal?: number; protein?: number; fat?: number; carbs?: number; sets?: number; reps?: number; kg?: number }
-interface Msg { id: string; role: "user" | "assistant"; text: string; items?: CoachItem[]; added?: boolean; /** превью вложений пользователя (маленькие картинки; сами файлы не хранятся) */ thumbs?: string[]; video?: boolean }
+interface Msg { id: string; role: "user" | "assistant"; text: string; items?: CoachItem[]; added?: boolean; /** превью вложений пользователя (маленькие картинки; сами файлы не хранятся) */ thumbs?: string[]; video?: boolean; /** ссылки, на которые опирался ответ с поиском Google */ sources?: { title: string; url: string }[] }
 
 interface S {
   name: string; hello: string; ph: string; send: string; thinking: string; err: string; details: string; add: string; added: string; clear: string; off: string;
@@ -41,15 +41,15 @@ const L: Record<CoachMode, Record<string, S>> = {
   },
 };
 
-interface AS { attach: string; preparing: string; note: string; remove: string; video: string; errors: Record<AiMediaError | "limit", string> }
+interface AS { web: string; webHint: string; sources: string; attach: string; preparing: string; note: string; remove: string; video: string; errors: Record<AiMediaError | "limit", string> }
 const A: Record<Lang, AS> = {
-  ru: { attach: "Прикрепить фото или видео", preparing: "Готовлю вложение…", note: "Фото и кадры из видео (без звука) тоже уйдут в Google Gemini.", remove: "Убрать вложение", video: "Видео", errors: { "not-media": "Можно прикрепить только фото или видео.", "too-big": "Файл слишком большой.", "too-long": `Видео длиннее ${MAX_VIDEO_SEC} секунд. Обрежьте его.`, unreadable: "Не удалось открыть файл.", limit: `Можно до ${MAX_PHOTOS} фото или одно видео.` } },
-  en: { attach: "Attach a photo or video", preparing: "Preparing the attachment…", note: "Photos and frames from videos (no sound) are sent to Google Gemini too.", remove: "Remove attachment", video: "Video", errors: { "not-media": "Only photos and videos can be attached.", "too-big": "The file is too big.", "too-long": `The video is longer than ${MAX_VIDEO_SEC} seconds. Trim it.`, unreadable: "Couldn't open the file.", limit: `Up to ${MAX_PHOTOS} photos or one video.` } },
-  be: { attach: "Прымацаваць фота або відэа", preparing: "Рыхтую ўкладанне…", note: "Фота і кадры з відэа (без гуку) таксама пойдуць у Google Gemini.", remove: "Прыбраць укладанне", video: "Відэа", errors: { "not-media": "Можна прымацаваць толькі фота або відэа.", "too-big": "Файл занадта вялікі.", "too-long": `Відэа даўжэйшае за ${MAX_VIDEO_SEC} секунд. Абрэжце яго.`, unreadable: "Не атрымалася адкрыць файл.", limit: `Можна да ${MAX_PHOTOS} фота або адно відэа.` } },
-  uk: { attach: "Прикріпити фото або відео", preparing: "Готую вкладення…", note: "Фото й кадри з відео (без звуку) також підуть до Google Gemini.", remove: "Прибрати вкладення", video: "Відео", errors: { "not-media": "Можна прикріпити лише фото або відео.", "too-big": "Файл завеликий.", "too-long": `Відео довше за ${MAX_VIDEO_SEC} секунд. Обріжте його.`, unreadable: "Не вдалося відкрити файл.", limit: `Можна до ${MAX_PHOTOS} фото або одне відео.` } },
-  de: { attach: "Foto oder Video anhängen", preparing: "Anhang wird vorbereitet…", note: "Fotos und Einzelbilder aus Videos (ohne Ton) werden ebenfalls an Google Gemini gesendet.", remove: "Anhang entfernen", video: "Video", errors: { "not-media": "Es können nur Fotos und Videos angehängt werden.", "too-big": "Die Datei ist zu groß.", "too-long": `Das Video ist länger als ${MAX_VIDEO_SEC} Sekunden. Kürze es.`, unreadable: "Die Datei konnte nicht geöffnet werden.", limit: `Bis zu ${MAX_PHOTOS} Fotos oder ein Video.` } },
-  fr: { attach: "Joindre une photo ou une vidéo", preparing: "Préparation de la pièce jointe…", note: "Les photos et des images extraites des vidéos (sans le son) sont aussi envoyées à Google Gemini.", remove: "Retirer la pièce jointe", video: "Vidéo", errors: { "not-media": "Seules les photos et les vidéos peuvent être jointes.", "too-big": "Le fichier est trop volumineux.", "too-long": `La vidéo dépasse ${MAX_VIDEO_SEC} secondes. Raccourcis-la.`, unreadable: "Impossible d’ouvrir le fichier.", limit: `Jusqu’à ${MAX_PHOTOS} photos ou une vidéo.` } },
-  es: { attach: "Adjuntar foto o vídeo", preparing: "Preparando el adjunto…", note: "Las fotos y fotogramas de vídeos (sin sonido) también se envían a Google Gemini.", remove: "Quitar adjunto", video: "Vídeo", errors: { "not-media": "Solo se pueden adjuntar fotos y vídeos.", "too-big": "El archivo es demasiado grande.", "too-long": `El vídeo dura más de ${MAX_VIDEO_SEC} segundos. Recórtalo.`, unreadable: "No se pudo abrir el archivo.", limit: `Hasta ${MAX_PHOTOS} fotos o un vídeo.` } },
+  ru: { web: "Искать в интернете", webHint: "Помощник сможет искать в Google: новинки, состав и КБЖУ конкретных продуктов. Ответ идёт чуть дольше, а число поисков в сутки ограничено. Запрос уйдёт в Google Search.", sources: "Источники", attach: "Прикрепить фото или видео", preparing: "Готовлю вложение…", note: "Фото и кадры из видео (без звука) тоже уйдут в Google Gemini.", remove: "Убрать вложение", video: "Видео", errors: { "not-media": "Можно прикрепить только фото или видео.", "too-big": "Файл слишком большой.", "too-long": `Видео длиннее ${MAX_VIDEO_SEC} секунд. Обрежьте его.`, unreadable: "Не удалось открыть файл.", limit: `Можно до ${MAX_PHOTOS} фото или одно видео.` } },
+  en: { web: "Search the web", webHint: "The assistant can search Google: new products, nutrition facts of specific foods. Answers take a bit longer and the number of searches per day is limited. Your question is sent to Google Search.", sources: "Sources", attach: "Attach a photo or video", preparing: "Preparing the attachment…", note: "Photos and frames from videos (no sound) are sent to Google Gemini too.", remove: "Remove attachment", video: "Video", errors: { "not-media": "Only photos and videos can be attached.", "too-big": "The file is too big.", "too-long": `The video is longer than ${MAX_VIDEO_SEC} seconds. Trim it.`, unreadable: "Couldn't open the file.", limit: `Up to ${MAX_PHOTOS} photos or one video.` } },
+  be: { web: "Шукаць у інтэрнэце", webHint: "Памочнік зможа шукаць у Google: навінкі, склад і КБЖВ канкрэтных прадуктаў. Адказ ідзе трохі даўжэй, а колькасць пошукаў за суткі абмежавана. Запыт пойдзе ў Google Search.", sources: "Крыніцы", attach: "Прымацаваць фота або відэа", preparing: "Рыхтую ўкладанне…", note: "Фота і кадры з відэа (без гуку) таксама пойдуць у Google Gemini.", remove: "Прыбраць укладанне", video: "Відэа", errors: { "not-media": "Можна прымацаваць толькі фота або відэа.", "too-big": "Файл занадта вялікі.", "too-long": `Відэа даўжэйшае за ${MAX_VIDEO_SEC} секунд. Абрэжце яго.`, unreadable: "Не атрымалася адкрыць файл.", limit: `Можна да ${MAX_PHOTOS} фота або адно відэа.` } },
+  uk: { web: "Шукати в інтернеті", webHint: "Помічник зможе шукати в Google: новинки, склад і КБЖВ конкретних продуктів. Відповідь іде трохи довше, а кількість пошуків на добу обмежена. Запит піде в Google Search.", sources: "Джерела", attach: "Прикріпити фото або відео", preparing: "Готую вкладення…", note: "Фото й кадри з відео (без звуку) також підуть до Google Gemini.", remove: "Прибрати вкладення", video: "Відео", errors: { "not-media": "Можна прикріпити лише фото або відео.", "too-big": "Файл завеликий.", "too-long": `Відео довше за ${MAX_VIDEO_SEC} секунд. Обріжте його.`, unreadable: "Не вдалося відкрити файл.", limit: `Можна до ${MAX_PHOTOS} фото або одне відео.` } },
+  de: { web: "Im Web suchen", webHint: "Der Assistent kann bei Google suchen: neue Produkte, Nährwerte bestimmter Lebensmittel. Antworten dauern etwas länger und die Zahl der Suchen pro Tag ist begrenzt. Deine Frage geht an Google Search.", sources: "Quellen", attach: "Foto oder Video anhängen", preparing: "Anhang wird vorbereitet…", note: "Fotos und Einzelbilder aus Videos (ohne Ton) werden ebenfalls an Google Gemini gesendet.", remove: "Anhang entfernen", video: "Video", errors: { "not-media": "Es können nur Fotos und Videos angehängt werden.", "too-big": "Die Datei ist zu groß.", "too-long": `Das Video ist länger als ${MAX_VIDEO_SEC} Sekunden. Kürze es.`, unreadable: "Die Datei konnte nicht geöffnet werden.", limit: `Bis zu ${MAX_PHOTOS} Fotos oder ein Video.` } },
+  fr: { web: "Chercher sur le web", webHint: "L’assistant peut chercher sur Google : nouveaux produits, valeurs nutritionnelles d’aliments précis. Les réponses sont un peu plus lentes et le nombre de recherches par jour est limité. Ta question est envoyée à Google Search.", sources: "Sources", attach: "Joindre une photo ou une vidéo", preparing: "Préparation de la pièce jointe…", note: "Les photos et des images extraites des vidéos (sans le son) sont aussi envoyées à Google Gemini.", remove: "Retirer la pièce jointe", video: "Vidéo", errors: { "not-media": "Seules les photos et les vidéos peuvent être jointes.", "too-big": "Le fichier est trop volumineux.", "too-long": `La vidéo dépasse ${MAX_VIDEO_SEC} secondes. Raccourcis-la.`, unreadable: "Impossible d’ouvrir le fichier.", limit: `Jusqu’à ${MAX_PHOTOS} photos ou une vidéo.` } },
+  es: { web: "Buscar en la web", webHint: "El asistente puede buscar en Google: productos nuevos, valores nutricionales de alimentos concretos. Las respuestas tardan un poco más y el número de búsquedas al día es limitado. Tu pregunta se envía a Google Search.", sources: "Fuentes", attach: "Adjuntar foto o vídeo", preparing: "Preparando el adjunto…", note: "Las fotos y fotogramas de vídeos (sin sonido) también se envían a Google Gemini.", remove: "Quitar adjunto", video: "Vídeo", errors: { "not-media": "Solo se pueden adjuntar fotos y vídeos.", "too-big": "El archivo es demasiado grande.", "too-long": `El vídeo dura más de ${MAX_VIDEO_SEC} segundos. Recórtalo.`, unreadable: "No se pudo abrir el archivo.", limit: `Hasta ${MAX_PHOTOS} fotos o un vídeo.` } },
 };
 
 const uid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
@@ -65,6 +65,8 @@ interface Props {
 export default function CoachChat({ mode, lang, context, onApply }: Props) {
   const l = (L[mode][lang] ?? L[mode].en);
   const [on, setOn] = useStored<boolean>(mode === "food" ? "dn.coachFood" : mode === "hobby" ? "dn.coachHobby" : "dn.coachWorkout", false);
+  // поиск Google включается вручную и общий для всех помощников: он медленнее и расходует дневной лимит
+  const [web, setWeb] = useStored<boolean>("dn.coachWeb", false);
   const [msgs, setMsgs] = useStored<Msg[]>(`dn.coach.${mode}`, []);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -140,7 +142,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          lang, mode, context,
+          lang, mode, context, web,
           messages: next.slice(-14).map((m) => ({ role: m.role, text: m.text, attached: m.thumbs?.length, items: m.items?.map((it) => ({ name: it.name })) })),
           // сами картинки уходят только с текущей репликой
           ...(sending.length ? { images: sending.flatMap((x) => x.images), video: sending[0].kind === "video" } : {}),
@@ -156,7 +158,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
       const dec = new TextDecoder();
       let buf = "";
       let acc = "";
-      type Fin = { reply?: string; items?: CoachItem[]; error?: string; detail?: string };
+      type Fin = { reply?: string; items?: CoachItem[]; sources?: { title: string; url: string }[]; error?: string; detail?: string };
       let fin = null as Fin | null;
       const onLine = (raw: string) => {
         const line = raw.trim();
@@ -188,7 +190,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
       if (!reply) throw Object.assign(new Error("bad"), { detail: fin?.detail || `empty reply (HTTP ${r.status})` });
       const items = Array.isArray(fin?.items) && fin.items.length ? fin.items : undefined;
       // от текущей истории, а не от снимка до запроса: иначе пропадёт отметка «Добавлено», поставленная во время ответа
-      setMsgs((prev) => [...prev, { id: uid(), role: "assistant" as const, text: reply, items }].slice(-40));
+      setMsgs((prev) => [...prev, { id: uid(), role: "assistant" as const, text: reply, items, sources: Array.isArray(fin?.sources) && fin.sources.length ? fin.sources : undefined }].slice(-40));
       if (fin?.error) setError({ msg: l.err, detail: fin.detail });
     } catch (e) {
       const err = e as { detail?: string; name?: string };
@@ -241,6 +243,12 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
                 </div>
               )}
               {m.text && <span>{m.text}</span>}
+              {m.sources && (
+                <div className="flex flex-wrap items-center gap-1.5 text-[11.5px] text-[var(--ink-faint)]">
+                  <span>🔎 {a.sources}:</span>
+                  {m.sources.map((src, i) => <a key={i} href={src.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-[var(--line)] px-2 py-0.5 font-semibold text-[var(--ink-soft)] hover:border-[var(--accent)]">{src.title}</a>)}
+                </div>
+              )}
               {m.items && (
                 <div className="flex flex-col gap-2 rounded-lg bg-[var(--panel-2)] p-2.5">
                   <ul className="flex flex-col gap-1 text-[12.5px]">{m.items.map((it, i) => <li key={i}>{describe(it)}</li>)}</ul>
@@ -298,6 +306,11 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
         <button onClick={() => send(text)} disabled={busy || preparing || (!text.trim() && !files.length)} className="flex h-11 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] px-4 text-[13px] font-bold text-[var(--accent-ink)] transition-all active:scale-95 disabled:opacity-50">{l.send}</button>
       </div>
       </div>
+
+      <label className="flex items-start gap-2 px-1 text-[12px] leading-relaxed text-[var(--ink-soft)]">
+        <input type="checkbox" checked={web} onChange={(e) => setWeb(e.target.checked)} disabled={busy} className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]" />
+        <span><b className="font-semibold text-[var(--ink)]">{a.web}</b>{web ? ` — ${a.webHint}` : ""}</span>
+      </label>
 
       <div className="flex justify-between px-1 pb-2 text-[12px] font-semibold leading-relaxed text-[var(--ink-faint)]">
         <button onClick={() => { setMsgs([]); setError(null); }} disabled={!msgs.length || busy} className="hover:text-[var(--ink)] disabled:opacity-40">{l.clear}</button>
