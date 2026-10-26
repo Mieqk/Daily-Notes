@@ -22,15 +22,23 @@ export const isNativeApp = () => Boolean(cap()?.isNativePlatform?.());
 
 /** Вход через Google: Google не пускает OAuth во встроенный WebView, поэтому открываем системный браузер. */
 export async function signInWithGoogleNative(): Promise<string | null> {
-  const browser = plugin('Browser');
-  if (!supabase || !browser) return 'Browser plugin unavailable';
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: NATIVE_REDIRECT, skipBrowserRedirect: true },
-  });
-  if (error || !data?.url) return error?.message ?? 'No OAuth url';
-  await browser.open({ url: data.url });
-  return null;
+  if (!supabase) return 'Supabase not configured';
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: NATIVE_REDIRECT, skipBrowserRedirect: true },
+    });
+    if (error || !data?.url) return error?.message ?? 'No OAuth url';
+    try {
+      await plugin('Browser').open({ url: data.url });
+    } catch {
+      // Плагин Browser недоступен: внешний адрес Capacitor откроет в системном браузере.
+      window.location.href = data.url;
+    }
+    return null;
+  } catch (e) {
+    return e instanceof Error ? e.message : String(e);
+  }
 }
 
 /** Ловит возврат из браузера по ссылке io.vercel.dailynotes://auth#access_token=… и входит в аккаунт. */
