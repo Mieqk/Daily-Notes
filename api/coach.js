@@ -225,8 +225,8 @@ export default async function handler(req, res) {
   };
   const run = (useWeb, deadlineMs) =>
     streamText(key, prompt, { temperature: 0.9, maxOutputTokens: 4096 }, diag, {
-      // функция живёт 60 секунд (vercel.json): первый кусок ждём до 12 с на модель (с поиском дольше), весь ответ не дольше 50 с
-      firstByteMs: useWeb ? 18_000 : 12_000,
+      // функция живёт 60 секунд (vercel.json): первый кусок ждём до 20 с на модель (с поиском дольше: при высокой нагрузке Gemini lite отвечает за 9–12 с, и 12 с обрывали живые ответы), весь ответ не дольше 50 с
+      firstByteMs: useWeb ? 25_000 : 20_000,
       deadlineMs,
       images,
       thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
@@ -243,6 +243,13 @@ export default async function handler(req, res) {
   if (!out && web && !open && Date.now() - t0 < 32_000) {
     diag.push("search off");
     web = false;
+    out = await run(false, 50_000 - (Date.now() - t0));
+  }
+
+  // Gemini перегружен («high demand», 503): через пару секунд обычно отпускает, один повтор, если ещё есть время
+  if (!out && !open && diag.some((d) => /HTTP 503/.test(d)) && Date.now() - t0 < 25_000) {
+    await new Promise((r) => setTimeout(r, 1500));
+    diag.push("retry after 503");
     out = await run(false, 50_000 - (Date.now() - t0));
   }
 

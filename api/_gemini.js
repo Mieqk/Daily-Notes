@@ -11,7 +11,7 @@ function loadFlashModels(key, version) {
       const d = await r.json();
       const list = (d.models || [])
         .filter((m) => (m.name || "").includes("flash"))
-        .filter((m) => !/tts|preview|image|audio|t2s/.test(m.name))
+        .filter((m) => !/tts|preview|image|audio|t2s|gemini-2\.5-flash-lite/.test(m.name)) // 2.5 lite закрыта для новых ключей (404)
         .filter((m) => !m.supportedGenerationMethods || m.supportedGenerationMethods.includes("generateContent"))
         .map((m) => m.name.replace("models/", ""));
       if (list.length) modelCache.set(version, { at: Date.now(), list });
