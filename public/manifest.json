@@ -11,6 +11,12 @@
   "background_color": "#edefe8",
   "theme_color": "#2d6a4f",
   "categories": ["lifestyle", "productivity", "health"],
+  "shortcuts": [
+    { "name": "Сегодня", "short_name": "Сегодня", "url": "/?tab=daily", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Календарь и планы", "short_name": "Планы", "url": "/?tab=plan", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Статистика", "short_name": "Статистика", "url": "/?tab=stats", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Искра — ИИ-помощник", "short_name": "Искра", "url": "/?tab=hobby&sub=ai", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ],
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
