@@ -16,6 +16,7 @@ import { MOODS, localeOf, WEEKDAYS_SHORT } from "../i18n";
 import type { Task, SleepData } from "../store";
 import { countWords, downloadText, fromISO, shiftISO, todayISO } from "../store";
 import AiInsights from "./AiInsights";
+import { RecapCard, StreaksAndBadges } from "./Recap";
 import { DownloadIcon, FlameIcon, MoodVisual, PrinterIcon, StatsIcon } from "../icons";
 
 interface StatsViewProps {
@@ -121,6 +122,7 @@ export default function StatsView({ notes, tasks, moods, sleep, moodEmoji, lang,
     Object.values(notes).some((v) => (v ?? "").trim()) ||
     Object.keys(moods).length > 0 ||
     Object.values(tasks).some((l) => l.length > 0);
+  const recapData = useMemo(() => ({ notes, tasks, moods, sleep }), [notes, tasks, moods, sleep]);
   const hasData = days.some((d) => d.mood !== null || d.total > 0);
 
   /* ---------- heatmap (16 weeks) ---------- */
@@ -338,6 +340,9 @@ export default function StatsView({ notes, tasks, moods, sleep, moodEmoji, lang,
         ))}
       </div>
       )}
+
+      {hasAnyData && <RecapCard data={recapData} range={range} moodEmoji={moodEmoji} lang={lang} />}
+      {hasAnyData && <StreaksAndBadges data={recapData} lang={lang} />}
 
       {hasAnyData && <AiInsights notes={notes} tasks={tasks} moods={moods} sleep={sleep} range={range} lang={lang} />}
 
