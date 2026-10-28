@@ -44,6 +44,8 @@ import ShareEntry from "./ShareEntry";
 import CameraCapture from "./CameraCapture";
 import { shrinkPhoto } from "../lib/images";
 import { generateUUID } from "../lib/uuid";
+import { MAX_DICTATE_SEC, canRecordAudio, dictateConsent, pickAudioType, setDictateConsent, transcribeAudio } from "../lib/transcribe";
+import { makeVoice } from "../voice-strings";
 
 
 export interface Reminder {
@@ -128,6 +130,9 @@ export default function DailyView(props: DailyViewProps) {
   const [tagInput, setTagInput] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [listening, setListening] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const aliveRef = useRef(true);
+  const vv = makeVoice(lang);
   const [appliedTpl, setAppliedTpl] = useState<string | null>(null);
   const [myTemplates] = useDayTemplates();
   const [fontOpen, setFontOpen] = useState(false);
@@ -143,7 +148,7 @@ useSwipe({
 });
 
   useEffect(() => () => window.clearTimeout(statusTimer.current), []);
-  useEffect(() => () => recRef.current?.stop(), []);
+  useEffect(() => { aliveRef.current = true; return () => { aliveRef.current = false; recRef.current?.stop(); }; }, []);
 
   const dateObj = fromISO(date);
   const dateLong = new Intl.DateTimeFormat(locale, { weekday: "long" }).format(dateObj);
@@ -164,9 +169,54 @@ useSwipe({
   const hasStandardAPI = !!(window as unknown as Record<string, unknown>).SpeechRecognition;
   const hasWebkitAPI = !!(window as unknown as Record<string, unknown>).webkitSpeechRecognition;
   const isVoiceSupported = !!SR;
+  const aiDictation = !isVoiceSupported && canRecordAudio();
+
+  const appendText = (extra: string) => {
+    setNotes((m) => {
+      const cur = m[date] ?? "";
+      return { ...m, [date]: cur + (cur && !cur.endsWith(" ") ? " " : "") + extra.trim() + " " };
+    });
+    bumpStatus();
+  };
+
+  // Запасная диктовка: где нет Web Speech API (Firefox, APK), записываем голос и расшифровываем через Gemini. Только после согласия.
+  const dictateWithAi = async () => {
+    if (!dictateConsent()) {
+      if (!window.confirm(vv("dictAiConsent"))) return;
+      setDictateConsent(true);
+    }
+    let stream: MediaStream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { showToast(vv("dictMic")); return; }
+    const type = pickAudioType();
+    const mr = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    const chunks: Blob[] = [];
+    const limit = window.setTimeout(() => { if (mr.state !== "inactive") mr.stop(); }, MAX_DICTATE_SEC * 1000);
+    mr.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+    mr.onstop = async () => {
+      window.clearTimeout(limit);
+      stream.getTracks().forEach((tr) => tr.stop());
+      if (!aliveRef.current) return;
+      setListening(false);
+      const blob = new Blob(chunks, { type: mr.mimeType || type || "audio/webm" });
+      if (!blob.size) return;
+      setTranscribing(true);
+      try {
+        appendText(await transcribeAudio(blob, lang));
+      } catch (e) {
+        showToast(vv((e as Error).message === "empty" ? "dictEmpty" : "dictFail"));
+      } finally {
+        if (aliveRef.current) setTranscribing(false);
+      }
+    };
+    recRef.current = { stop: () => { if (mr.state !== "inactive") mr.stop(); } };
+    setListening(true);
+    mr.start();
+  };
 
   const toggleVoice = () => {
+    if (transcribing) return;
     if (listening) { recRef.current?.stop(); return; }
+    if (aiDictation) { void dictateWithAi(); return; }
     if (!isVoiceSupported) {
       console.warn("Speech Recognition API details:", { hasStandardAPI, hasWebkitAPI, userAgent: navigator.userAgent, isSecureContext: window.isSecureContext, protocol: window.location.protocol });
       let errorMsg = t("voiceUnsupported");
@@ -334,8 +384,8 @@ useSwipe({
               </div>
             )}
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-[var(--line)] px-4 py-2.5">
-              <button onClick={toggleVoice} title={SR ? undefined : t("voiceUnsupported")} className={`flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-semibold transition-all duration-200 active:scale-95 ${listening ? "animate-pulsering bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)] hover:text-[var(--ink)]"} ${SR ? "" : "cursor-not-allowed opacity-40"}`}>
-                <MicIcon className="h-4 w-4" />{listening ? t("voiceListening") : ""}
+              <button onClick={toggleVoice} title={aiDictation ? vv("dictAiTitle") : SR ? undefined : t("voiceUnsupported")} className={`flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-semibold transition-all duration-200 active:scale-95 ${listening ? "animate-pulsering bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)] hover:text-[var(--ink)]"} ${SR || aiDictation ? "" : "cursor-not-allowed opacity-40"}`}>
+                <MicIcon className="h-4 w-4" />{transcribing ? vv("dictWork") : listening ? (aiDictation ? vv("dictRec") : t("voiceListening")) : ""}
               </button>
               <button onClick={() => fileRef.current?.click()} className="flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-semibold text-[var(--ink-soft)] transition-all duration-200 hover:bg-[var(--hover)] hover:text-[var(--ink)] active:scale-95">
                 <ImageIcon className="h-4 w-4" /><span className="hidden sm:inline">{t("addPhoto")}</span>

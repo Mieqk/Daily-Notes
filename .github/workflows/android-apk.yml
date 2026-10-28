@@ -63,6 +63,19 @@ jobs:
           PY
           grep -n "io.vercel.dailynotes" android/app/src/main/AndroidManifest.xml
 
+      # Микрофон (диктовка и голосовые) и местоположение (напоминания по месту): без этих разрешений WebView их не даст.
+      - name: Add microphone and location permissions
+        run: |
+          python3 - <<'PY'
+          p = "android/app/src/main/AndroidManifest.xml"
+          s = open(p, encoding="utf-8").read()
+          perms = ["RECORD_AUDIO", "MODIFY_AUDIO_SETTINGS", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
+          add = "".join(f'    <uses-permission android:name="android.permission.{x}" />\n' for x in perms if x not in s)
+          assert "<application" in s
+          open(p, "w", encoding="utf-8").write(s.replace("<application", add + "    <application", 1))
+          PY
+          grep -n "uses-permission" android/app/src/main/AndroidManifest.xml
+
       # Иконка из public/icons/icon-512.png вместо стандартной от Capacitor.
       - name: Set launcher icon
         run: |

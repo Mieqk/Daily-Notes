@@ -49,14 +49,16 @@ async function pickModels(key, preferLite = false) {
 export async function generateText(key, prompt, generationConfig = {}, diag = [], opts = {}) {
   const errors = diag;
   const started = Date.now();
-  const { timeoutMs = 25_000, deadlineMs = 50_000, thinking = [], preferLite = false } = opts;
+  const { timeoutMs = 25_000, deadlineMs = 50_000, thinking = [], preferLite = false, inline = [] } = opts;
   const { version, models } = await pickModels(key, preferLite);
+  // inline — необязательные вложения [{mime, data(base64)}] (например, аудио для расшифровки): уходят перед текстом
+  const parts = [...inline.map((x) => ({ inlineData: { mimeType: x.mime, data: x.data } })), { text: prompt }];
 
   const call = async (model, config, limit) => {
     const r = await fetch(`${BASE}/${version}/models/${model}:generateContent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: config }),
+      body: JSON.stringify({ contents: [{ parts }], generationConfig: config }),
       signal: AbortSignal.timeout(limit),
     });
     return { r, data: await r.json() };
