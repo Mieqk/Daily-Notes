@@ -6,6 +6,9 @@ import { FONT_STACKS, hashPin } from "../store";
 import type { Task } from "../store";
 import { biometricSupported, registerBiometric } from "../lib/biometric";
 import { makeDevice } from "../device-strings";
+import { makeRestore } from "../restore-strings";
+import { applyRestore, parseBackup, summarize } from "../lib/backup";
+import type { Backup, RestoreMode, RestoreSummary } from "../lib/backup";
 import { THEMES } from "../themes";
 import type { ThemeId } from "../themes";
 import { BG_IMAGES } from "../bg";
@@ -214,6 +217,25 @@ export default function SettingsView(props: SettingsViewProps) {
   } = props;
 
   const [confirmClear, setConfirmClear] = useState(false);
+  const rs = makeRestore(lang);
+  const [pendingBackup, setPendingBackup] = useState<Backup | null>(null);
+  const [restoreMode, setRestoreMode] = useState<RestoreMode>("merge");
+  const restoreStats = pendingBackup ? summarize(localStorage, pendingBackup, restoreMode) : null;
+  const pickBackup = async (file: File | undefined) => {
+    if (!file) return;
+    const parsed = parseBackup(await file.text().catch(() => ""));
+    if (!parsed.ok) { showToast(rs(parsed.error === "format" ? "errFormat" : parsed.error === "version" ? "errVersion" : "errEmpty")); return; }
+    setRestoreMode("merge");
+    setPendingBackup(parsed.backup);
+  };
+  const doRestore = () => {
+    if (!pendingBackup) return;
+    if (!applyRestore(localStorage, pendingBackup, restoreMode)) { showToast(rs("fail")); setPendingBackup(null); return; }
+    showToast(rs("done"));
+    setPendingBackup(null);
+    // приложение читает данные из хранилища при запуске, поэтому перезагружаем страницу
+    window.setTimeout(() => window.location.reload(), 700);
+  };
   const [pinMode, setPinMode] = useState<null | "edit">(null);
   const [p1, setP1] = useState("");
   const [p2, setP2] = useState("");
@@ -648,6 +670,13 @@ export default function SettingsView(props: SettingsViewProps) {
               <DownloadIcon className="h-4 w-4" />
               {t("exportJson")}
             </button>
+            <label
+              className="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-4 text-[13px] font-semibold text-[var(--ink-soft)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent-deep)] active:scale-95"
+            >
+              <input type="file" accept="application/json,.json" className="hidden" onChange={(e) => { void pickBackup(e.target.files?.[0]); e.target.value = ""; }} />
+              <DownloadIcon className="h-4 w-4 rotate-180" />
+              {rs("btn")}
+            </label>
             <button
               onClick={() => setConfirmClear(true)}
               className="ml-auto flex h-10 items-center gap-2 rounded-lg border border-[var(--danger)] px-4 text-[13px] font-bold text-[var(--danger)] transition-all hover:bg-[var(--danger-soft)] active:scale-95"
@@ -658,6 +687,60 @@ export default function SettingsView(props: SettingsViewProps) {
           </div>
         </Section>
       </div>
+
+      {/* Restore modal */}
+      {pendingBackup && restoreStats && (
+        <div
+          className="animate-fadein fixed inset-0 z-50 grid place-items-center bg-black/50 p-4 backdrop-blur-[2px]"
+          onMouseDown={() => setPendingBackup(null)}
+        >
+          <div
+            className="animate-pop w-full max-w-sm rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-5"
+            style={{ boxShadow: "var(--shadow)" }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-display text-[16px] font-bold">{rs("title")}</h3>
+            {pendingBackup.exportedAt && (
+              <p className="mt-1 text-[12.5px] text-[var(--ink-soft)]">{rs("fileDate").replace("{date}", pendingBackup.exportedAt.slice(0, 10))}</p>
+            )}
+            <ul className="mt-3 space-y-1 text-[13px]">
+              {(Object.keys(restoreStats.inFile) as (keyof RestoreSummary)[]).filter((k) => restoreStats.inFile[k] > 0).map((k) => (
+                <li key={k} className="flex justify-between gap-3">
+                  <span>{rs(k)}: <b>{restoreStats.inFile[k]}</b></span>
+                  {restoreMode === "merge" && <span className="text-[var(--ink-soft)]">{rs("newN").replace("{n}", String(restoreStats.added[k]))}</span>}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {(["merge", "replace"] as RestoreMode[]).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setRestoreMode(m)}
+                  className={`h-9 rounded-lg border text-[13px] font-semibold transition-colors ${restoreMode === m ? "border-[var(--accent)] bg-[var(--hover)] text-[var(--accent-deep)]" : "border-[var(--line)] text-[var(--ink-soft)]"}`}
+                >
+                  {rs(m)}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[12px] leading-relaxed text-[var(--ink-soft)]">{rs(restoreMode === "merge" ? "mergeHint" : "replaceHint")}</p>
+            <p className="mt-2 text-[12px] leading-relaxed text-[var(--ink-soft)]">{rs("note")}</p>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => setPendingBackup(null)}
+                className="h-10 flex-1 rounded-lg border border-[var(--line)] text-[13px] font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--hover)]"
+              >
+                {t("cancel")}
+              </button>
+              <button
+                onClick={doRestore}
+                className="h-10 flex-1 rounded-lg bg-[var(--accent)] text-[13px] font-bold text-white transition-all hover:brightness-110 active:scale-95"
+              >
+                {rs("apply")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Clear confirm modal */}
       {confirmClear && (
