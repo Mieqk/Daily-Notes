@@ -11,6 +11,7 @@ import type { BgId, Tab, Task, SleepData, WritingFontId } from "./store";
 import { verifyBiometric } from "./lib/biometric";
 import { makeDevice } from "./device-strings";
 import { buildBackup } from "./lib/backup";
+import { applyDeepLink } from "./lib/deepLink";
 import { buildMarkdown, downloadText, hashPin, shiftISO, toISO, todayISO, useNow, useStored } from "./store";
 import { BG_IMAGES } from "./bg";
 import Sidebar from "./components/Sidebar";
@@ -65,6 +66,7 @@ export default function App() {
 
   // «Питание» и «Тренировки» переехали внутрь «Хобби»: старое сохранённое значение открывает нужную подвкладку
   useState(() => {
+    applyDeepLink();
     try {
       const old = JSON.parse(localStorage.getItem("dn.tab") || '""');
       if (old === "food" || old === "workout") {

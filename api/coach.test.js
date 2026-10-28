@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseReply, visibleLength } from './coach.js';
+import { parseReply, sanitizeMemory, visibleLength } from './coach.js';
 
 describe('parseReply', () => {
   it('обычный текст без позиций', () => {
@@ -66,5 +66,25 @@ describe('visibleLength', () => {
   });
   it('решётка в середине текста не прячется', () => {
     expect(visibleLength('цена #5 рубля')).toBe('цена #5 рубля'.length);
+  });
+});
+
+describe('sanitizeMemory', () => {
+  it('только в режиме hobby', () => {
+    expect(sanitizeMemory(['бегаю'], 'food')).toEqual([]);
+    expect(sanitizeMemory(['бегаю'], 'hobby')).toEqual(['бегаю']);
+  });
+
+  it('чистит пробелы, повторы, пустое и ограничивает размер', () => {
+    const long = 'а'.repeat(500);
+    const out = sanitizeMemory(['  цель:   выучить  английский ', 'Цель: выучить английский', '', 5, { text: long }], 'hobby');
+    expect(out[0]).toBe('цель: выучить английский');
+    expect(out).toHaveLength(2);
+    expect(out[1]).toHaveLength(160);
+  });
+
+  it('не больше 20 фактов и не массив даёт пусто', () => {
+    expect(sanitizeMemory(Array.from({ length: 30 }, (_, i) => `f${i}`), 'hobby')).toHaveLength(20);
+    expect(sanitizeMemory('abc', 'hobby')).toEqual([]);
   });
 });

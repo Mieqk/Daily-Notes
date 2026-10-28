@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Lang } from "../i18n";
 import { useStored } from "../store";
 import { MAX_PHOTOS, MAX_VIDEO_SEC, prepareAiMedia, type AiAttachment, type AiMediaError } from "../lib/aiMedia";
+import SparkMemoryPanel from "./SparkMemoryPanel";
+import { EMPTY_MEMORY, addFact, memoryForRequest, sanitizeMemory, type SparkMemory } from "../lib/sparkMemory";
 import { parseStreamLine, type CoachFinal } from "../lib/aiStream";
 
 export type CoachMode = "food" | "workout" | "hobby";
@@ -69,6 +71,9 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
   // поиск Google включается вручную и общий для всех помощников: он медленнее и расходует дневной лимит
   const [web, setWeb] = useStored<boolean>("dn.coachWeb", false);
   const [msgs, setMsgs] = useStored<Msg[]>(`dn.coach.${mode}`, []);
+  const [memRaw, setMemRaw] = useStored<SparkMemory>("dn.sparkMemory", EMPTY_MEMORY);
+  const memory = sanitizeMemory(memRaw);
+  const [memOpen, setMemOpen] = useState(false);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   // текст ответа, который ещё печатается (приходит потоком); в историю попадает целиком, когда ответ готов
@@ -144,6 +149,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lang, mode, context, web,
+          ...(mode === "hobby" && memoryForRequest(memory).length ? { memory: memoryForRequest(memory) } : {}),
           messages: next.slice(-14).map((m) => ({ role: m.role, text: m.text, attached: m.thumbs?.length, items: m.items?.map((it) => ({ name: it.name })) })),
           // сами картинки уходят только с текущей репликой
           ...(sending.length ? { images: sending.flatMap((x) => x.images), video: sending[0].kind === "video" } : {}),
@@ -225,6 +231,7 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
 
   return (
     <div ref={rootRef} className="flex flex-col gap-3">
+      {mode === "hobby" && <SparkMemoryPanel lang={lang} memory={memory} onChange={setMemRaw} open={memOpen} onToggle={() => setMemOpen((v) => !v)} />}
       <div className="flex flex-col gap-3">
         <div className="flex items-end gap-2">
           <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[13px] font-bold text-[var(--accent-ink)]" aria-hidden="true">{l.name[0]}</div>
@@ -241,6 +248,9 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
                 </div>
               )}
               {m.text && <span>{m.text}</span>}
+              {mode === "hobby" && memory.on && m.role === "user" && m.text && !memory.facts.some((f) => f.text === m.text.replace(/\s+/g, " ").trim().slice(0, 160)) && memory.facts.length < 20 && (
+                <button onClick={() => setMemRaw(addFact(memory, m.text, uid()))} className="self-end text-[11.5px] font-semibold underline opacity-80 hover:opacity-100">{(REMEMBER[lang] ?? REMEMBER.en)}</button>
+              )}
               {m.sources && (
                 <div className="flex flex-wrap items-center gap-1.5 text-[11.5px] text-[var(--ink-faint)]">
                   <span>🔎 {a.sources}:</span>
@@ -330,6 +340,8 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
     </div>
   );
 }
+
+const REMEMBER: Record<Lang, string> = { ru: "Запомнить", en: "Remember this", be: "Запомніць", uk: "Запам'ятати", de: "Merken", fr: "Retenir", es: "Recordar" };
 
 const UP: Record<Lang, string> = { ru: "Наверх", en: "Back to top", be: "Уверх", uk: "Нагору", de: "Nach oben", fr: "Haut de page", es: "Arriba" };
 
