@@ -40,6 +40,7 @@ import { isLocalMode } from "../lib/sync";
 import { createPortal } from "react-dom";
 import AuthScreen from "./AuthScreen";
 import NotificationSettings from "./NotificationSettings";
+import PlaceReminders from "./PlaceReminders";
 import GoogleCalendarSettings from "./GoogleCalendarSettings";
 import E2eeSettings from "./E2eeSettings";
 import { makeE2ee } from "../e2ee-strings";
@@ -498,6 +499,7 @@ export default function SettingsView(props: SettingsViewProps) {
 
         {/* Privacy */}
         <NotificationSettings lang={lang} signedIn={Boolean(user)} />
+        <PlaceReminders lang={lang} showToast={showToast} />
         <GoogleCalendarSettings lang={lang} signedIn={Boolean(user)} tasks={tasks} showToast={showToast} />
 
         <Section icon={<LockIcon className="h-4.5 w-4.5" />} title={t("secPrivacy")} sub={t("secPrivacySub")} delay={300}>

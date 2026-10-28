@@ -34,6 +34,7 @@ import MobileMenu from "./components/MobileMenu";
 import FriendsView from "./components/FriendsView";
 import AccountMenu from "./components/AccountMenu";
 import { useNotifications } from "./hooks/useNotifications";
+import { usePlaceReminders } from "./hooks/usePlaceReminders";
 import { useChatUnread } from "./hooks/useChatUnread";
 import { startPresenceHeartbeat } from "./lib/presence";
 import { useCalls } from "./hooks/useCalls";
@@ -123,6 +124,7 @@ export default function App() {
   const t = (k: TKey) => STRINGS[lang][k] ?? STRINGS.ru[k];
 
   const showToast = (msg: string) => setToast({ id: Date.now(), msg });
+  usePlaceReminders(lang, showToast);
   useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(id); }, [toast]);
   useEffect(() => {
     const onFull = () => showToast(u('storageFull'));
