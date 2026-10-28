@@ -64,6 +64,7 @@ export default async function handler(req, res) {
   });
   res.setHeader("Cache-Control", "no-store");
   if (out) return res.json({ text: cleanTranscript(out.text) });
-  // пустой ответ модели на тишину — не ошибка, но отличить его от сбоя здесь нельзя: сообщаем сбой
+  // тишина: все модели ответили, но пустым текстом — это не сбой, клиент покажет «речь не расслышана»
+  if (errors.length && errors.every((e) => e.endsWith("empty response"))) return res.json({ text: "" });
   return res.status(500).json({ error: "ai failed", detail: errors.join(" | ").slice(0, 400) });
 }

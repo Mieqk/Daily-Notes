@@ -13,12 +13,16 @@ export function parseDeepLink(search: string): Record<string, string> {
   return out;
 }
 
-/** Применяет ссылку один раз при старте и убирает параметры из адреса. */
+/** Применяет ссылку один раз при старте и убирает из адреса только свои параметры (tab, sub): остальные, например ?gcal= после входа в Google, нужны другим частям приложения. */
 export function applyDeepLink() {
   try {
     const found = parseDeepLink(window.location.search);
-    if (!window.location.search) return;
+    const p = new URLSearchParams(window.location.search);
+    if (!p.has("tab") && !p.has("sub")) return;
     for (const [k, v] of Object.entries(found)) localStorage.setItem(k, v);
-    window.history.replaceState(null, "", window.location.pathname + window.location.hash);
+    p.delete("tab");
+    p.delete("sub");
+    const qs = p.toString();
+    window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash);
   } catch { /* не критично */ }
 }
