@@ -1,4 +1,4 @@
-import { streamText } from "./_gemini.js";
+import { streamText, warmModels } from "./_gemini.js";
 
 // Чат-помощник (тренер или диетолог). Приватность: приходят только последние реплики диалога и короткая сводка
 // за сегодня, которую собирает клиент (ккал или упражнения). Записей дневника, имён и идентификаторов нет.
@@ -123,6 +123,12 @@ export function visibleLength(text) {
 }
 
 export default async function handler(req, res) {
+  // Прогрев: клиент стучится при открытии чата, чтобы функция проснулась и список моделей был уже в памяти
+  if (req.method === "GET" && req.query?.warm !== undefined) {
+    if (process.env.GEMINI_API_KEY) await warmModels(process.env.GEMINI_API_KEY);
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(204).end();
+  }
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "method not allowed" });

@@ -26,6 +26,9 @@ const num = (v, min, max, digits = 1) => {
   return Math.round(Math.max(min, Math.min(max, v)) * f) / f;
 };
 
+// строки вместо JSON-объектов: вдвое меньше входных токенов
+const COLS = ["day", "weekday", "mood", "sleepHours", "sleepQuality", "tasksDone", "tasksTotal", "wordsWritten"];
+
 function sanitizeDays(raw) {
   if (!Array.isArray(raw)) return [];
   return raw.slice(0, 31).map((d, i) => ({
@@ -67,13 +70,14 @@ export default async function handler(req, res) {
     `Write 3 or 4 short insights (one sentence each) about patterns you can actually see in these numbers: mood trend, link between sleep and mood, tasks and mood, best and worst weekdays. ` +
     `Add one gentle, practical suggestion as the last line. Do not diagnose, do not give medical advice, do not invent data, and say so briefly if there is too little data for a claim. ` +
     `Reply in ${LANG_NAMES[lang]}, one insight per line, each starting with "- ", no intro, no headings.\n` +
-    `Data (JSON): ${JSON.stringify(days)}`;
+    `Data (one row per day, columns: ${COLS.join(",")}): ${days.map((d) => COLS.map((c) => d[c] ?? "null").join(",")).join("; ")}`;
 
   const diag = [];
   // без отключения размышлений новые модели тратят лимит токенов на «мысли» и отвечают пусто или обрывком;
   // функция живёт 60 секунд (vercel.json), поэтому на все попытки не больше 45
   const out = await generateText(key, prompt, { temperature: 0.6, maxOutputTokens: 1024 }, diag, {
     timeoutMs: 15_000,
+    hedgeMs: 6_000,
     deadlineMs: 45_000,
     thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
   });

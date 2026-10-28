@@ -53,6 +53,8 @@ export default async function handler(req, res) {
     deadlineMs: 22_000,
     thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
     preferLite: true,
+    // lite обычно отвечает за 1–2 с; если молчит дольше 3 с, параллельно спрашиваем следующую модель
+    hedgeMs: 3_000,
   });
   if (out) {
     res.setHeader("Cache-Control", "no-store");

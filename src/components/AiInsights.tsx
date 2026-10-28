@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Lang } from "../i18n";
 import type { SleepData, Task } from "../store";
 import { countWords, fromISO, shiftISO, todayISO, useStored } from "../store";
@@ -22,15 +22,28 @@ interface Props {
   lang: Lang;
 }
 
+const CACHE_KEY = "dn.aiInsightsCache";
+const readCache = (sig: string): string[] | null => {
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+    return c?.sig === sig && Array.isArray(c.items) ? c.items : null;
+  } catch {
+    return null;
+  }
+};
+const writeCache = (sig: string, items: string[]) => {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ sig, items })); } catch { /* ignore */ }
+};
+
 export default function AiInsights({ notes, tasks, moods, sleep, range, lang }: Props) {
   const l = L[lang] ?? L.en;
   const [enabled, setEnabled] = useStored<boolean>("dn.aiInsights", false);
-  const [state, setState] = useState<{ range: number; items: string[] } | null>(null);
+  const [state, setState] = useState<{ sig: string; items: string[] } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const run = async () => {
-    // Только числа по дням, без текстов и дат (день недели нужен для закономерностей вроде «по понедельникам хуже»)
+  // Только числа по дням, без текстов и дат (день недели нужен для закономерностей вроде «по понедельникам хуже»)
+  const days = useMemo(() => {
     const today = todayISO();
     const days = [];
     for (let i = range - 1; i >= 0; i--) {
@@ -47,6 +60,16 @@ export default function AiInsights({ notes, tasks, moods, sleep, range, lang }: 
         words: countWords(notes[iso] ?? ""),
       });
     }
+    return days;
+  }, [notes, tasks, moods, sleep, range]);
+
+  // те же цифры и язык, что в прошлый раз: показываем сохранённый ответ сразу, без ожидания ИИ
+  const sig = useMemo(() => `${lang}|${JSON.stringify(days)}`, [lang, days]);
+  const [cachedSig, setCachedSig] = useState<string | null>(null);
+  const cached = useMemo(() => (enabled ? readCache(sig) : null), [enabled, sig, cachedSig]); // eslint-disable-line react-hooks/exhaustive-deps
+  const shown = state && state.sig === sig ? state.items : cached;
+
+  const run = async () => {
     if (days.filter((d) => d.mood !== undefined).length < 3) {
       setError(l.few);
       return;
@@ -65,7 +88,9 @@ export default function AiInsights({ notes, tasks, moods, sleep, range, lang }: 
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !Array.isArray(d?.insights)) throw Object.assign(new Error("bad"), { detail: d?.detail || d?.error || `HTTP ${r.status}` });
-      setState({ range, items: d.insights });
+      setState({ sig, items: d.insights });
+      writeCache(sig, d.insights);
+      setCachedSig(sig);
     } catch (e) {
       const err = e as { detail?: string; name?: string };
       const detail = err.name === "AbortError" ? "timeout" : err.detail;
@@ -101,14 +126,14 @@ export default function AiInsights({ notes, tasks, moods, sleep, range, lang }: 
               <div className="h-3.5 w-full animate-pulse rounded bg-[var(--hover)]" />
               <div className="h-3.5 w-3/4 animate-pulse rounded bg-[var(--hover)]" />
             </div>
-          ) : state ? (
+          ) : shown ? (
             <ul className="flex list-disc flex-col gap-1.5 pl-5 text-[13.5px] leading-relaxed text-[var(--ink-soft)]">
-              {state.items.map((s, i) => <li key={i}>{s}</li>)}
+              {shown.map((s, i) => <li key={i}>{s}</li>)}
             </ul>
           ) : null}
           {error && <p className="text-[12.5px] text-[var(--ink-soft)]">{error}</p>}
           <div className="flex flex-wrap items-center gap-2">
-            <button onClick={run} disabled={loading} className={btnCls}>{state ? l.again : l.run}</button>
+            <button onClick={run} disabled={loading} className={btnCls}>{shown ? l.again : l.run}</button>
             <span className="text-[11.5px] text-[var(--ink-faint)]">{l.note}</span>
           </div>
         </>

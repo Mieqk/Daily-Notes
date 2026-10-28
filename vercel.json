@@ -9,6 +9,9 @@
     "api/insights.js": {
       "maxDuration": 60
     },
+    "api/transcribe.js": {
+      "maxDuration": 60
+    },
     "api/fact.js": {
       "maxDuration": 30
     },

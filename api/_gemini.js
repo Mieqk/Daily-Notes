@@ -1,23 +1,41 @@
 const BASE = process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com"; // переопределяется только в тестах
 // Общий вызов Gemini для серверных функций: перебирает рекомендуемые и доступные flash-модели.
 const modelCache = new Map(); // version -> { at, list }
-async function listFlashModels(key, version) {
+const modelLoads = new Map(); // version -> идущий запрос списка (чтобы не слать два одинаковых)
+function loadFlashModels(key, version) {
+  if (modelLoads.has(version)) return modelLoads.get(version);
+  const p = (async () => {
+    try {
+      const r = await fetch(`${BASE}/${version}/models?pageSize=200`, { headers: { "x-goog-api-key": key }, signal: AbortSignal.timeout(8000) });
+      if (!r.ok) return [];
+      const d = await r.json();
+      const list = (d.models || [])
+        .filter((m) => (m.name || "").includes("flash"))
+        .filter((m) => !/tts|preview|image|audio|t2s/.test(m.name))
+        .filter((m) => !m.supportedGenerationMethods || m.supportedGenerationMethods.includes("generateContent"))
+        .map((m) => m.name.replace("models/", ""));
+      if (list.length) modelCache.set(version, { at: Date.now(), list });
+      return list;
+    } catch {
+      return [];
+    } finally {
+      modelLoads.delete(version);
+    }
+  })();
+  modelLoads.set(version, p);
+  return p;
+}
+// Список моделей не стоит задержки ответа: устаревший список берём сразу и обновляем в фоне; на холодном старте
+// ждём список недолго (MODEL_LIST_WAIT_MS), иначе идём по запасным именам.
+const MODEL_LIST_WAIT_MS = 1200;
+async function listFlashModels(key, version, wait = MODEL_LIST_WAIT_MS) {
   const hit = modelCache.get(version);
-  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.list;
-  try {
-    const r = await fetch(`${BASE}/${version}/models?pageSize=200`, { headers: { "x-goog-api-key": key } });
-    if (!r.ok) return [];
-    const d = await r.json();
-    const list = (d.models || [])
-      .filter((m) => (m.name || "").includes("flash"))
-      .filter((m) => !/tts|preview|image|audio|t2s/.test(m.name))
-      .filter((m) => !m.supportedGenerationMethods || m.supportedGenerationMethods.includes("generateContent"))
-      .map((m) => m.name.replace("models/", ""));
-    modelCache.set(version, { at: Date.now(), list });
-    return list;
-  } catch {
-    return [];
+  if (hit) {
+    if (Date.now() - hit.at >= 10 * 60_000) loadFlashModels(key, version);
+    return hit.list;
   }
+  const load = loadFlashModels(key, version);
+  return wait > 0 ? Promise.race([load, new Promise((res) => setTimeout(() => res([]), wait))]) : load;
 }
 
 // Новее — раньше, полные модели раньше lite (с preferLite наоборот: lite быстрее начинает отвечать); неизвестные имена в конец
@@ -32,7 +50,8 @@ const thinkingOk = new Map(); // model -> index в opts.thinking (или -1: б�
 async function pickModels(key, preferLite = false) {
   let version = "v1beta";
   let dynamic = await listFlashModels(key, version);
-  if (!dynamic.length) {
+  if (!dynamic.length && !modelLoads.has(version)) {
+    // v1beta не ответил полностью (а не просто задержался): пробуем v1
     version = "v1";
     dynamic = await listFlashModels(key, version);
   }
@@ -45,32 +64,28 @@ async function pickModels(key, preferLite = false) {
 // diag — необязательный массив: сюда попадают причины отказов моделей (без ключа и данных пользователя).
 // opts.timeoutMs — предел на один запрос к модели, opts.deadlineMs — предел на всю попытку со сменой моделей
 // (он должен быть меньше maxDuration функции, иначе Vercel оборвёт её ответом 504).
+// opts.hedgeMs — если попытка молчит дольше, параллельно стартует следующая модель (побеждает первая успешная).
 // opts.thinking — варианты thinkingConfig для быстрых ответов: пробуются по очереди, пока модель не примет один из них.
 export async function generateText(key, prompt, generationConfig = {}, diag = [], opts = {}) {
   const errors = diag;
   const started = Date.now();
-  const { timeoutMs = 25_000, deadlineMs = 50_000, thinking = [], preferLite = false, inline = [] } = opts;
+  const { timeoutMs = 25_000, deadlineMs = 50_000, thinking = [], preferLite = false, inline = [], hedgeMs = 0 } = opts;
   const { version, models } = await pickModels(key, preferLite);
   // inline — необязательные вложения [{mime, data(base64)}] (например, аудио для расшифровки): уходят перед текстом
   const parts = [...inline.map((x) => ({ inlineData: { mimeType: x.mime, data: x.data } })), { text: prompt }];
 
-  const call = async (model, config, limit) => {
+  const call = async (model, config, limit, signal) => {
     const r = await fetch(`${BASE}/${version}/models/${model}:generateContent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({ contents: [{ parts }], generationConfig: config }),
-      signal: AbortSignal.timeout(limit),
+      signal: AbortSignal.any ? AbortSignal.any([signal, AbortSignal.timeout(limit)]) : signal,
     });
     return { r, data: await r.json() };
   };
 
-  for (const model of models) {
-    const left = deadlineMs - (Date.now() - started);
-    if (left < 2000) {
-      errors.push("deadline exceeded");
-      break;
-    }
-    const limit = Math.min(timeoutMs, left);
+  // Одна попытка в одной модели: { text, model } или null (причина попадает в errors)
+  const attempt = async (model, limit, signal) => {
     try {
       // разные модели по-разному отключают размышления: пробуем варианты, потом без них
       const variants = [...thinking, null];
@@ -81,33 +96,75 @@ export async function generateText(key, prompt, generationConfig = {}, diag = []
       for (const i of order) {
         const v = variants[i];
         used = v ? i : -1;
-        ({ r, data } = await call(model, v ? { ...generationConfig, thinkingConfig: v } : generationConfig, limit));
+        ({ r, data } = await call(model, v ? { ...generationConfig, thinkingConfig: v } : generationConfig, limit, signal));
         // на неподходящий thinkingConfig новые модели отвечают просто «invalid argument», без слова think
         if (r.ok || r.status !== 400) break;
       }
       if (!r.ok) {
         if (r.status === 404 && model !== "gemini-flash-latest") deadModels.add(model);
         errors.push(`${model}: HTTP ${r.status} — ${data?.error?.message || "unknown"}`);
-        continue;
+        return null;
       }
       if (thinking.length) thinkingOk.set(model, used);
-      const parts = data?.candidates?.[0]?.content?.parts || [];
-      const text = parts.filter((p) => !p.thought).map((p) => p.text || "").join("").trim();
+      const out = data?.candidates?.[0]?.content?.parts || [];
+      const text = out.filter((p) => !p.thought).map((p) => p.text || "").join("").trim();
       if (!text) {
         errors.push(`${model}: empty response`);
-        continue;
+        return null;
       }
       return { text, model };
     } catch (e) {
-      errors.push(`${model}: ${e.message}`);
+      if (!signal.aborted) errors.push(`${model}: ${e.message}`);
+      return null;
     }
+  };
+
+  // Модели по очереди; с hedgeMs, если попытка молчит дольше, параллельно стартует следующая модель и побеждает первая
+  // успешная (задержки Gemini сильно скачут, а сервер ждёт зря).
+  const ctl = new AbortController();
+  const pending = new Set();
+  const queue = [...models];
+  let result = null;
+  const launch = () => {
+    const left = deadlineMs - (Date.now() - started);
+    if (!queue.length) return false;
+    if (left < 2000) {
+      if (!errors.includes("deadline exceeded")) errors.push("deadline exceeded");
+      queue.length = 0;
+      return false;
+    }
+    const p = attempt(queue.shift(), Math.min(timeoutMs, left), ctl.signal).then((res) => ({ p, res }));
+    pending.add(p);
+    return true;
+  };
+  launch();
+  let armed = true;
+  while (pending.size && !result) {
+    const races = [...pending];
+    let timer;
+    if (hedgeMs && armed && queue.length) races.push(new Promise((res) => (timer = setTimeout(() => res({ hedge: true }), hedgeMs))));
+    const got = await Promise.race(races);
+    clearTimeout(timer);
+    if (got.hedge) {
+      armed = false;
+      launch();
+      continue;
+    }
+    pending.delete(got.p);
+    if (got.res) result = got.res;
+    else if (!pending.size && launch()) armed = true;
   }
+  ctl.abort();
+  if (result) return result;
   console.error("gemini: all models failed", errors);
   return null;
 }
 
 // Список моделей запрашиваем сразу при загрузке функции, параллельно с разбором запроса
-if (process.env.GEMINI_API_KEY && !process.env.GEMINI_BASE_URL) listFlashModels(process.env.GEMINI_API_KEY, "v1beta");
+if (process.env.GEMINI_API_KEY && !process.env.GEMINI_BASE_URL) loadFlashModels(process.env.GEMINI_API_KEY, "v1beta");
+
+// Прогрев для клиента: список моделей уже в памяти функции (вызывается при открытии чата)
+export const warmModels = (key) => pickModels(key, true).then(() => undefined);
 
 // Один потоковый запрос к модели: отдаёт куски текста (без частей с размышлениями).
 // images — необязательные картинки [{mime, data(base64)}]: уходят перед текстом как inlineData (мультимодальный ввод).
