@@ -1,5 +1,5 @@
 import { CheckIcon, DiceIcon, PlusIcon } from "../icons";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Lang } from "../i18n";
 import { todayISO } from "../store";
 import { FACTS, factIndexForDate, factText, type FactCategory } from "../facts";
@@ -33,23 +33,33 @@ export default function FactOfDay({ lang, onSave }: { lang: Lang; onSave?: (text
     setIdx((i) => (i + 1) % FACTS.length);
   };
 
+  // готовый факт «про запас»: после показанного ИИ-факта следующий запрашиваем заранее, и кнопка отвечает сразу
+  const spare = useRef<{ lang: string; p: Promise<string | null> } | null>(null);
+  const fetchFact = (avoid: string): Promise<string | null> => {
+    // если ИИ не ответил за 25 с, вернём null (AbortController, а не AbortSignal.timeout: его нет в старых WebView на Android)
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 25_000);
+    return fetch(`/api/fact?lang=${lang}&r=${Date.now()}&avoid=${encodeURIComponent(avoid.slice(0, 150))}`, { signal: ctl.signal })
+      .then((r) => r.json())
+      .then((d) => (typeof d?.fact === "string" && d.fact ? (d.fact as string) : null))
+      .catch(() => null)
+      .finally(() => clearTimeout(timer));
+  };
+
   const askAi = async () => {
     setLoading(true);
     setJustSaved(false);
-    try {
-      // если ИИ не ответил за 25 с, показываем факт из встроенного списка
-      // (AbortController, а не AbortSignal.timeout: его нет в старых WebView на Android)
-      const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), 25_000);
-      const r = await fetch(`/api/fact?lang=${lang}&r=${Date.now()}&avoid=${encodeURIComponent(text.slice(0, 150))}`, { signal: ctl.signal }).finally(() => clearTimeout(timer));
-      const d = await r.json();
-      if (!d?.fact) throw new Error("bad");
-      setAiFact(d.fact);
-    } catch {
+    const ready = spare.current?.lang === lang ? spare.current.p : null;
+    spare.current = null;
+    const got = await (ready ?? fetchFact(text));
+    if (got) {
+      setAiFact(got);
+      spare.current = { lang, p: fetchFact(got) };
+    } else {
+      // не получилось: показываем факт из встроенного списка
       next();
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const save = () => {

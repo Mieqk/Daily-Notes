@@ -60,6 +60,7 @@ export default async function handler(req, res) {
     deadlineMs: 40_000,
     thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
     preferLite: true,
+    hedgeMs: 6_000,
     inline: [audio],
   });
   res.setHeader("Cache-Control", "no-store");

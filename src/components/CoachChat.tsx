@@ -55,6 +55,7 @@ const A: Record<Lang, AS> = {
   es: { web: "Buscar en la web", webHint: "El asistente puede buscar en Google: productos nuevos, valores nutricionales de alimentos concretos. Las respuestas tardan un poco más y el número de búsquedas al día es limitado. Tu pregunta se envía a Google Search.", sources: "Fuentes", attach: "Adjuntar foto o vídeo", preparing: "Preparando el adjunto…", note: "Las fotos y fotogramas de vídeos (sin sonido) también se envían a Google Gemini.", remove: "Quitar adjunto", video: "Vídeo", errors: { "not-media": "Solo se pueden adjuntar fotos y vídeos.", "too-big": "El archivo es demasiado grande.", "too-long": `El vídeo dura más de ${MAX_VIDEO_SEC} segundos. Recórtalo.`, unreadable: "No se pudo abrir el archivo.", limit: `Hasta ${MAX_PHOTOS} fotos o un vídeo.` } },
 };
 
+let warmed = false;
 const uid = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
 interface Props {
@@ -85,6 +86,13 @@ export default function CoachChat({ mode, lang, context, onApply }: Props) {
   const [fileErr, setFileErr] = useState("");
   const pick = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // прогрев: пока человек печатает, функция на сервере просыпается и узнаёт список моделей (раз за сессию вкладки)
+  useEffect(() => {
+    if (warmed) return;
+    warmed = true;
+    fetch("/api/coach?warm=1").catch(() => {});
+  }, []);
 
   // листаем только <main>: scrollIntoView сдвигал и внешние контейнеры, и шапка уезжала вверх
   useEffect(() => {
