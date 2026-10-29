@@ -35,6 +35,7 @@ import { makeE2ee } from "./e2ee-strings";
 import { makeSleepAuto } from "./sleep-auto-strings";
 import MobileMenu from "./components/MobileMenu";
 import FriendsView from "./components/FriendsView";
+import PairView from "./components/PairView";
 import AccountMenu from "./components/AccountMenu";
 import { useNotifications } from "./hooks/useNotifications";
 import { usePlaceReminders } from "./hooks/usePlaceReminders";
@@ -407,6 +408,7 @@ export default function App() {
     stats: { title: t("statsTitle"), sub: t("statsSub") },
     notes: { title: t("notesTitle"), sub: t("notesSub") },
     sleep: { title: t("sleepTitle"), sub: t("sleepSub") },
+    pair: { title: t("pairTitle"), sub: t("pairSub") },
     hobby: { title: t("hobbyTitle"), sub: t("hobbySub") },
     friends: { title: t("friendsTitle"), sub: t("friendsSub") },
     settings: { title: t("settingsTitle"), sub: t("settingsSub") },
@@ -463,6 +465,14 @@ export default function App() {
           {tab === "daily" && <DailyView userId={userId} capsules={capsules} setCapsules={setCapsules} date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} onWritingFont={setWritingFont} lang={lang} t={t} showToast={showToast} />}
           {tab === "stats" && <Suspense fallback={<div className="grid h-64 place-items-center text-sm text-[var(--ink-faint)]"><span className="animate-livedot h-2.5 w-2.5 rounded-full bg-[var(--accent)]" /></div>}><StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} /></Suspense>}
           {tab === "sleep" && <SleepView sleep={sleep} lang={lang} t={t} autoSleep={autoSleep} setAutoSleep={setAutoSleep} setSleep={(iso, data) => setSleep((prev) => { const next = { ...prev }; if (data) next[iso] = data; else delete next[iso]; return next; })} />}
+          {tab === "pair" && !userId && (
+            <div className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-6 py-12 text-center" style={{ boxShadow: "var(--shadow-sm)" }}>
+              <h3 className="text-[16px] font-bold">{t("friendsGuestTitle")}</h3>
+              <p className="text-sm leading-relaxed text-[var(--ink-soft)]">{t("friendsGuestBody")}</p>
+              <button onClick={() => { setLocalMode(false); setShowAuth(true); }} className="mt-2 h-11 rounded-lg bg-[var(--accent)] px-5 text-[13px] font-bold text-[var(--accent-ink)] transition-all hover:brightness-110 active:scale-95">{t("loginBtn")}</button>
+            </div>
+          )}
+          {tab === "pair" && userId && <PairView userId={userId} lang={lang} sleep={sleep} />}
           {tab === "hobby" && <HobbyView lang={lang} />}
           {tab === "plan" && <PlannerView moods={moods} moodEmoji={moodEmoji} tasks={tasks} setTasks={setTasks} onOpen={openDate} lang={lang} showToast={showToast} />}
           {tab === "notes" && <NotesView capsules={capsules} notes={notes} tasks={tasks} moods={moods} tags={tags} photos={photos} moodEmoji={moodEmoji} writingFont={writingFont} onOpen={openDate} lang={lang} t={t} />}
@@ -473,7 +483,7 @@ export default function App() {
               <button onClick={() => { setLocalMode(false); setShowAuth(true); }} className="mt-2 h-11 rounded-lg bg-[var(--accent)] px-5 text-[13px] font-bold text-[var(--accent-ink)] transition-all hover:brightness-110 active:scale-95">{t("loginBtn")}</button>
             </div>
           )}
-          {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} moodEmoji={moodEmoji} sleep={sleep} streak={streak} notesCount={notesCount} chatUnread={chatUnread.byFriend} />}
+          {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} moodEmoji={moodEmoji} streak={streak} notesCount={notesCount} chatUnread={chatUnread.byFriend} />}
           {tab === "settings" && <SettingsView userId={userId} look={look} onLook={setLook} theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={(h) => { setPinHash(h); if (!h) setBioId(null); }} bioId={bioId} onBioChange={setBioId} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} tasks={tasks} showToast={showToast} />}
         </main>
       </div>
