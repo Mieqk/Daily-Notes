@@ -33,11 +33,11 @@ export default function HobbyView({ lang }: { lang: Lang }) {
     <div className="flex flex-col gap-5 [&>*:not(:first-child)]:w-full">
       {/* две отдельные плашки с небольшим зазором; сплошная подложка только под ними (по ширине плашек), чтобы текст чата не просвечивал */}
       <div className="sticky -top-6 z-30 mx-auto w-full max-w-xl rounded-xl bg-[var(--bg)] sm:-top-8">
-        <div className="grid grid-cols-4 gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
+        <div className="flex gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
           {SUBS.map(({ id, icon: Icon }) => (
-            <button key={id} role="tab" aria-selected={sub === id} onClick={() => setSub(id)} className={`flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-lg px-1.5 text-[12px] font-semibold transition-all sm:text-[13px] ${sub === id ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>
+            <button key={id} role="tab" aria-label={label(id)} title={label(id)} aria-selected={sub === id} onClick={() => setSub(id)} className={`flex h-10 min-w-0 flex-auto items-center justify-center gap-1.5 rounded-lg px-2 text-[12px] font-semibold transition-all sm:text-[13px] ${sub === id ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>
               <Icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{label(id)}</span>
+              <span className={`truncate ${sub === id ? "" : "max-[419px]:hidden"}`}>{label(id)}</span>
             </button>
           ))}
         </div>
