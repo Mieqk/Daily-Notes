@@ -86,7 +86,7 @@ export default function NotesView({
       </div>
 
       {mode === "calendar" ? (
-        <CalendarView notes={notes} tasks={tasks} moods={moods} onOpen={onOpen} lang={lang} />
+        <CalendarView notes={notes} tasks={tasks} moods={moods} moodEmoji={moodEmoji} onOpen={onOpen} lang={lang} />
       ) : (
       <>
       {/* Toolbar */}
