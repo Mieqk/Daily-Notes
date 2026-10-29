@@ -98,7 +98,7 @@ function Game2048({ t, best, submit }: GameProps) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex gap-2"><Stat label={t("score")} value={score} /><Stat label={t("best")} value={Math.max(best ?? 0, score) || t("none")} /></div>
-      <div {...swipe} className="mx-auto grid aspect-square w-full max-w-[22rem] touch-none select-none grid-cols-4 gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-2" role="grid">
+      <div {...swipe} className="mx-auto grid aspect-square w-full max-w-[22rem] touch-none select-none grid-cols-4 grid-rows-4 gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-2" role="grid">
         {board.map((v, i) => {
           const level = v ? Math.log2(v) : 0;
           const pct = Math.min(96, 16 + level * 9);
@@ -212,7 +212,7 @@ function SnakeGame({ t, best, submit }: GameProps) {
     return m;
   }, [snake, food, w]);
   const dpad = (d: Dir, label: string, glyph: string, cls: string) => (
-    <button aria-label={label} className={`${btn} h-12 ${cls}`} onPointerDown={(e) => { e.preventDefault(); steer(d); }}>{glyph}</button>
+    <button aria-label={label} className={`${btn} h-11 ${cls}`} onPointerDown={(e) => { e.preventDefault(); steer(d); }}>{glyph}</button>
   );
 
   return (
@@ -238,7 +238,7 @@ function SnakeGame({ t, best, submit }: GameProps) {
       <div className="mx-auto grid w-full max-w-[14rem] grid-cols-3 gap-1.5">
         <span />{dpad("up", t("up"), "▲", "")}<span />
         {dpad("left", t("left"), "◀", "")}
-        <button className={`${btn} h-12`} disabled={!alive || status === "ready"} onClick={() => setStatus((s) => (s === "play" ? "paused" : "play"))}>{status === "play" ? "⏸" : "▶"}</button>
+        <button className={`${btn} h-11`} disabled={!alive || status === "ready"} onClick={() => setStatus((s) => (s === "play" ? "paused" : "play"))}>{status === "play" ? "⏸" : "▶"}</button>
         {dpad("right", t("right"), "▶", "")}
         <span />{dpad("down", t("down"), "▼", "")}<span />
       </div>
