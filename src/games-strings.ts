@@ -10,6 +10,7 @@ const ru = {
   start: "Нажми, чтобы начать", pause: "Пауза", resume: "Продолжить", left: "Влево", right: "Вправо", up: "Вверх", down: "Вниз",
   flag: "Флажок", flagOn: "Режим флажка включён", mineLeft: "Мин", waitGreen: "Жди зелёного…", tapNow: "Жми!", tooSoon: "Рано! Нажми, чтобы повторить", again: "Нажми, чтобы ещё раз",
   card: "Карточка",
+  puzzle: "Пятнашки", puzzleDesc: "Собери числа по порядку", ttt: "Крестики-нолики", tttDesc: "Сыграй с компьютером", wins: "Победы", draw: "Ничья", yourTurn: "Твой ход (✕)", thinking: "Думаю…", solved: "Собрано!",
 };
 type Strings = typeof ru;
 
@@ -22,6 +23,7 @@ const en: Strings = {
   start: "Tap to start", pause: "Pause", resume: "Resume", left: "Left", right: "Right", up: "Up", down: "Down",
   flag: "Flag", flagOn: "Flag mode is on", mineLeft: "Mines", waitGreen: "Wait for green…", tapNow: "Tap!", tooSoon: "Too soon! Tap to retry", again: "Tap to go again",
   card: "Card",
+  puzzle: "15 Puzzle", puzzleDesc: "Put the numbers in order", ttt: "Tic-tac-toe", tttDesc: "Play against the computer", wins: "Wins", draw: "Draw", yourTurn: "Your turn (✕)", thinking: "Thinking…", solved: "Solved!",
 };
 
 const be: Strings = {
@@ -33,6 +35,7 @@ const be: Strings = {
   start: "Націсні, каб пачаць", pause: "Паўза", resume: "Працягнуць", left: "Улева", right: "Управа", up: "Уверх", down: "Уніз",
   flag: "Сцяжок", flagOn: "Рэжым сцяжка ўключаны", mineLeft: "Мін", waitGreen: "Чакай зялёнага…", tapNow: "Жмі!", tooSoon: "Рана! Націсні, каб паўтарыць", again: "Націсні, каб яшчэ раз",
   card: "Картка",
+  puzzle: "Пятнашкі", puzzleDesc: "Збяры лічбы па парадку", ttt: "Крыжыкі-нулікі", tttDesc: "Згуляй з камп’ютарам", wins: "Перамогі", draw: "Нічыя", yourTurn: "Твой ход (✕)", thinking: "Думаю…", solved: "Сабрана!",
 };
 
 const uk: Strings = {
@@ -44,6 +47,7 @@ const uk: Strings = {
   start: "Натисни, щоб почати", pause: "Пауза", resume: "Продовжити", left: "Вліво", right: "Вправо", up: "Вгору", down: "Вниз",
   flag: "Прапорець", flagOn: "Режим прапорця ввімкнено", mineLeft: "Мін", waitGreen: "Чекай зеленого…", tapNow: "Тисни!", tooSoon: "Зарано! Натисни, щоб повторити", again: "Натисни, щоб ще раз",
   card: "Картка",
+  puzzle: "П’ятнашки", puzzleDesc: "Збери числа по порядку", ttt: "Хрестики-нулики", tttDesc: "Зіграй із комп’ютером", wins: "Перемоги", draw: "Нічия", yourTurn: "Твій хід (✕)", thinking: "Думаю…", solved: "Зібрано!",
 };
 
 const de: Strings = {
@@ -55,6 +59,7 @@ const de: Strings = {
   start: "Tippen zum Start", pause: "Pause", resume: "Weiter", left: "Links", right: "Rechts", up: "Hoch", down: "Runter",
   flag: "Flagge", flagOn: "Flaggenmodus ist an", mineLeft: "Minen", waitGreen: "Warte auf Grün…", tapNow: "Tippen!", tooSoon: "Zu früh! Tippen zum Wiederholen", again: "Tippen für noch einmal",
   card: "Karte",
+  puzzle: "15er-Puzzle", puzzleDesc: "Bringe die Zahlen in Reihenfolge", ttt: "Tic-Tac-Toe", tttDesc: "Spiele gegen den Computer", wins: "Siege", draw: "Unentschieden", yourTurn: "Du bist dran (✕)", thinking: "Ich überlege…", solved: "Gelöst!",
 };
 
 const fr: Strings = {
@@ -66,6 +71,7 @@ const fr: Strings = {
   start: "Touche pour commencer", pause: "Pause", resume: "Reprendre", left: "Gauche", right: "Droite", up: "Haut", down: "Bas",
   flag: "Drapeau", flagOn: "Mode drapeau activé", mineLeft: "Mines", waitGreen: "Attends le vert…", tapNow: "Touche !", tooSoon: "Trop tôt ! Touche pour réessayer", again: "Touche pour rejouer",
   card: "Carte",
+  puzzle: "Taquin", puzzleDesc: "Remets les nombres dans l'ordre", ttt: "Morpion", tttDesc: "Joue contre l'ordinateur", wins: "Victoires", draw: "Égalité", yourTurn: "À toi (✕)", thinking: "Je réfléchis…", solved: "Résolu !",
 };
 
 const es: Strings = {
@@ -77,6 +83,7 @@ const es: Strings = {
   start: "Toca para empezar", pause: "Pausa", resume: "Seguir", left: "Izquierda", right: "Derecha", up: "Arriba", down: "Abajo",
   flag: "Bandera", flagOn: "Modo bandera activado", mineLeft: "Minas", waitGreen: "Espera al verde…", tapNow: "¡Toca!", tooSoon: "¡Muy pronto! Toca para repetir", again: "Toca para otra vez",
   card: "Carta",
+  puzzle: "Puzle 15", puzzleDesc: "Ordena los números", ttt: "Tres en raya", tttDesc: "Juega contra el ordenador", wins: "Victorias", draw: "Empate", yourTurn: "Tu turno (✕)", thinking: "Pensando…", solved: "¡Resuelto!",
 };
 
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };

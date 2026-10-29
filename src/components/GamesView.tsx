@@ -4,7 +4,7 @@ import { makeGames } from "../games-strings";
 import { useStored } from "../store";
 import {
   addTile2048, canMove2048, cleanBests, isRecord, makeDeck, move2048, newBoard2048, newSnake, placeMines, revealCells,
-  countAround, minesWon, stepSnake, MINES_COUNT, MINES_H, MINES_W, type Bests, type Dir, type GameId,
+  countAround, minesWon, stepSnake, isPuzzleSolved, shufflePuzzle, slideTile, tttComputerMove, tttWinner, PUZZLE_N, type Mark, MINES_COUNT, MINES_H, MINES_W, type Bests, type Dir, type GameId,
 } from "../lib/games";
 
 type T = (k: Parameters<ReturnType<typeof makeGames>>[0]) => string;
@@ -16,10 +16,12 @@ const GAMES: { id: GameId; icon: string }[] = [
   { id: "snake", icon: "🐍" },
   { id: "mines", icon: "💣" },
   { id: "reaction", icon: "⚡" },
+  { id: "puzzle", icon: "🧩" },
+  { id: "ttt", icon: "❌" },
 ];
 
-const DESC = { g2048: "g2048Desc", memory: "memoryDesc", snake: "snakeDesc", mines: "minesDesc", reaction: "reactionDesc" } as const;
-const UNIT = { g2048: "", memory: "", snake: "", mines: "sec", reaction: "ms" } as const;
+const DESC = { g2048: "g2048Desc", memory: "memoryDesc", snake: "snakeDesc", mines: "minesDesc", reaction: "reactionDesc", puzzle: "puzzleDesc", ttt: "tttDesc" } as const;
+const UNIT = { g2048: "", memory: "", snake: "", mines: "sec", reaction: "ms", puzzle: "", ttt: "" } as const;
 
 const btn = "rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2 text-[13px] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--hover)] active:scale-[0.98]";
 const primary = "rounded-lg bg-[var(--accent)] px-4 py-2 text-[13px] font-semibold text-[var(--accent-ink)] transition-opacity hover:opacity-90 active:scale-[0.98]";
@@ -362,6 +364,78 @@ function ReactionGame({ t, best, submit }: GameProps) {
   );
 }
 
+/* ---------- Пятнашки ---------- */
+
+function PuzzleGame({ t, best, submit }: GameProps) {
+  const [board, setBoard] = useState(() => shufflePuzzle());
+  const [moves, setMoves] = useState(0);
+  const startBest = useRef(best);
+  const done = isPuzzleSolved(board) && moves > 0;
+
+  useEffect(() => { if (done) submit(moves); }, [done]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const tap = (i: number) => {
+    if (done) return;
+    const next = slideTile(board, i);
+    if (next === board) return;
+    setBoard(next);
+    setMoves((m) => m + 1);
+  };
+  const restart = () => { setBoard(shufflePuzzle()); setMoves(0); startBest.current = best; };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex gap-2"><Stat label={t("moves")} value={moves} /><Stat label={t("best")} value={best ?? t("none")} /></div>
+      <div className="mx-auto grid aspect-square w-full max-w-[22rem] gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1.5" style={{ gridTemplateColumns: `repeat(${PUZZLE_N}, 1fr)`, gridTemplateRows: `repeat(${PUZZLE_N}, 1fr)` }}>
+        {board.map((v, i) => (
+          v === 0 ? <div key={i} /> : (
+            <button key={i} onClick={() => tap(i)} className="flex items-center justify-center rounded-lg bg-[var(--accent)] text-2xl font-bold tabular-nums text-[var(--accent-ink)] transition-transform active:scale-95">{v}</button>
+          )
+        ))}
+      </div>
+      {done && <Banner>{t("solved")}{isRecord("puzzle", startBest.current, moves) && ` · ${t("record")}`}</Banner>}
+      <button className={`${primary} self-center`} onClick={restart}>{t("newGame")}</button>
+    </div>
+  );
+}
+
+/* ---------- Крестики-нолики ---------- */
+
+function TttGame({ t, best, submit }: GameProps) {
+  const [board, setBoard] = useState<Mark[]>(() => Array(9).fill(null));
+  const result = tttWinner(board);
+  const myTurn = !result && board.filter(Boolean).length % 2 === 0;
+
+  // ход компьютера с короткой паузой, чтобы он не выглядел мгновенным
+  useEffect(() => {
+    if (result || myTurn) return;
+    const move = tttComputerMove(board, "O");
+    const id = setTimeout(() => setBoard((b) => b.map((x, i) => (i === move && !x ? "O" : x))), 450);
+    return () => clearTimeout(id);
+  }, [board, result, myTurn]);
+
+  useEffect(() => { if (result === "X") submit((best ?? 0) + 1); }, [result]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const tap = (i: number) => { if (myTurn && !board[i]) setBoard(board.map((x, j) => (j === i ? "X" : x))); };
+  const status = result === "X" ? t("youWin") : result === "draw" ? t("draw") : result === "O" ? t("gameOver") : myTurn ? t("yourTurn") : t("thinking");
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex gap-2"><Stat label={t("wins")} value={best ?? 0} /></div>
+      <div className="mx-auto grid aspect-square w-full max-w-[22rem] grid-cols-3 grid-rows-3 gap-2 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-2">
+        {board.map((v, i) => (
+          <button key={i} onClick={() => tap(i)} disabled={!!v || !myTurn} aria-label={v ?? ""}
+            className={`flex items-center justify-center rounded-lg bg-[var(--hover)] text-5xl font-bold ${v === "X" ? "text-[var(--accent)]" : "text-[var(--ink-soft)]"}`}>
+            {v === "X" ? "✕" : v === "O" ? "◯" : ""}
+          </button>
+        ))}
+      </div>
+      <Banner>{status}</Banner>
+      <button className={`${primary} self-center`} onClick={() => setBoard(Array(9).fill(null))}>{t("newGame")}</button>
+    </div>
+  );
+}
+
 /* ---------- Меню ---------- */
 
 export default function GamesView({ lang }: { lang: Lang }) {
@@ -390,6 +464,8 @@ export default function GamesView({ lang }: { lang: Lang }) {
         {game === "snake" && <SnakeGame {...props} />}
         {game === "mines" && <MinesGame {...props} />}
         {game === "reaction" && <ReactionGame {...props} />}
+        {game === "puzzle" && <PuzzleGame {...props} />}
+        {game === "ttt" && <TttGame {...props} />}
       </div>
     );
   }
