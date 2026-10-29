@@ -40,7 +40,7 @@ interface SidebarProps {
   notesCount: number;
   selectedDate: string;
   onPickDate: (iso: string) => void;
-  hasEntry: (iso: string) => boolean;
+  hasMood: (iso: string) => boolean;
   hasPin: boolean;
   onLock: () => void;
   /** непрочитанные сообщения чата, показываются у вкладки «Друзья» */
@@ -75,12 +75,12 @@ const LANGS: { id: Lang; badge: string; native: string }[] = [
 export function MiniCalendar({
   selected,
   onPick,
-  hasEntry,
+  hasMood,
   lang,
 }: {
   selected: string;
   onPick: (iso: string) => void;
-  hasEntry: (iso: string) => boolean;
+  hasMood: (iso: string) => boolean;
   lang: Lang;
 }) {
   const [month, setMonth] = useState(() => {
@@ -160,7 +160,7 @@ export function MiniCalendar({
               }`}
             >
               {Number(iso.slice(8))}
-              {hasEntry(iso) && (
+              {hasMood(iso) && (
                 <span
                   className={`absolute bottom-[2.5px] h-1 w-1 rounded-full ${
                     iso === selected ? "bg-[var(--accent-ink)]" : "bg-[var(--accent)]"
@@ -190,7 +190,7 @@ export default function Sidebar({
   notesCount,
   selectedDate,
   onPickDate,
-  hasEntry,
+  hasMood,
   hasPin,
   onLock,
   friendsBadge = 0,
@@ -387,7 +387,7 @@ export default function Sidebar({
         <MiniCalendar
           selected={selectedDate}
           onPick={onPickDate}
-          hasEntry={hasEntry}
+          hasMood={hasMood}
           lang={lang}
         />
         <div className="mt-3 flex items-center gap-2.5 border-t border-[var(--line)] pt-3 short:mt-2 short:pt-2">

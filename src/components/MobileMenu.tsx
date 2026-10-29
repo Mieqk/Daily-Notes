@@ -11,7 +11,7 @@ interface MobileMenuProps {
   lang: Lang;
   selectedDate: string;
   onPickDate: (iso: string) => void;
-  hasEntry: (iso: string) => boolean;
+  hasMood: (iso: string) => boolean;
   friendsBadge?: number;
 }
 
@@ -37,7 +37,7 @@ const L: Record<Lang, { menu: string; close: string }> = {
 };
 
 /** Телефон: кнопка-«бургер» в шапке и выдвижное меню разделов вместо нижней полосы. */
-export default function MobileMenu({ tab, onTab, t, lang, selectedDate, onPickDate, hasEntry, friendsBadge = 0 }: MobileMenuProps) {
+export default function MobileMenu({ tab, onTab, t, lang, selectedDate, onPickDate, hasMood, friendsBadge = 0 }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
   const l = L[lang] ?? L.en;
 
@@ -94,7 +94,7 @@ export default function MobileMenu({ tab, onTab, t, lang, selectedDate, onPickDa
               })}
               {/* Тот же календарик, что в боковой панели на компьютере: выбор дня сразу открывает его */}
               <div className="mt-3 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-3.5">
-                <MiniCalendar selected={selectedDate} onPick={(iso) => { onPickDate(iso); setOpen(false); }} hasEntry={hasEntry} lang={lang} />
+                <MiniCalendar selected={selectedDate} onPick={(iso) => { onPickDate(iso); setOpen(false); }} hasMood={hasMood} lang={lang} />
               </div>
             </div>
           </nav>
