@@ -13,7 +13,7 @@ const KEY_LAST = "dn.sleepAuto.last";
 const KEY_CAND = "dn.sleepAuto.cand";
 const KEY_SKIP = "dn.sleepAuto.skip";
 
-const MIN_GAP = 3 * 3600_000;
+const MIN_GAP = 2 * 3600_000;
 const MAX_GAP = 14 * 3600_000;
 const HEARTBEAT = 60_000;
 
@@ -64,7 +64,7 @@ export function withTimes(cur: SleepData | undefined, bedtime: string, waketime:
 const candLen = (c: SleepCandidate) => calcHours(c.bedtime, c.waketime) ?? 0;
 
 /**
- * Пауза [from, to] похожа на сон, если она 3–14 часов, началась вечером или ночью
+ * Пауза [from, to] похожа на сон, если она 2–14 часов, началась вечером или ночью
  * (с 19:00 до 04:00) и закончилась утром или днём (с 04:00 до 14:00).
  */
 export function detectCandidate(from: number, to: number): SleepCandidate | null {

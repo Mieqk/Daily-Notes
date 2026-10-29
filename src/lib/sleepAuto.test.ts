@@ -8,7 +8,7 @@ describe('detectCandidate', () => {
     expect(detectCandidate(at(28, 23, 40), at(29, 7, 15))).toEqual({ date: '2026-10-29', bedtime: '23:40', waketime: '07:15' });
   });
   it('короткая или дневная пауза не считается сном', () => {
-    expect(detectCandidate(at(28, 23, 0), at(29, 1, 0))).toBeNull();
+    expect(detectCandidate(at(28, 23, 0), at(29, 0, 30))).toBeNull();
     expect(detectCandidate(at(29, 9, 0), at(29, 14, 30))).toBeNull();
   });
   it('слишком длинная пауза не считается сном', () => {
