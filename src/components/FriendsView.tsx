@@ -11,8 +11,6 @@ import SharedMemories from "./SharedMemories";
 import SharedEntries from "./SharedEntries";
 import BuddyHabits from "./BuddyHabits";
 import Challenges from "./Challenges";
-import SleepParty from "./SleepParty";
-import type { SleepData } from "../store";
 import FriendsSection, { GroupLabel, EmptyState } from "./FriendsSection";
 import { makeUI } from "../ui-strings";
 import { makeChat } from "../chat-strings";
@@ -30,7 +28,6 @@ interface FriendsViewProps {
   lang: Lang;
   streak: number;
   notesCount: number;
-  sleep: Record<string, SleepData>;
   moodEmoji: string[];
   /** непрочитанные сообщения по id друга */
   chatUnread?: Record<string, number>;
@@ -145,7 +142,7 @@ function genCode(): string {
   return s;
 }
 
-export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread = {} }: FriendsViewProps) {
+export default function FriendsView({ userId, lang, moodEmoji, chatUnread = {} }: FriendsViewProps) {
   const t = (k: string) => (L[lang] ?? L.en)[k] ?? L.en[k];
   const card = "rounded-xl border border-[var(--line)] bg-[var(--panel)]";
 
@@ -535,7 +532,6 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread
       <div className="gap-4 lg:columns-2 [&>*]:break-inside-avoid">
       <BuddyHabits userId={userId} lang={lang} friends={friendOpts} />
       <Challenges userId={userId} lang={lang} friends={friendOpts} myName={me?.display_name || "—"} />
-      <SleepParty userId={userId} lang={lang} friends={friendOpts} sleep={sleep} />
       <SharedMemories userId={userId} lang={lang} friends={friendOpts} />
       <SharedEntries userId={userId} lang={lang} friends={friendOpts} moodEmoji={moodEmoji} />
       </div>

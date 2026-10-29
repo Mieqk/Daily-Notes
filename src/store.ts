@@ -156,4 +156,4 @@ export interface SleepData {
 
 export type WritingFontId = "body" | "serif" | "mono";
 export type BgId = "dots" | "grid" | "paper" | "space" | "lines" | "hex" | "waves";
-export type Tab = "daily" | "plan" | "stats" | "notes" | "sleep" | "hobby" | "friends" | "settings";
+export type Tab = "daily" | "plan" | "stats" | "notes" | "sleep" | "pair" | "hobby" | "friends" | "settings";

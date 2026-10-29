@@ -377,6 +377,12 @@ export function UsersIcon({ className }: { className?: string }) {
   );
 }
 
+export const HeartIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M12 20.5S3.5 15.4 3.5 9.3A4.8 4.8 0 0 1 12 6.9a4.8 4.8 0 0 1 8.5 2.4c0 6.1-8.5 11.2-8.5 11.2Z" />
+  </svg>
+);
+
 export const SunIcon = ({ className = "h-5 w-5" }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} {...base}>
     <circle cx="12" cy="12" r="4" />

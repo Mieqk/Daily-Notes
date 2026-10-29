@@ -29,7 +29,7 @@ const bedDiff = (a?: string | null, b?: string | null) => {
 };
 
 /** Sleep Party: пара друзей делится ночами, серия растёт, когда сон записали оба. */
-export default function SleepParty({ userId, lang, friends, sleep }: { userId: string; lang: Lang; friends: FriendOpt[]; sleep: Record<string, SleepData> }) {
+export default function SleepParty({ userId, lang, friends, sleep, onChanged }: { userId: string; lang: Lang; friends: FriendOpt[]; sleep: Record<string, SleepData>; onChanged?: () => void }) {
   const s = makeSocial(lang);
   const [parties, setParties] = useState<Party[] | null>(null);
   const [nights, setNights] = useState<Night[]>([]);
@@ -51,7 +51,8 @@ export default function SleepParty({ userId, lang, friends, sleep }: { userId: s
     const since = shiftISO(todayISO(), -60);
     const { data: n } = await supabase!.from("sleep_party_nights").select("*").in("party_id", list.map((p) => p.id)).gte("day", since);
     setNights((n ?? []) as Night[]);
-  }, []);
+    onChanged?.();
+  }, [onChanged]);
   useEffect(() => { load(); }, [load]);
 
   const urls = useMediaUrls(nights.map((n) => n.media_path));
