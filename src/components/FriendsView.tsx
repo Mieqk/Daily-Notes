@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Lang } from "../i18n";
 import { sendPushEvent } from "../lib/push";
 import { supabase } from "../lib/supabase";
@@ -11,7 +11,7 @@ import SharedMemories from "./SharedMemories";
 import SharedEntries from "./SharedEntries";
 import BuddyHabits from "./BuddyHabits";
 import Challenges from "./Challenges";
-import FriendsSection, { GroupLabel, EmptyState } from "./FriendsSection";
+import FriendsSection, { EmptyState } from "./FriendsSection";
 import { makeUI } from "../ui-strings";
 import { makeChat } from "../chat-strings";
 import { makePresence } from "../presence-strings";
@@ -19,12 +19,24 @@ import { localeOf } from "../i18n";
 import PresenceDot from "./PresenceDot";
 import { PRESENCE_COLOR, PRESENCE_MODES, cachePresenceMode, PRESENCE_MODE_EVENT, type PresenceMode, type PresenceState } from "../lib/presence";
 import FriendChat from "./FriendChat";
+import PairView from "./PairView";
+import { useStored } from "../store";
+import type { SleepData } from "../store";
+import { HeartIcon, SunIcon, UsersIcon } from "../icons";
+
+type Sub = "friends" | "together" | "care";
+const SUBS: { id: Sub; icon: (p: { className?: string }) => ReactNode; label: "gConnect" | "gTogether" | "gCare" }[] = [
+  { id: "friends", icon: UsersIcon, label: "gConnect" },
+  { id: "together", icon: HeartIcon, label: "gTogether" },
+  { id: "care", icon: SunIcon, label: "gCare" },
+];
 import FriendNoteEditor from "./FriendNoteEditor";
 import type { FriendNote } from "./FriendNoteEditor";
 import { makeFriendNotes } from "../friend-notes-strings";
 
 interface FriendsViewProps {
   userId: string;
+  sleep: Record<string, SleepData>;
   lang: Lang;
   streak: number;
   notesCount: number;
@@ -142,7 +154,7 @@ function genCode(): string {
   return s;
 }
 
-export default function FriendsView({ userId, lang, moodEmoji, chatUnread = {} }: FriendsViewProps) {
+export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread = {} }: FriendsViewProps) {
   const t = (k: string) => (L[lang] ?? L.en)[k] ?? L.en[k];
   const card = "rounded-xl border border-[var(--line)] bg-[var(--panel)]";
 
@@ -155,6 +167,8 @@ export default function FriendsView({ userId, lang, moodEmoji, chatUnread = {} }
   const [copied, setCopied] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [viewId, setViewId] = useState<string | null>(null);
+  const [savedSub, setSub] = useStored<Sub>("dn.friendsTab", "friends");
+  const sub: Sub = SUBS.some((x) => x.id === savedSub) ? savedSub : "friends";
   const u = makeUI(lang);
   const chat = makeChat(lang);
   const pr = makePresence(lang);
@@ -368,7 +382,19 @@ export default function FriendsView({ userId, lang, moodEmoji, chatUnread = {} }
         </div>
       )}
 
-      <GroupLabel>{t("gConnect")}</GroupLabel>
+      {/* разделы вкладки: как в «Хобби», одна плашка с переключателем */}
+      <div className="sticky -top-6 z-30 mx-auto mb-4 w-full max-w-xl rounded-xl bg-[var(--bg)] sm:-top-8">
+        <div className="flex gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
+          {SUBS.map(({ id, icon: Icon, label }) => (
+            <button key={id} role="tab" aria-label={t(label)} title={t(label)} aria-selected={sub === id} onClick={() => setSub(id)} className={`flex h-10 min-w-0 flex-auto items-center justify-center gap-1.5 rounded-lg px-2 text-[12px] font-semibold transition-all sm:text-[13px] ${sub === id ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className={`truncate ${sub === id ? "" : "max-[419px]:hidden"}`}>{t(label)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {sub === "friends" && <>
 
       {/* блоки раскладываются в две колонки, на телефоне в одну */}
       <div className="gap-4 lg:columns-2 [&>*]:break-inside-avoid">
@@ -528,20 +554,25 @@ export default function FriendsView({ userId, lang, moodEmoji, chatUnread = {} }
       </FriendsSection>
       </div>
 
-      <GroupLabel>{t("gTogether")}</GroupLabel>
+      </>}
+
+      {sub === "together" && <>
+      <PairView userId={userId} lang={lang} sleep={sleep} />
       <div className="gap-4 lg:columns-2 [&>*]:break-inside-avoid">
       <BuddyHabits userId={userId} lang={lang} friends={friendOpts} />
       <Challenges userId={userId} lang={lang} friends={friendOpts} myName={me?.display_name || "—"} />
       <SharedMemories userId={userId} lang={lang} friends={friendOpts} />
       <SharedEntries userId={userId} lang={lang} friends={friendOpts} moodEmoji={moodEmoji} />
       </div>
+      </>}
 
-      <GroupLabel>{t("gCare")}</GroupLabel>
+      {sub === "care" && <>
       <div className="gap-4 lg:columns-2 [&>*]:break-inside-avoid">
       <SosPanel userId={userId} lang={lang} />
       <FriendsAnswers userId={userId} lang={lang} />
       <GratitudeFeed userId={userId} lang={lang} refreshKey={feedKey} />
       </div>
+      </>}
 
       {chatWith && (
         <FriendChat
