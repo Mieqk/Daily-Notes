@@ -44,6 +44,8 @@ const ru = {
   tasks100: "Мастер дел",
   tasks100d: "100 выполненных задач",
   hrs: "ч",
+  hide: "Скрыть",
+  show: "Показать",
 };
 
 type Strings = Record<keyof typeof ru, string>;
@@ -91,6 +93,8 @@ const en: Strings = {
   tasks100: "Task master",
   tasks100d: "100 tasks done",
   hrs: "h",
+  hide: "Hide",
+  show: "Show",
 };
 
 const be: Strings = {
@@ -136,6 +140,8 @@ const be: Strings = {
   tasks100: "Майстар спраў",
   tasks100d: "100 выкананых заданняў",
   hrs: "г",
+  hide: "Схаваць",
+  show: "Паказаць",
 };
 
 const uk: Strings = {
@@ -181,6 +187,8 @@ const uk: Strings = {
   tasks100: "Майстер справ",
   tasks100d: "100 виконаних завдань",
   hrs: "г",
+  hide: "Сховати",
+  show: "Показати",
 };
 
 const de: Strings = {
@@ -226,6 +234,8 @@ const de: Strings = {
   tasks100: "Aufgabenprofi",
   tasks100d: "100 erledigte Aufgaben",
   hrs: "Std.",
+  hide: "Ausblenden",
+  show: "Einblenden",
 };
 
 const fr: Strings = {
@@ -271,6 +281,8 @@ const fr: Strings = {
   tasks100: "Maître des tâches",
   tasks100d: "100 tâches terminées",
   hrs: "h",
+  hide: "Masquer",
+  show: "Afficher",
 };
 
 const es: Strings = {
@@ -316,6 +328,8 @@ const es: Strings = {
   tasks100: "Maestro de tareas",
   tasks100d: "100 tareas hechas",
   hrs: "h",
+  hide: "Ocultar",
+  show: "Mostrar",
 };
 
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };
