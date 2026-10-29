@@ -384,7 +384,7 @@ export default function App() {
   const weekMarks = Array.from({ length: 7 }, (_, i) => Boolean((notes[shiftISO(today, i - 6)] ?? "").trim()));
   const notesCount = Object.keys(notes).filter((k) => (notes[k] ?? "").trim()).length;
   const tasksCount = Object.values(tasks).reduce((sum, list) => sum + (list?.length ?? 0), 0);
-  const hasEntry = (iso: string) => Boolean((notes[iso] ?? "").trim());
+  const hasMood = (iso: string) => moods[iso] !== undefined;
 
   const clearAll = async () => {
     if (userId && !isLocalMode()) {
@@ -438,11 +438,11 @@ export default function App() {
         <div className="noise absolute inset-0 opacity-[0.05]" />
       </div>
 
-      <Sidebar tab={tab} onTab={setTab} theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} t={t} streak={streak} weekMarks={weekMarks} notesCount={notesCount} selectedDate={date} onPickDate={openDate} hasEntry={hasEntry} hasPin={Boolean(pinHash)} onLock={() => setLocked(true)} friendsBadge={chatUnread.total} />
+      <Sidebar tab={tab} onTab={setTab} theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} t={t} streak={streak} weekMarks={weekMarks} notesCount={notesCount} selectedDate={date} onPickDate={openDate} hasMood={hasMood} hasPin={Boolean(pinHash)} onLock={() => setLocked(true)} friendsBadge={chatUnread.total} />
 
       <div className="relative z-10 flex h-full min-w-0 flex-1 flex-col">
         <header className="flex min-h-[74px] shrink-0 py-2 items-center gap-4 border-b border-[var(--line)] px-4 sm:px-8">
-          <MobileMenu tab={tab} onTab={setTab} t={t} lang={lang} selectedDate={date} onPickDate={openDate} hasEntry={hasEntry} friendsBadge={chatUnread.total} />
+          <MobileMenu tab={tab} onTab={setTab} t={t} lang={lang} selectedDate={date} onPickDate={openDate} hasMood={hasMood} friendsBadge={chatUnread.total} />
           <div className="min-w-0">
             <h1 className="font-display truncate py-0.5 text-xl font-bold leading-snug tracking-tight sm:text-2xl">{tabMeta[tab].title}</h1>
             <p className="hidden truncate text-xs text-[var(--ink-faint)] sm:block">{tabMeta[tab].sub}</p>
@@ -464,7 +464,7 @@ export default function App() {
           {tab === "stats" && <Suspense fallback={<div className="grid h-64 place-items-center text-sm text-[var(--ink-faint)]"><span className="animate-livedot h-2.5 w-2.5 rounded-full bg-[var(--accent)]" /></div>}><StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} /></Suspense>}
           {tab === "sleep" && <SleepView sleep={sleep} lang={lang} t={t} autoSleep={autoSleep} setAutoSleep={setAutoSleep} setSleep={(iso, data) => setSleep((prev) => { const next = { ...prev }; if (data) next[iso] = data; else delete next[iso]; return next; })} />}
           {tab === "hobby" && <HobbyView lang={lang} />}
-          {tab === "plan" && <PlannerView tasks={tasks} setTasks={setTasks} onOpen={openDate} lang={lang} showToast={showToast} />}
+          {tab === "plan" && <PlannerView moods={moods} moodEmoji={moodEmoji} tasks={tasks} setTasks={setTasks} onOpen={openDate} lang={lang} showToast={showToast} />}
           {tab === "notes" && <NotesView capsules={capsules} notes={notes} tasks={tasks} moods={moods} tags={tags} photos={photos} moodEmoji={moodEmoji} writingFont={writingFont} onOpen={openDate} lang={lang} t={t} />}
           {tab === "friends" && !userId && (
             <div className="mx-auto flex max-w-md flex-col items-center gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-6 py-12 text-center" style={{ boxShadow: "var(--shadow-sm)" }}>

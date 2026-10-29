@@ -4,11 +4,13 @@ import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
 import type { Task } from "../store";
 import { fromISO, shiftISO, toISO, todayISO } from "../store";
-import { ArrowLeftIcon, ArrowRightIcon, CheckIcon, TrashIcon } from "../icons";
+import { ArrowLeftIcon, ArrowRightIcon, CheckIcon, MoodVisual, TrashIcon } from "../icons";
 import { generateUUID } from "../lib/uuid";
 import { plural } from "../plural";
 
 interface Props {
+  moods: Record<string, number>;
+  moodEmoji: string[];
   tasks: Record<string, Task[]>;
   setTasks: Dispatch<SetStateAction<Record<string, Task[]>>>;
   onOpen: (iso: string) => void;
@@ -29,7 +31,7 @@ const S = {
 const MAX_RANGE = 62;
 
 /** Календарь-планировщик: выбрать диапазон дней и расписать на них задачи. */
-export default function PlannerView({ tasks, setTasks, onOpen, lang, showToast }: Props) {
+export default function PlannerView({ moods, moodEmoji, tasks, setTasks, onOpen, lang, showToast }: Props) {
   const s = S[lang] ?? S.en;
   const locale = localeOf(lang);
   const today = todayISO();
@@ -115,14 +117,22 @@ export default function PlannerView({ tasks, setTasks, onOpen, lang, showToast }
             const sel = inRange(iso);
             const isToday = iso === today;
             const past = iso < today;
+            const mood = moods[iso];
+            const level = mood !== undefined ? Math.max(0, Math.min(4, mood)) : -1;
             return (
               <button
                 key={iso}
                 onClick={() => pick(iso)}
                 aria-pressed={sel}
-                className={`flex min-h-[52px] flex-col items-stretch rounded-lg border p-1 text-left transition-all active:scale-[0.97] sm:min-h-[96px] sm:p-1.5 ${sel ? "border-[var(--accent)] bg-[var(--accent-soft)]" : "border-[var(--line)] bg-[var(--panel-2)] hover:border-[var(--ink-faint)]"} ${past && !sel ? "opacity-60" : ""}`}
+                className={`relative flex min-h-[52px] flex-col items-stretch rounded-lg border p-1 text-left transition-all active:scale-[0.97] sm:min-h-[96px] sm:p-1.5 ${sel ? "border-[var(--accent)] bg-[var(--accent-soft)]" : "border-[var(--line)] bg-[var(--panel-2)] hover:border-[var(--ink-faint)]"} ${past && !sel ? "opacity-60" : ""}`}
               >
                 <span className={`mb-0.5 self-start rounded-md px-1 text-[12px] font-bold tabular-nums ${isToday ? "bg-[var(--accent)] text-[var(--accent-ink)]" : ""}`}>{Number(iso.slice(8))}</span>
+                {level >= 0 && (
+                  <>
+                    <MoodVisual level={level} emoji={moodEmoji[level]} className="absolute bottom-1 right-1 h-3.5 w-3.5 text-[12px] text-[var(--accent)] sm:bottom-auto sm:right-4 sm:top-1 sm:h-[18px] sm:w-[18px] sm:text-[14px]" />
+                    <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[var(--accent)]" aria-hidden="true" />
+                  </>
+                )}
                 {/* на телефоне только точки, на широком экране тексты задач */}
                 <span className="flex flex-wrap gap-0.5 sm:hidden">
                   {list.slice(0, 4).map((x) => <span key={x.id} className={`h-1.5 w-1.5 rounded-full ${x.done ? "bg-[var(--ink-faint)]" : "bg-[var(--accent)]"}`} />)}
