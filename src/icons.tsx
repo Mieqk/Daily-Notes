@@ -418,3 +418,11 @@ export const XIcon = ({ className = "h-4 w-4" }: IconProps) => (
     <path d="M6 6l12 12M18 6L6 18" />
   </svg>
 );
+
+export const GamepadIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M7 7h10a4 4 0 0 1 3.9 4.9l-.8 4A2.5 2.5 0 0 1 15.7 17l-1-1.3H9.3L8.3 17a2.5 2.5 0 0 1-4.4-1.1l-.8-4A4 4 0 0 1 7 7z" />
+    <path d="M8 10v3M6.5 11.5h3" />
+    <path d="M15.5 10.8h.01M17.5 12.8h.01" />
+  </svg>
+);
