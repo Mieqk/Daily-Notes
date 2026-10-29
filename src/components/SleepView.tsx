@@ -3,6 +3,8 @@ import type { Lang, TKey } from "../i18n";
 import { localeOf } from "../i18n";
 import type { SleepData } from "../store";
 import { fromISO, shiftISO, todayISO, useStored } from "../store";
+import { calcHours, autoQuality } from "../lib/sleepAuto";
+import { makeSleepAuto } from "../sleep-auto-strings";
 import { ArrowLeftIcon, ArrowRightIcon, MoonIcon, SunIcon } from "../icons";
 
 interface SleepViewProps {
@@ -10,6 +12,8 @@ interface SleepViewProps {
   lang: Lang;
   t: (k: TKey) => string;
   setSleep: (iso: string, data: SleepData | null) => void;
+  autoSleep: boolean;
+  setAutoSleep: (v: boolean) => void;
 }
 
 const EXTRA: Record<string, { note: string; notePh: string; awake: string; auto: string; history: string; unit: string; goal: string; trends: string; avg7: string; avg30: string; avgBed: string; avgWake: string; regularity: string; bestNight: string; worstNight: string; debt: string; minUnit: string }> = {
@@ -38,33 +42,13 @@ const stdev = (xs: number[]) => {
   return m === null || xs.length < 2 ? null : Math.sqrt(xs.reduce((a, b) => a + (b - m) ** 2, 0) / xs.length);
 };
 
-function calcHours(bedtime?: string, waketime?: string): number | null {
-  if (!bedtime || !waketime) return null;
-  const [bh, bm] = bedtime.split(":").map(Number);
-  const [wh, wm] = waketime.split(":").map(Number);
-  let diff = wh * 60 + wm - (bh * 60 + bm);
-  if (diff <= 0) diff += 1440;
-  return Math.round((diff / 60) * 10) / 10;
-}
-
-function autoQuality(hours: number, awakenings: number): number {
-  if (hours <= 0) return 0;
-  let q = 1;
-  if (hours >= 4) q = 2;
-  if (hours >= 5.5) q = 3;
-  if (hours >= 6.5) q = 4;
-  if (hours >= 7 && hours <= 9.5) q = 5;
-  if (hours > 10) q = 4;
-  q -= awakenings >= 4 ? 2 : awakenings >= 2 ? 1 : 0;
-  return Math.max(1, Math.min(5, q));
-}
-
-export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) {
+export default function SleepView({ sleep, lang, t, setSleep, autoSleep, setAutoSleep }: SleepViewProps) {
   const today = todayISO();
   const [editDate, setEditDate] = useState(today);
   const [goal, setGoal] = useStored<number>("dn.sleepGoal", 8);
   const locale = localeOf(lang);
   const L = EXTRA[lang] ?? EXTRA.en;
+  const A = makeSleepAuto(lang);
   const card = "rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4";
 
   const empty: SleepData = { hours: 0, quality: 0, bedtime: "", waketime: "", awakenings: 0, note: "" };
@@ -275,6 +259,20 @@ export default function SleepView({ sleep, lang, t, setSleep }: SleepViewProps) 
             </div>
           </div>
         </div>
+      </div>
+
+      <div className={`${card} animate-rise mt-5 !p-5`} style={{ boxShadow: "var(--shadow-sm)" }}>
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-[15px] font-bold">{A("title")}</h3>
+            <p className="text-xs text-[var(--ink-soft)]">{A("sub")}</p>
+          </div>
+          <button role="switch" aria-checked={autoSleep} aria-label={A("title")} onClick={() => setAutoSleep(!autoSleep)} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${autoSleep ? "bg-[var(--accent)]" : "bg-[var(--hover)]"}`}>
+            <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${autoSleep ? "left-[22px]" : "left-0.5"}`} />
+          </button>
+        </div>
+        <p className="mt-3 text-[12.5px] leading-relaxed text-[var(--ink-soft)]">{A("about")}</p>
+        <p className="mt-2 text-[12.5px] leading-relaxed text-[var(--ink-faint)]">{A("limit")}</p>
       </div>
 
       {nights.length >= 2 && (
