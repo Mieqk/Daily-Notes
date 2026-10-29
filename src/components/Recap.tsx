@@ -150,6 +150,22 @@ async function shareCanvas(canvas: HTMLCanvasElement, title: string, name: strin
   return "saved";
 }
 
+/** Свёрнутость блока помним на устройстве. */
+function useHidden(key: string): [boolean, () => void] {
+  const [hidden, setHidden] = useState(() => {
+    try { return localStorage.getItem(key) === "1"; } catch { return false; }
+  });
+  const toggle = () => {
+    setHidden((h) => {
+      try { localStorage.setItem(key, h ? "0" : "1"); } catch { /* ignore */ }
+      return !h;
+    });
+  };
+  return [hidden, toggle];
+}
+
+const toggleBtn = "h-8 shrink-0 rounded-lg border border-[var(--line)] px-3 text-[12px] font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--hover)]";
+
 interface RecapProps {
   data: RecapData;
   range: 7 | 30;
@@ -165,6 +181,7 @@ export function RecapCard({ data, range, moodEmoji, lang }: RecapProps) {
   const [msg, setMsg] = useState("");
   const streaks = useMemo(() => habitStreaks(data, todayISO()), [data]);
   const best = streaks.write.best;
+  const [hidden, toggleHidden] = useHidden("dn.recapHidden");
 
   useEffect(() => {
     const mo = new MutationObserver(() => setThemeTick((n) => n + 1));
@@ -173,8 +190,8 @@ export function RecapCard({ data, range, moodEmoji, lang }: RecapProps) {
   }, []);
 
   useEffect(() => {
-    if (ref.current) drawCard(ref.current, { lang, range, data, moodEmoji, bestStreak: best });
-  }, [lang, range, data, moodEmoji, best, themeTick]);
+    if (!hidden && ref.current) drawCard(ref.current, { lang, range, data, moodEmoji, bestStreak: best });
+  }, [hidden, lang, range, data, moodEmoji, best, themeTick]);
 
   const share = async () => {
     if (!ref.current) return;
@@ -183,12 +200,24 @@ export function RecapCard({ data, range, moodEmoji, lang }: RecapProps) {
     setMsg(res === "fail" ? s("shareFail") : res === "saved" ? s("saved") : "");
   };
 
+  if (hidden) {
+    return (
+      <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3" style={{ boxShadow: "var(--shadow-sm)" }}>
+        <h3 className="text-[15px] font-bold">{s(range === 7 ? "weekTitle" : "monthTitle")}</h3>
+        <button onClick={toggleHidden} aria-expanded={false} className={toggleBtn}>{s("show")}</button>
+      </div>
+    );
+  }
+
   return (
     <div className="mb-5 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <canvas ref={ref} role="img" aria-label={s(range === 7 ? "weekTitle" : "monthTitle")} className="aspect-[4/5] w-full max-w-[320px] self-center rounded-xl border border-[var(--line)] sm:self-start" />
         <div className="flex flex-1 flex-col gap-3">
-          <h3 className="text-[15px] font-bold">{s(range === 7 ? "weekTitle" : "monthTitle")}</h3>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-[15px] font-bold">{s(range === 7 ? "weekTitle" : "monthTitle")}</h3>
+            <button onClick={toggleHidden} aria-expanded className={toggleBtn}>{s("hide")}</button>
+          </div>
           <p className="text-[12.5px] leading-relaxed text-[var(--ink-soft)]">{s("privacy")}</p>
           <button
             onClick={share}
@@ -218,9 +247,23 @@ export function StreaksAndBadges({ data, lang }: { data: RecapData; lang: Lang }
   const streaks = useMemo(() => habitStreaks(data, today), [data, today]);
   const badges = useMemo(() => computeBadges(data, today), [data, today]);
   const nf = new Intl.NumberFormat(localeOf(lang));
+  const [hidden, toggleHidden] = useHidden("dn.badgesHidden");
+
+  if (hidden) {
+    return (
+      <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-4 py-3" style={{ boxShadow: "var(--shadow-sm)" }}>
+        <h3 className="text-[15px] font-bold">{s("streaksTitle")} · {s("badgesTitle")} · {badges.filter((b) => b.done).length}/{badges.length}</h3>
+        <button onClick={toggleHidden} aria-expanded={false} className={toggleBtn}>{s("show")}</button>
+      </div>
+    );
+  }
 
   return (
-    <div className="mb-5 grid gap-4 lg:grid-cols-5">
+    <div className="mb-5">
+      <div className="mb-2 flex justify-end">
+        <button onClick={toggleHidden} aria-expanded className={toggleBtn}>{s("hide")}</button>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-5">
       <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 lg:col-span-2" style={{ boxShadow: "var(--shadow-sm)" }}>
         <h3 className="mb-3 text-[15px] font-bold">{s("streaksTitle")}</h3>
         <ul className="flex flex-col gap-2">
@@ -257,6 +300,7 @@ export function StreaksAndBadges({ data, lang }: { data: RecapData; lang: Lang }
             </li>
           ))}
         </ul>
+      </div>
       </div>
     </div>
   );
