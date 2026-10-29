@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addTile2048, canMove2048, cleanBests, countAround, isRecord, makeDeck, move2048, newBoard2048, newSnake,
   placeMines, revealCells, slideLine, stepSnake, minesWon, type SnakeState,
+  isPuzzleSolved, shufflePuzzle, slideTile, solvedPuzzle, tttComputerMove, tttWinner, type Mark,
 } from "./games";
 
 const seq = (...vals: number[]) => { let i = 0; return () => vals[i++ % vals.length]; };
@@ -120,5 +121,43 @@ describe("рекорды", () => {
   it("чистит мусор из хранилища", () => {
     expect(cleanBests({ g2048: 512, snake: "x", foo: 3, memory: -1 })).toEqual({ g2048: 512 });
     expect(cleanBests(null)).toEqual({});
+  });
+});
+
+describe("пятнашки", () => {
+  it("собранная доска решена, сдвиг меняет плитку с пустой клеткой", () => {
+    const b = solvedPuzzle();
+    expect(isPuzzleSolved(b)).toBe(true);
+    const m = slideTile(b, 14); // слева от пустой клетки (индекс 15)
+    expect(m[14]).toBe(0);
+    expect(m[15]).toBe(15);
+  });
+  it("не двигает плитку не рядом с пустой клеткой и по диагонали", () => {
+    const b = solvedPuzzle();
+    expect(slideTile(b, 0)).toBe(b);
+    expect(slideTile(b, 10)).toBe(b);
+  });
+  it("перемешанная доска не решена, содержит все плитки и решается обратными ходами", () => {
+    const b = shufflePuzzle();
+    expect(isPuzzleSolved(b)).toBe(false);
+    expect([...b].sort((x, y) => x - y)).toEqual(Array.from({ length: 16 }, (_, i) => i));
+  });
+});
+
+describe("крестики-нолики", () => {
+  const B = (s: string): Mark[] => s.split("").map((c) => (c === "X" || c === "O" ? c : null));
+  it("находит победителя и ничью", () => {
+    expect(tttWinner(B("XXX......"))).toBe("X");
+    expect(tttWinner(B("O..O..O.."))).toBe("O");
+    expect(tttWinner(B("XOXXOOOXX"))).toBe("draw");
+    expect(tttWinner(B("........."))).toBe(null);
+  });
+  it("компьютер выигрывает в один ход и блокирует чужую победу", () => {
+    expect(tttComputerMove(B("OO.XX...."), "O", () => 0.99)).toBe(2);
+    expect(tttComputerMove(B("XX..O...."), "O", () => 0.99)).toBe(2);
+  });
+  it("не ставит в занятую клетку даже при случайном ходе", () => {
+    const b = B("XOXOXOOX.");
+    expect(tttComputerMove(b, "O", () => 0)).toBe(8);
   });
 });

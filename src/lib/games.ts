@@ -2,10 +2,10 @@
 
 export type Rng = () => number;
 
-export type GameId = "g2048" | "memory" | "snake" | "mines" | "reaction";
+export type GameId = "g2048" | "memory" | "snake" | "mines" | "reaction" | "puzzle" | "ttt";
 
 /** Для каких игр лучше меньшее число (ходы, секунды, миллисекунды). */
-const LOWER_IS_BETTER: Record<GameId, boolean> = { g2048: false, memory: true, snake: false, mines: true, reaction: true };
+const LOWER_IS_BETTER: Record<GameId, boolean> = { g2048: false, memory: true, snake: false, mines: true, reaction: true, puzzle: true, ttt: false };
 
 export type Bests = Partial<Record<GameId, number>>;
 
@@ -180,3 +180,67 @@ export function revealCells(mines: boolean[], open: boolean[], flags: boolean[],
 
 /** Победа: открыты все клетки без мин. */
 export const minesWon = (mines: boolean[], open: boolean[]): boolean => mines.every((m, i) => m || open[i]);
+
+/* ---------- Пятнашки ---------- */
+
+export const PUZZLE_N = 4;
+
+export const solvedPuzzle = (n = PUZZLE_N): number[] => Array.from({ length: n * n }, (_, i) => (i + 1) % (n * n));
+
+export const isPuzzleSolved = (board: number[]): boolean => board.every((v, i) => v === (i + 1) % board.length);
+
+/** Сдвигает плитку на пустую клетку (0), если они соседи по стороне. Иначе возвращает ту же доску. */
+export function slideTile(board: number[], idx: number, n = PUZZLE_N): number[] {
+  const hole = board.indexOf(0);
+  const dx = Math.abs((idx % n) - (hole % n)), dy = Math.abs(Math.floor(idx / n) - Math.floor(hole / n));
+  if (dx + dy !== 1) return board;
+  const next = board.slice();
+  next[hole] = board[idx];
+  next[idx] = 0;
+  return next;
+}
+
+/** Перемешивание случайными ходами из собранной доски: такая доска всегда решается. */
+export function shufflePuzzle(rng: Rng = Math.random, n = PUZZLE_N, moves = 200): number[] {
+  let board = solvedPuzzle(n);
+  let prev = -1;
+  for (let i = 0; i < moves; i++) {
+    const hole = board.indexOf(0);
+    const opts = neighbours(hole, n, n).filter((j) => Math.abs((j % n) - (hole % n)) + Math.abs(Math.floor(j / n) - Math.floor(hole / n)) === 1 && j !== prev);
+    const pick = opts[Math.floor(rng() * opts.length)];
+    prev = hole;
+    board = slideTile(board, pick, n);
+  }
+  return isPuzzleSolved(board) ? shufflePuzzle(rng, n, moves) : board;
+}
+
+/* ---------- Крестики-нолики ---------- */
+
+export type Mark = "X" | "O" | null;
+const LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+
+export function tttWinner(b: Mark[]): "X" | "O" | "draw" | null {
+  for (const [a, c, d] of LINES) if (b[a] && b[a] === b[c] && b[a] === b[d]) return b[a];
+  return b.every(Boolean) ? "draw" : null;
+}
+
+/** Оценка позиции для `me`: чем быстрее победа, тем выше счёт; чем позже поражение, тем лучше. */
+function minimax(b: Mark[], turn: "X" | "O", me: "X" | "O", depth = 0): number {
+  const w = tttWinner(b);
+  if (w) return w === "draw" ? 0 : w === me ? 10 - depth : depth - 10;
+  const scores = b.flatMap((v, i) => (v ? [] : [minimax(b.map((x, j) => (j === i ? turn : x)), turn === "X" ? "O" : "X", me, depth + 1)]));
+  return turn === me ? Math.max(...scores) : Math.min(...scores);
+}
+
+/** Ход компьютера: обычно лучший, но с вероятностью `blunder` случайный, чтобы у человека был шанс выиграть. */
+export function tttComputerMove(b: Mark[], mark: "X" | "O", rng: Rng = Math.random, blunder = 0.25): number {
+  const free = b.flatMap((v, i) => (v ? [] : [i]));
+  if (rng() < blunder) return free[Math.floor(rng() * free.length)];
+  const other = mark === "X" ? "O" : "X";
+  let best = -Infinity, picks: number[] = [];
+  for (const i of free) {
+    const sc = minimax(b.map((x, j) => (j === i ? mark : x)), other, mark, 1);
+    if (sc > best) { best = sc; picks = [i]; } else if (sc === best) picks.push(i);
+  }
+  return picks[Math.floor(rng() * picks.length)];
+}
