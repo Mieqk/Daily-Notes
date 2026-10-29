@@ -24,7 +24,6 @@ import {
   PenIcon,
   StatsIcon,
   SleepIcon,
-  HeartIcon,
   UsersIcon,
 } from "../icons";
 
@@ -55,7 +54,6 @@ const TABS: { id: Tab; icon: (p: { className?: string }) => ReactNode; key: TKey
   { id: "plan", icon: PlanIcon, key: "tabPlan" },
   { id: "stats", icon: StatsIcon, key: "tabStats" },
   { id: "sleep", icon: SleepIcon, key: "tabSleep" },
-  { id: "pair", icon: HeartIcon, key: "tabPair" },
   { id: "hobby", icon: SparkIcon, key: "tabHobby" },
   { id: "notes", icon: NotebookIcon, key: "tabNotes" },
   { id: "friends", icon: UsersIcon, key: "tabFriends" },

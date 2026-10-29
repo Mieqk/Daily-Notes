@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CalendarIcon, PlanIcon, StatsIcon, NotebookIcon, SleepIcon, HeartIcon, SparkIcon, GearIcon, UsersIcon, XIcon } from "../icons";
+import { CalendarIcon, PlanIcon, StatsIcon, NotebookIcon, SleepIcon, SparkIcon, GearIcon, UsersIcon, XIcon } from "../icons";
 import type { Tab } from "../store";
 import type { Lang, TKey } from "../i18n";
 import { MiniCalendar } from "./Sidebar";
@@ -20,7 +20,6 @@ const TABS = [
   { id: "plan" as Tab, icon: PlanIcon, key: "tabPlan" as TKey },
   { id: "stats" as Tab, icon: StatsIcon, key: "tabStats" as TKey },
   { id: "sleep" as Tab, icon: SleepIcon, key: "tabSleep" as TKey },
-  { id: "pair" as Tab, icon: HeartIcon, key: "tabPair" as TKey },
   { id: "hobby" as Tab, icon: SparkIcon, key: "tabHobby" as TKey },
   { id: "notes" as Tab, icon: NotebookIcon, key: "tabNotes" as TKey },
   { id: "friends" as Tab, icon: UsersIcon, key: "tabFriends" as TKey },
