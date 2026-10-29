@@ -3,13 +3,14 @@ import type { Lang } from "../i18n";
 import { localeOf, MOODS } from "../i18n";
 import type { Task } from "../store";
 import { fromISO, toISO, todayISO } from "../store";
-import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
+import { ArrowLeftIcon, ArrowRightIcon, MoodVisual } from "../icons";
 import { makeUI } from "../ui-strings";
 
 interface CalendarViewProps {
   notes: Record<string, string>;
   tasks: Record<string, Task[]>;
   moods: Record<string, number>;
+  moodEmoji: string[];
   onOpen: (iso: string) => void;
   lang: Lang;
 }
@@ -17,7 +18,7 @@ interface CalendarViewProps {
 /** Насыщенность акцента по уровню настроения 0..4 */
 const MOOD_MIX = [18, 34, 52, 72, 92];
 
-export default function CalendarView({ notes, tasks, moods, onOpen, lang }: CalendarViewProps) {
+export default function CalendarView({ notes, tasks, moods, moodEmoji, onOpen, lang }: CalendarViewProps) {
   const u = makeUI(lang);
   const locale = localeOf(lang);
   const today = todayISO();
@@ -74,6 +75,7 @@ export default function CalendarView({ notes, tasks, moods, onOpen, lang }: Cale
           const done = dayTasks.filter((x) => x.done).length;
           const isToday = iso === today;
           const day = Number(iso.slice(8));
+          const level = mood !== undefined ? Math.max(0, Math.min(4, mood)) : -1;
           const bg = mood !== undefined ? `color-mix(in srgb, var(--accent) ${MOOD_MIX[Math.max(0, Math.min(4, mood))]}%, var(--panel-2))` : undefined;
           const lightText = mood !== undefined && mood >= 3;
           const label = `${iso}${has ? "" : ` · ${u("calNoEntry")}`}${mood !== undefined ? ` · ${MOODS[lang][mood]}` : ""}`;
@@ -83,13 +85,18 @@ export default function CalendarView({ notes, tasks, moods, onOpen, lang }: Cale
               onClick={() => onOpen(iso)}
               aria-label={label}
               title={label}
-              className={`relative flex aspect-square min-h-[44px] flex-col items-center justify-center rounded-xl border text-sm font-semibold transition-all duration-150 hover:-translate-y-0.5 active:scale-95 ${isToday ? "border-[var(--accent)] ring-2 ring-[var(--accent)]/30" : "border-[var(--line)]"} ${mood === undefined ? "bg-[var(--panel-2)]" : ""}`}
+              className={`relative flex aspect-square min-h-[44px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl border text-sm font-semibold transition-all duration-150 hover:-translate-y-0.5 active:scale-95 ${isToday ? "border-[var(--accent)] ring-2 ring-[var(--accent)]/30" : "border-[var(--line)]"} ${mood === undefined ? "bg-[var(--panel-2)]" : ""}`}
               style={{ background: bg, color: lightText ? "var(--accent-ink)" : "var(--ink)" }}
             >
-              <span>{day}</span>
-              {has && <span className="mt-0.5 h-1 w-1 rounded-full" style={{ background: lightText ? "var(--accent-ink)" : "var(--accent)" }} />}
+              <span className="text-[12px] leading-none sm:text-sm">{day}</span>
+              {level >= 0 && (
+                <>
+                  <MoodVisual level={level} emoji={moodEmoji[level]} className="h-4 w-4 text-[14px] sm:h-5 sm:w-5 sm:text-[17px]" />
+                  <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full" style={{ background: lightText ? "var(--accent-ink)" : "var(--accent)" }} aria-hidden="true" />
+                </>
+              )}
               {dayTasks.length > 0 && done === dayTasks.length && (
-                <span className="absolute right-1.5 top-1 text-[10px] leading-none" aria-hidden="true">✓</span>
+                <span className="absolute left-1 top-0.5 text-[9px] leading-none sm:left-1.5 sm:text-[10px]" aria-hidden="true">✓</span>
               )}
             </button>
           );
@@ -100,7 +107,9 @@ export default function CalendarView({ notes, tasks, moods, onOpen, lang }: Cale
         <span>{u("calMood")}:</span>
         {MOOD_MIX.map((m, i) => (
           <span key={m} className="flex items-center gap-1.5">
-            <span className="h-3.5 w-3.5 rounded" style={{ background: `color-mix(in srgb, var(--accent) ${m}%, var(--panel-2))` }} />
+            <span className="grid h-5 w-5 place-items-center rounded" style={{ background: `color-mix(in srgb, var(--accent) ${m}%, var(--panel-2))`, color: i >= 3 ? "var(--accent-ink)" : "var(--ink)" }}>
+              <MoodVisual level={i} emoji={moodEmoji[i]} className="h-3.5 w-3.5 text-[11px]" />
+            </span>
             {MOODS[lang][i]}
           </span>
         ))}
