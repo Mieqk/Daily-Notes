@@ -4,7 +4,7 @@
     <string name="widget_name">Daily Note</string>
     <string name="widget_description">Streak, today’s entry and quick buttons</string>
     <string name="widget_streak">Streak: %1$d d</string>
-    <string name="widget_done">Today's entry is done ✓</string>
+    <string name="widget_done">Today\'s entry is done ✓</string>
     <string name="widget_todo">No entry yet today</string>
     <string name="widget_write">Write</string>
     <string name="widget_plan">Plans</string>
