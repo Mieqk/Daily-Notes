@@ -12,6 +12,7 @@ import { verifyBiometric } from "./lib/biometric";
 import { makeDevice } from "./device-strings";
 import { buildBackup } from "./lib/backup";
 import { applyDeepLink } from "./lib/deepLink";
+import { syncWidget } from "./lib/widget";
 import { buildMarkdown, downloadText, hashPin, shiftISO, toISO, todayISO, useNow, useStored } from "./store";
 import { BG_IMAGES } from "./bg";
 import Sidebar from "./components/Sidebar";
@@ -385,6 +386,9 @@ export default function App() {
     let iso = writtenOn[today] && (notes[today] ?? "").trim() ? today : shiftISO(today, -1);
     for (; (notes[iso] ?? "").trim() && writtenOn[iso]; iso = shiftISO(iso, -1)) streak += 1;
   }
+  const todayDone = Boolean(writtenOn[today] && (notes[today] ?? "").trim());
+  // Виджет на главном экране Android показывает серию и отметку за сегодня
+  useEffect(() => { syncWidget(Boolean(userId), streak, todayDone, today); }, [userId, streak, todayDone, today]);
   const weekMarks = Array.from({ length: 7 }, (_, i) => Boolean((notes[shiftISO(today, i - 6)] ?? "").trim()));
   const notesCount = Object.keys(notes).filter((k) => (notes[k] ?? "").trim()).length;
   const tasksCount = Object.values(tasks).reduce((sum, list) => sum + (list?.length ?? 0), 0);

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_title">Daily Note</string>
+    <string name="widget_name">Daily Note</string>
+    <string name="widget_description">Serie, heutiger Eintrag und Schnellbuttons</string>
+    <string name="widget_streak">Serie: %1$d T.</string>
+    <string name="widget_done">Heutiger Eintrag erledigt ✓</string>
+    <string name="widget_todo">Heute noch kein Eintrag</string>
+    <string name="widget_write">Schreiben</string>
+    <string name="widget_plan">Pläne</string>
+    <string name="widget_ai">Funke</string>
+    <string name="widget_open_app">App öffnen zum Abgleichen</string>
+</resources>

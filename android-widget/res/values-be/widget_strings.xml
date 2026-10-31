@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_title">Daily Note</string>
+    <string name="widget_name">Daily Note</string>
+    <string name="widget_description">Серыя, запіс за сёння і хуткія кнопкі</string>
+    <string name="widget_streak">Серыя: %1$d дн.</string>
+    <string name="widget_done">Запіс за сёння ёсць ✓</string>
+    <string name="widget_todo">Сёння запісу яшчэ няма</string>
+    <string name="widget_write">Запісаць</string>
+    <string name="widget_plan">Планы</string>
+    <string name="widget_ai">Іскра</string>
+    <string name="widget_open_app">Адкрыйце праграму для сінхранізацыі</string>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_bg">#F5F5F0</color>
+    <color name="widget_btn">#E3E8DE</color>
+    <color name="widget_text">#1B2B22</color>
+    <color name="widget_muted">#5F6F65</color>
+    <color name="widget_accent">#2D6A4F</color>
+    <color name="widget_on_accent">#FFFFFF</color>
+    <style name="WidgetButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginEnd">6dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:background">@drawable/widget_btn</item>
+        <item name="android:textColor">@color/widget_text</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:maxLines">1</item>
+    </style>
+</resources>
