@@ -63,6 +63,16 @@ jobs:
           PY
           grep -n "io.vercel.dailynotes" android/app/src/main/AndroidManifest.xml
 
+      # Виджет на главный экран (серия дней, запись за сегодня, кнопки «Записать», «Планы», «Искра»): исходники в android-widget/.
+      - name: Add home screen widget
+        run: |
+          APP=android/app/src/main
+          cp -r android-widget/res/. "$APP/res/"
+          mkdir -p "$APP/java/io/vercel/dailynotes"
+          cp android-widget/java/io/vercel/dailynotes/*.java "$APP/java/io/vercel/dailynotes/"
+          python3 android-widget/patch_manifest.py "$APP/AndroidManifest.xml"
+          grep -n "DailyWidgetProvider\|host=\"open\"" "$APP/AndroidManifest.xml"
+
       # Микрофон (диктовка и голосовые) и местоположение (напоминания по месту): без этих разрешений WebView их не даст.
       - name: Add microphone and location permissions
         run: |

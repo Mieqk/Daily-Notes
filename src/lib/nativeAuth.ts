@@ -29,7 +29,7 @@ const cap = (): CapacitorGlobal | undefined => (window as unknown as { Capacitor
  * Вызов метода нативного плагина. Страница грузится с сайта, без JS-пакетов Capacitor, поэтому ни
  * Capacitor.Plugins, ни registerPlugin там нет; зато нативный мост всегда даёт nativePromise.
  */
-const callNative = (name: string, method: string, options?: unknown): Promise<any> => {
+export const callNative = (name: string, method: string, options?: unknown): Promise<any> => {
   const c = cap();
   if (c?.nativePromise) return c.nativePromise(name, method, options);
   const p = c?.Plugins?.[name] ?? c?.registerPlugin?.(name);
