@@ -3,6 +3,7 @@ import type { Lang } from "../i18n";
 import { MOODS, localeOf } from "../i18n";
 import { MoodVisual } from "../icons";
 import { supabase } from "../lib/supabase";
+import { sendPushEvent } from "../lib/push";
 import { countdown, goalProgress, localInputToISO, moodAverage, moodByDay, pairKey, suggestedTouch, type Mark, type MoodRow, type TouchKind } from "../lib/pairTogether";
 import { makeTogether } from "../pair-together-strings";
 import { fromISO, shiftISO, todayISO } from "../store";
@@ -110,9 +111,12 @@ function Touches({ linkId, userId, lang, otherId, name }: WithOther) {
   const send = async (kind: TouchKind) => {
     if (!supabase || busy) return;
     setBusy(true); setErr(false);
-    const { error } = await supabase.from("pair_touches").upsert({ link_id: linkId, sender: userId, kind, day }, { onConflict: "link_id,sender,kind,day", ignoreDuplicates: true });
+    // повторное касание в тот же день игнорируется и строку не возвращает, поэтому пуш уходит один раз
+    const { data: added, error } = await supabase.from("pair_touches").upsert({ link_id: linkId, sender: userId, kind, day }, { onConflict: "link_id,sender,kind,day", ignoreDuplicates: true }).select("id");
     setBusy(false);
     if (error) { setErr(true); return; }
+    const id = (added as { id?: string }[] | null)?.[0]?.id;
+    if (id) sendPushEvent("touch", id);
     load();
   };
 

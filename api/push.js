@@ -1,4 +1,4 @@
-// POST /api/push { kind: "gratitude" | "sos" | "chat" | "call", id }  +  Authorization: Bearer <JWT пользователя>
+// POST /api/push { kind: "gratitude" | "sos" | "chat" | "call" | "touch", id }  +  Authorization: Bearer <JWT пользователя>
 // Рассылает фоновый web-push адресату благодарности или сообщения чата либо друзьям автора SOS-сигнала.
 import { config, sendMany, tr } from "./_push.js";
 
@@ -31,15 +31,15 @@ export default async function handler(req, res) {
   if (!me) return res.status(401).json({ error: "unauthorized" });
 
   const { kind, id } = req.body || {};
-  if ((kind !== "gratitude" && kind !== "sos" && kind !== "chat" && kind !== "call") || typeof id !== "string" || id.length > 64) {
+  if ((kind !== "gratitude" && kind !== "sos" && kind !== "chat" && kind !== "call" && kind !== "touch") || typeof id !== "string" || id.length > 64) {
     return res.status(400).json({ error: "bad request" });
   }
   if (kind === "chat" ? tooMany(`${me}:chat`, MAX_CHAT_PER_WINDOW) : tooMany(me)) return res.status(429).json({ error: "too many requests" });
 
   // 1. Запись должна принадлежать вызывающему, быть свежей и ещё не разосланной.
   //    Условие pushed_at IS NULL в UPDATE делает «первый вызов выигрывает» атомарным.
-  const table = kind === "gratitude" ? "gratitude" : kind === "chat" ? "chat_messages" : kind === "call" ? "call_signals" : "sos_signals";
-  const ownerCol = kind === "gratitude" ? "from_user" : kind === "chat" || kind === "call" ? "sender" : "user_id";
+  const table = kind === "touch" ? "pair_touches" : kind === "gratitude" ? "gratitude" : kind === "chat" ? "chat_messages" : kind === "call" ? "call_signals" : "sos_signals";
+  const ownerCol = kind === "gratitude" ? "from_user" : kind === "chat" || kind === "call" || kind === "touch" ? "sender" : "user_id";
   const { data: row } = await admin
     .from(table)
     .update({ pushed_at: new Date().toISOString() })
@@ -57,6 +57,11 @@ export default async function handler(req, res) {
     recipients = [row.to_user];
   } else if (kind === "chat" || kind === "call") {
     recipients = [row.recipient];
+  } else if (kind === "touch") {
+    // второй участник пары; отправитель обязан быть в этой паре
+    const { data: link } = await admin.from("pair_links").select("user_a,user_b").eq("id", row.link_id).maybeSingle();
+    const other = link && (link.user_a === me ? link.user_b : link.user_b === me ? link.user_a : null);
+    recipients = other ? [other] : [];
   } else {
     const { data: fr } = await admin.from("friendships").select("user_a,user_b").eq("status", "accepted").or(`user_a.eq.${me},user_b.eq.${me}`);
     recipients = (fr || []).map((f) => (f.user_a === me ? f.user_b : f.user_a));
@@ -65,14 +70,16 @@ export default async function handler(req, res) {
 
   const { data: subs } = await admin.from("push_subscriptions").select("*").in("user_id", recipients).eq("friends_enabled", true);
   let senderName = "";
-  if (kind === "chat" || kind === "call") {
+  if (kind === "chat" || kind === "call" || kind === "touch") {
     const { data: prof } = await admin.from("profiles").select("display_name").eq("id", me).maybeSingle();
     senderName = String(prof?.display_name || "").slice(0, 60);
   }
   const jobs = (subs || []).map((sub) => {
     const t = tr(sub.lang);
     const payload =
-      kind === "gratitude"
+      kind === "touch"
+        ? { title: t.pair, body: (t.touch[row.kind] || t.touch.thinking).replace("{name}", senderName || "💞"), tag: "dn-touch" }
+        : kind === "gratitude"
         ? { title: t.thanks, body: String(row.text || "").slice(0, 280), tag: "dn-thanks" }
         : kind === "call"
           ? { title: senderName || t.call, body: row.video ? t.videoCall : t.voiceCall, tag: "dn-call", requireInteraction: true }
