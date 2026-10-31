@@ -4,7 +4,7 @@ import { MOODS, localeOf } from "../i18n";
 import { MoodVisual } from "../icons";
 import { supabase } from "../lib/supabase";
 import { sendPushEvent } from "../lib/push";
-import { countdown, goalProgress, localInputToISO, moodAverage, moodByDay, monthRange, monthSummary, pairKey, suggestedTouch, type Mark, type MoodRow, type TouchKind } from "../lib/pairTogether";
+import { countdown, goalProgress, localInputToISO, moodAverage, moodByDay, monthExtras, monthRange, monthSummary, pairKey, suggestedTouch, type Mark, type MoodRow, type TouchKind } from "../lib/pairTogether";
 import { makeTogether } from "../pair-together-strings";
 import { fromISO, shiftISO, todayISO } from "../store";
 import type { FriendOpt } from "./SharedMemories";
@@ -462,7 +462,7 @@ function Events({ linkId, userId, lang }: SectionProps) {
 function MonthRecap({ linkId, userId, lang, otherId, name, moodEmoji }: WithOther & { moodEmoji: string[] }) {
   const t = makeTogether(lang);
   const [offset, setOffset] = useState(0);
-  const [data, setData] = useState<{ touches: { sender: string; day: string }[]; goals: { id: string; target: number }[]; marks: Mark[]; moods: MoodRow[] } | null>(null);
+  const [data, setData] = useState<{ touches: { sender: string; day: string }[]; goals: { id: string; target: number }[]; marks: Mark[]; moods: MoodRow[]; nights: { user_id: string; day: string; hours: number }[]; checkins: { user_id: string; day: string }[] } | null>(null);
   const range = useMemo(() => monthRange(todayISO(), offset), [offset]);
 
   useEffect(() => {
@@ -478,15 +478,29 @@ function MonthRecap({ linkId, userId, lang, otherId, name, moodEmoji }: WithOthe
       const goals = (gl.data ?? []) as { id: string; target: number }[];
       const mk = goals.length ? await supabase!.from("pair_goal_marks").select("goal_id,user_id,day").in("goal_id", goals.map((g) => g.id)) : { data: [] };
       if (off) return;
-      setData({ touches: (tc.data ?? []) as { sender: string; day: string }[], goals, marks: (mk.data ?? []) as Mark[], moods: (md.data ?? []) as MoodRow[] });
+      // сон и привычки пары: берём только то, чем вы уже делитесь в «Парных» разделах
+      const parties = await supabase!.from("sleep_parties").select("id,owner,buddy");
+      const party = ((parties.data ?? []) as { id: string; owner: string; buddy: string }[]).find((p) => (p.owner === userId && p.buddy === otherId) || (p.owner === otherId && p.buddy === userId));
+      const sl = party ? await supabase!.from("sleep_party_nights").select("user_id,day,hours").eq("party_id", party.id).gte("day", range.start).lt("day", range.end) : { data: [] };
+      const hb = await supabase!.from("buddy_habits").select("id,owner,buddy");
+      const habitIds = ((hb.data ?? []) as { id: string; owner: string; buddy: string }[]).filter((h) => (h.owner === userId && h.buddy === otherId) || (h.owner === otherId && h.buddy === userId)).map((h) => h.id);
+      const ck = habitIds.length ? await supabase!.from("buddy_checkins").select("user_id,day").in("habit_id", habitIds).gte("day", range.start).lt("day", range.end) : { data: [] };
+      if (off) return;
+      setData({
+        touches: (tc.data ?? []) as { sender: string; day: string }[], goals, marks: (mk.data ?? []) as Mark[], moods: (md.data ?? []) as MoodRow[],
+        nights: (sl.data ?? []) as { user_id: string; day: string; hours: number }[], checkins: (ck.data ?? []) as { user_id: string; day: string }[],
+      });
     })();
     return () => { off = true; };
-  }, [linkId, range.start, range.end]);
+  }, [linkId, userId, otherId, range.start, range.end]);
 
   const sum = useMemo(() => data && monthSummary(range, userId, otherId, data.touches, data.goals, data.marks, data.moods), [data, range, userId, otherId]);
+  const extra = useMemo(() => data && monthExtras(range, userId, otherId, data.nights, data.checkins), [data, range, userId, otherId]);
   const label = new Intl.DateTimeFormat(localeOf(lang), { month: "long", year: "numeric" }).format(fromISO(range.start));
   const nav = "grid h-9 w-9 place-items-center rounded-lg text-[16px] text-[var(--ink-soft)] hover:bg-[var(--hover)] disabled:opacity-30";
-  const empty = !!sum && sum.touchesMine + sum.touchesTheirs + sum.marksMine + sum.marksTheirs + sum.goalsDone === 0;
+  const hasSleep = !!extra && (extra.sleepMine !== null || extra.sleepTheirs !== null);
+  const hasHabits = !!extra && extra.habitsMine + extra.habitsTheirs > 0;
+  const empty = !!sum && sum.touchesMine + sum.touchesTheirs + sum.marksMine + sum.marksTheirs + sum.goalsDone === 0 && !hasSleep && !hasHabits;
   const moodLabel = (v: number) => `${moodEmoji[Math.round(v)] ?? ""} ${MOODS[lang][Math.round(v)]}`;
 
   const row = (title: string, mine: number, theirs: number) => (
@@ -515,6 +529,18 @@ function MonthRecap({ linkId, userId, lang, otherId, name, moodEmoji }: WithOthe
               <span className="text-[13px] font-semibold">{t("sGoals")}</span>
               <b className="text-[14px] tabular-nums">{sum.goalsDone}</b>
             </li>
+            {hasHabits && extra && row(t("sHabits"), extra.habitsMine, extra.habitsTheirs)}
+            {hasSleep && extra && (
+              <li className="flex items-center justify-between gap-3 rounded-xl bg-[var(--hover)] px-3 py-2.5">
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-semibold">{t("sSleep")}</span>
+                  {extra.sleepBoth > 0 && <span className="block text-[11px] text-[var(--ink-faint)]">{t("sSleepNights").replace("{n}", String(extra.sleepBoth))}</span>}
+                </span>
+                <span className="shrink-0 text-right text-[12px] tabular-nums text-[var(--ink-soft)]">
+                  {t("mYou")}: <b className="text-[var(--ink)]">{extra.sleepMine ?? "–"}</b> {t("sHoursUnit")} · <span className="inline-block max-w-[7rem] truncate align-bottom">{name}</span>: <b className="text-[var(--ink)]">{extra.sleepTheirs ?? "–"}</b> {t("sHoursUnit")}
+                </span>
+              </li>
+            )}
             <li className="flex items-center justify-between gap-3 rounded-xl bg-[var(--hover)] px-3 py-2.5">
               <span className="min-w-0 text-[13px] font-semibold">{t("sMood")}</span>
               {sum.moodMine !== null && sum.moodTheirs !== null

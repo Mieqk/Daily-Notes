@@ -110,3 +110,26 @@ export function monthSummary(r: MonthRange, me: string, other: string, touches: 
     activeDays: active.size,
   };
 }
+
+export interface MonthNight { user_id: string; day: string; hours: number }
+export interface MonthCheckin { user_id: string; day: string }
+export interface MonthExtras {
+  sleepMine: number | null; sleepTheirs: number | null; sleepBoth: number;
+  habitsMine: number; habitsTheirs: number;
+}
+
+/** Сон (средние часы, ночи у обоих) и отметки парных привычек за месяц. Берётся только то, чем пара уже делится. */
+export function monthExtras(r: MonthRange, me: string, other: string, nights: MonthNight[], checkins: MonthCheckin[]): MonthExtras {
+  const n = nights.filter((x) => inRange(x.day, r));
+  const avgOf = (id: string) => {
+    const h = n.filter((x) => x.user_id === id && x.hours > 0).map((x) => x.hours);
+    return h.length === 0 ? null : Math.round((h.reduce((a, b) => a + b, 0) / h.length) * 10) / 10;
+  };
+  const mineDays = new Set(n.filter((x) => x.user_id === me).map((x) => x.day));
+  const both = new Set(n.filter((x) => x.user_id === other && mineDays.has(x.day)).map((x) => x.day)).size;
+  const c = checkins.filter((x) => inRange(x.day, r));
+  return {
+    sleepMine: avgOf(me), sleepTheirs: avgOf(other), sleepBoth: both,
+    habitsMine: c.filter((x) => x.user_id === me).length, habitsTheirs: c.filter((x) => x.user_id !== me).length,
+  };
+}

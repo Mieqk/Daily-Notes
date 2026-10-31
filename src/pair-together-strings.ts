@@ -68,6 +68,10 @@ const ru = {
   sEmpty: "В этом месяце пока тихо. Отправьте тёплое слово или отметьте общую цель.",
   sWarm: "Вы много значите друг для друга 💞",
   sWarmQuiet: "Новый месяц, новые поводы быть рядом 🌱",
+  sSleep: "Сон в среднем",
+  sSleepNights: "общих ночей: {n}",
+  sHabits: "Отметки привычек",
+  sHoursUnit: "ч",
 };
 type Strings = typeof ru;
 
@@ -138,6 +142,10 @@ const en: Strings = {
   sEmpty: "Quiet so far this month. Send a warm word or tick a shared goal.",
   sWarm: "You mean a lot to each other 💞",
   sWarmQuiet: "A new month, new reasons to be close 🌱",
+  sSleep: "Average sleep",
+  sSleepNights: "nights shared: {n}",
+  sHabits: "Habit check-ins",
+  sHoursUnit: "h",
 };
 
 const be: Strings = {
@@ -207,6 +215,10 @@ const be: Strings = {
   sEmpty: "У гэтым месяцы пакуль ціха. Адпраўце цёплае слова або адзначце агульную мэту.",
   sWarm: "Вы шмат значыце адно для аднаго 💞",
   sWarmQuiet: "Новы месяц, новыя нагоды быць побач 🌱",
+  sSleep: "Сон у сярэднім",
+  sSleepNights: "агульных начэй: {n}",
+  sHabits: "Адзнакі звычак",
+  sHoursUnit: "г",
 };
 
 const uk: Strings = {
@@ -276,6 +288,10 @@ const uk: Strings = {
   sEmpty: "У цьому місяці поки тихо. Надішліть тепле слово або позначте спільну ціль.",
   sWarm: "Ви багато значите одне для одного 💞",
   sWarmQuiet: "Новий місяць, нові приводи бути поруч 🌱",
+  sSleep: "Сон у середньому",
+  sSleepNights: "спільних ночей: {n}",
+  sHabits: "Позначки звичок",
+  sHoursUnit: "г",
 };
 
 const de: Strings = {
@@ -345,6 +361,10 @@ const de: Strings = {
   sEmpty: "In diesem Monat ist es noch ruhig. Schickt ein liebes Wort oder hakt ein gemeinsames Ziel ab.",
   sWarm: "Ihr bedeutet einander viel 💞",
   sWarmQuiet: "Ein neuer Monat, neue Gründe, sich nah zu sein 🌱",
+  sSleep: "Schlaf im Schnitt",
+  sSleepNights: "gemeinsame Nächte: {n}",
+  sHabits: "Gewohnheits-Häkchen",
+  sHoursUnit: "Std.",
 };
 
 const fr: Strings = {
@@ -414,6 +434,10 @@ const fr: Strings = {
   sEmpty: "Calme pour l’instant ce mois-ci. Envoyez un mot doux ou cochez un objectif commun.",
   sWarm: "Vous comptez beaucoup l’un pour l’autre 💞",
   sWarmQuiet: "Un nouveau mois, de nouvelles raisons d’être proches 🌱",
+  sSleep: "Sommeil moyen",
+  sSleepNights: "nuits communes : {n}",
+  sHabits: "Pointages d’habitudes",
+  sHoursUnit: "h",
 };
 
 const es: Strings = {
@@ -483,6 +507,10 @@ const es: Strings = {
   sEmpty: "De momento está tranquilo este mes. Enviad una palabra cálida o marcad una meta común.",
   sWarm: "Significáis mucho el uno para el otro 💞",
   sWarmQuiet: "Un mes nuevo, nuevas razones para estar cerca 🌱",
+  sSleep: "Sueño medio",
+  sSleepNights: "noches compartidas: {n}",
+  sHabits: "Marcas de hábitos",
+  sHoursUnit: "h",
 };
 
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };
