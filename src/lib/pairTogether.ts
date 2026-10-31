@@ -61,3 +61,52 @@ export function suggestedTouch(hour: number): TouchKind {
 export function pairKey(a: string, b: string): { user_a: string; user_b: string } {
   return a < b ? { user_a: a, user_b: b } : { user_a: b, user_b: a };
 }
+
+export interface MonthRange { start: string; end: string; ym: string }
+
+/** Границы месяца: start включительно, end (первое число следующего месяца) не включая. offset 0 - текущий, -1 - прошлый. */
+export function monthRange(todayISO: string, offset = 0): MonthRange {
+  const [y, m] = todayISO.split("-").map(Number);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const at = (shift: number) => { const d = new Date(y, m - 1 + offset + shift, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-01`; };
+  const start = at(0);
+  return { start, end: at(1), ym: start.slice(0, 7) };
+}
+
+export interface MonthTouch { sender: string; day: string }
+export interface MonthGoal { id: string; target: number }
+export interface MonthSummary {
+  touchesMine: number; touchesTheirs: number;
+  marksMine: number; marksTheirs: number;
+  goalsDone: number;
+  moodMine: number | null; moodTheirs: number | null;
+  activeDays: number;
+}
+
+const inRange = (day: string, r: MonthRange) => day >= r.start && day < r.end;
+
+/** Итог месяца пары: касания и отметки каждого, достигнутые за месяц цели, среднее настроение (по общим данным). */
+export function monthSummary(r: MonthRange, me: string, other: string, touches: MonthTouch[], goals: MonthGoal[], marks: Mark[], moods: MoodRow[]): MonthSummary {
+  const t = touches.filter((x) => inRange(x.day, r));
+  const mk = marks.filter((x) => inRange(x.day, r));
+  // цель достигнута в этом месяце, если отметка, закрывшая нужное число, поставлена в нём
+  let goalsDone = 0;
+  for (const g of goals) {
+    const days = marks.filter((m) => m.goal_id === g.id).map((m) => m.day).sort();
+    const closing = days[Math.max(1, g.target) - 1];
+    if (closing !== undefined && inRange(closing, r)) goalsDone++;
+  }
+  const md = moods.filter((x) => inRange(x.day, r));
+  const avg = (id: string) => moodAverage(md.filter((x) => x.user_id === id).map((x) => x.mood));
+  const mine = avg(me), theirs = avg(other);
+  const active = new Set<string>([...t.map((x) => x.day), ...mk.map((x) => x.day)]);
+  return {
+    touchesMine: t.filter((x) => x.sender === me).length, touchesTheirs: t.filter((x) => x.sender !== me).length,
+    marksMine: mk.filter((x) => x.user_id === me).length, marksTheirs: mk.filter((x) => x.user_id !== me).length,
+    goalsDone,
+    // настроение показываем только если поделились оба
+    moodMine: mine !== null && theirs !== null ? mine : null,
+    moodTheirs: mine !== null && theirs !== null ? theirs : null,
+    activeDays: active.size,
+  };
+}

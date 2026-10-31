@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countdown, goalProgress, localInputToISO, moodAverage, moodByDay, pairKey, suggestedTouch } from './lib/pairTogether';
+import { countdown, goalProgress, localInputToISO, moodAverage, moodByDay, monthRange, monthSummary, pairKey, suggestedTouch } from './lib/pairTogether';
 
 describe('pairTogether', () => {
   it('обратный отсчёт: дни, часы, минуты и прошедшее событие', () => {
@@ -38,5 +38,22 @@ describe('pairTogether', () => {
   it('ключ пары не зависит от порядка', () => {
     expect(pairKey('b', 'a')).toEqual({ user_a: 'a', user_b: 'b' });
     expect(pairKey('a', 'b')).toEqual({ user_a: 'a', user_b: 'b' });
+  });
+  it('границы месяца: текущий, прошлый и через Новый год', () => {
+    expect(monthRange('2026-10-31')).toEqual({ start: '2026-10-01', end: '2026-11-01', ym: '2026-10' });
+    expect(monthRange('2026-01-15', -1)).toEqual({ start: '2025-12-01', end: '2026-01-01', ym: '2025-12' });
+  });
+  it('итог месяца: считает только свой месяц, цели и настроение лишь если поделились оба', () => {
+    const r = monthRange('2026-10-20');
+    const touches = [{ sender: 'me', day: '2026-10-02' }, { sender: 'him', day: '2026-10-02' }, { sender: 'him', day: '2026-09-30' }];
+    const goals = [{ id: 'g1', target: 2 }, { id: 'g2', target: 3 }];
+    const marks = [
+      { goal_id: 'g1', user_id: 'me', day: '2026-09-29' }, { goal_id: 'g1', user_id: 'him', day: '2026-10-05' },
+      { goal_id: 'g2', user_id: 'me', day: '2026-10-06' },
+    ];
+    const s = monthSummary(r, 'me', 'him', touches, goals, marks, [{ user_id: 'me', day: '2026-10-03', mood: 4 }]);
+    expect(s).toMatchObject({ touchesMine: 1, touchesTheirs: 1, marksMine: 1, marksTheirs: 1, goalsDone: 1, activeDays: 3, moodMine: null, moodTheirs: null });
+    const s2 = monthSummary(r, 'me', 'him', [], [], [], [{ user_id: 'me', day: '2026-10-03', mood: 4 }, { user_id: 'him', day: '2026-10-04', mood: 2 }]);
+    expect(s2).toMatchObject({ moodMine: 4, moodTheirs: 2 });
   });
 });
