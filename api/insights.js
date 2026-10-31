@@ -104,7 +104,12 @@ export default async function handler(req, res) {
     deadlineMs: 45_000,
     thinking: [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, { thinkingLevel: "low" }],
   });
-  if (!out) return res.status(500).json({ error: "ai failed", detail: diag.join(" | ").slice(0, 400) });
+  if (!out) {
+    const detail = diag.join(" | ").slice(0, 400);
+    // Gemini перегружен («high demand»): клиент подождёт и повторит
+    if (diag.some((d) => /HTTP (503|429)\b/.test(d))) return res.status(503).json({ error: "ai busy", busy: true, detail });
+    return res.status(500).json({ error: "ai failed", detail });
+  }
 
   const insights = out.text
     .split("\n")
