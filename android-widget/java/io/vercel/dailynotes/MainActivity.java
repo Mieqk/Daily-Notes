@@ -13,6 +13,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(DailyWidgetPlugin.class);
+        registerPlugin(HealthSleepPlugin.class);
         super.onCreate(savedInstanceState);
         if (savedInstanceState == null) openFromWidget(getIntent());
     }

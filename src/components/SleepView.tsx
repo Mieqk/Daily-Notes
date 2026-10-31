@@ -5,6 +5,7 @@ import type { SleepData } from "../store";
 import { fromISO, shiftISO, todayISO, useStored } from "../store";
 import { calcHours, autoQuality } from "../lib/sleepAuto";
 import { makeSleepAuto } from "../sleep-auto-strings";
+import HealthSleepCard from "./HealthSleepCard";
 import { ArrowLeftIcon, ArrowRightIcon, MoonIcon, SunIcon } from "../icons";
 
 interface SleepViewProps {
@@ -14,6 +15,8 @@ interface SleepViewProps {
   setSleep: (iso: string, data: SleepData | null) => void;
   autoSleep: boolean;
   setAutoSleep: (v: boolean) => void;
+  healthSleep: boolean;
+  setHealthSleep: (v: boolean) => void;
 }
 
 const EXTRA: Record<string, { note: string; notePh: string; awake: string; auto: string; history: string; unit: string; goal: string; trends: string; avg7: string; avg30: string; avgBed: string; avgWake: string; regularity: string; bestNight: string; worstNight: string; debt: string; minUnit: string }> = {
@@ -42,7 +45,7 @@ const stdev = (xs: number[]) => {
   return m === null || xs.length < 2 ? null : Math.sqrt(xs.reduce((a, b) => a + (b - m) ** 2, 0) / xs.length);
 };
 
-export default function SleepView({ sleep, lang, t, setSleep, autoSleep, setAutoSleep }: SleepViewProps) {
+export default function SleepView({ sleep, lang, t, setSleep, autoSleep, setAutoSleep, healthSleep, setHealthSleep }: SleepViewProps) {
   const today = todayISO();
   const [editDate, setEditDate] = useState(today);
   const [goal, setGoal] = useStored<number>("dn.sleepGoal", 8);
@@ -274,6 +277,8 @@ export default function SleepView({ sleep, lang, t, setSleep, autoSleep, setAuto
         <p className="mt-3 text-[12.5px] leading-relaxed text-[var(--ink-soft)]">{A("about")}</p>
         <p className="mt-2 text-[12.5px] leading-relaxed text-[var(--ink-faint)]">{A("limit")}</p>
       </div>
+
+      <HealthSleepCard lang={lang} enabled={healthSleep} setEnabled={setHealthSleep} />
 
       {nights.length >= 2 && (
         <div className={`${card} animate-rise mt-5 !p-5`} style={{ boxShadow: "var(--shadow-sm)" }}>
