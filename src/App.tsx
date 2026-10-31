@@ -26,6 +26,8 @@ import LockScreen from "./components/LockScreen";
 import SleepView from "./components/SleepView";
 import SleepSuggestion from "./components/SleepSuggestion";
 import { useSleepAuto } from "./lib/sleepAuto";
+import { useHealthSleep } from "./lib/healthSleep";
+import { makeHealthSleep } from "./health-sleep-strings";
 import HobbyView from "./components/HobbyView";
 import InstallPrompt from "./components/InstallPrompt";
 import NewPasswordScreen from "./components/NewPasswordScreen";
@@ -105,6 +107,7 @@ export default function App() {
   const [bioId, setBioId] = useStored<string | null>("dn.bio", null);
   const [sleep, setSleep] = useStored<Record<string, SleepData>>("dn.sleep", {});
   const [autoSleep, setAutoSleep] = useStored<boolean>("dn.sleepAuto", false);
+  const [healthSleep, setHealthSleep] = useStored<boolean>("dn.sleepHealth", false);
   const [capsules, setCapsules] = useStored<Record<string, string>>("dn.capsules", {});
 
   const [date, setDate] = useState<string>(todayISO());
@@ -135,6 +138,7 @@ export default function App() {
   const showToast = (msg: string) => setToast({ id: Date.now(), msg });
   const saveSleep = (iso: string, d: SleepData) => { setSleep((prev) => ({ ...prev, [iso]: d })); showToast(makeSleepAuto(lang)("saved")); };
   const sleepAuto = useSleepAuto(autoSleep, sleep, saveSleep);
+  useHealthSleep(healthSleep, sleep, (days) => { setSleep((prev) => { const next = { ...prev }; for (const [k, v] of Object.entries(days)) if (!next[k]?.bedtime && !next[k]?.waketime) next[k] = v; return next; }); showToast(makeHealthSleep(lang)("imported")); });
   usePlaceReminders(lang, showToast);
   useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(id); }, [toast]);
   useEffect(() => {
@@ -470,7 +474,7 @@ export default function App() {
           {sleepAuto.cand && <SleepSuggestion cand={sleepAuto.cand} lang={lang} onAccept={sleepAuto.accept} onDismiss={sleepAuto.dismiss} />}
           {tab === "daily" && <DailyView userId={userId} capsules={capsules} setCapsules={setCapsules} date={date} onDate={setDate} notes={notes} setNotes={setNotes} tasks={tasks} setTasks={setTasks} moods={moods} setMoods={setMoods} tags={tags} setTags={setTags} photos={photos} setPhotos={setPhotos} reminder={reminder} setReminder={setReminder} moodEmoji={moodEmoji} writingFont={writingFont} onWritingFont={setWritingFont} lang={lang} t={t} showToast={showToast} />}
           {tab === "stats" && <Suspense fallback={<div className="grid h-64 place-items-center text-sm text-[var(--ink-faint)]"><span className="animate-livedot h-2.5 w-2.5 rounded-full bg-[var(--accent)]" /></div>}><StatsView notes={notes} tasks={tasks} moods={moods} sleep={sleep} moodEmoji={moodEmoji} lang={lang} t={t} /></Suspense>}
-          {tab === "sleep" && <SleepView sleep={sleep} lang={lang} t={t} autoSleep={autoSleep} setAutoSleep={setAutoSleep} setSleep={(iso, data) => setSleep((prev) => { const next = { ...prev }; if (data) next[iso] = data; else delete next[iso]; return next; })} />}
+          {tab === "sleep" && <SleepView sleep={sleep} lang={lang} t={t} autoSleep={autoSleep} setAutoSleep={setAutoSleep} healthSleep={healthSleep} setHealthSleep={setHealthSleep} setSleep={(iso, data) => setSleep((prev) => { const next = { ...prev }; if (data) next[iso] = data; else delete next[iso]; return next; })} />}
           {tab === "hobby" && <HobbyView lang={lang} />}
           {tab === "plan" && <PlannerView moods={moods} moodEmoji={moodEmoji} tasks={tasks} setTasks={setTasks} onOpen={openDate} lang={lang} showToast={showToast} />}
           {tab === "notes" && <NotesView capsules={capsules} notes={notes} tasks={tasks} moods={moods} tags={tags} photos={photos} moodEmoji={moodEmoji} writingFont={writingFont} onOpen={openDate} lang={lang} t={t} />}
