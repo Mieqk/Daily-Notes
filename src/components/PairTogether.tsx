@@ -9,6 +9,7 @@ import { makeTogether } from "../pair-together-strings";
 import { fromISO, shiftISO, todayISO } from "../store";
 import type { FriendOpt } from "./SharedMemories";
 import FriendsSection, { EmptyState } from "./FriendsSection";
+import PairPlant from "./PairPlant";
 
 interface Goal { id: string; title: string; target: number; created_by: string }
 interface PairEvent { id: string; title: string; emoji: string; starts_at: string }
@@ -77,6 +78,7 @@ export default function PairTogether({ userId, lang, friends, moods, moodEmoji }
         <>
           <Touches linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} />
           <MoodShare linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} moods={moods} moodEmoji={moodEmoji} />
+          <PairPlant linkId={linkId} userId={userId} lang={lang} name={other.name} />
           <Goals linkId={linkId} userId={userId} lang={lang} name={other.name} />
           <Events linkId={linkId} userId={userId} lang={lang} />
           <MonthRecap linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} moodEmoji={moodEmoji} />
