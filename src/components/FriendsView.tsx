@@ -20,6 +20,7 @@ import PresenceDot from "./PresenceDot";
 import { PRESENCE_COLOR, PRESENCE_MODES, cachePresenceMode, PRESENCE_MODE_EVENT, type PresenceMode, type PresenceState } from "../lib/presence";
 import FriendChat from "./FriendChat";
 import PairView from "./PairView";
+import PairTogether from "./PairTogether";
 import { useStored } from "../store";
 import type { SleepData } from "../store";
 import { HeartIcon, SunIcon, UsersIcon } from "../icons";
@@ -41,6 +42,7 @@ interface FriendsViewProps {
   streak: number;
   notesCount: number;
   moodEmoji: string[];
+  moods: Record<string, number>;
   /** непрочитанные сообщения по id друга */
   chatUnread?: Record<string, number>;
 }
@@ -154,7 +156,7 @@ function genCode(): string {
   return s;
 }
 
-export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread = {} }: FriendsViewProps) {
+export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, chatUnread = {} }: FriendsViewProps) {
   const t = (k: string) => (L[lang] ?? L.en)[k] ?? L.en[k];
   const card = "rounded-xl border border-[var(--line)] bg-[var(--panel)]";
 
@@ -557,6 +559,7 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, chatUnread
       </>}
 
       {sub === "together" && <>
+      <PairTogether userId={userId} lang={lang} friends={friendOpts} moods={moods} moodEmoji={moodEmoji} />
       <PairView userId={userId} lang={lang} sleep={sleep} />
       <div className="gap-4 lg:columns-2 [&>*]:break-inside-avoid">
       <BuddyHabits userId={userId} lang={lang} friends={friendOpts} />
