@@ -4,7 +4,7 @@ import { MOODS, localeOf } from "../i18n";
 import { MoodVisual } from "../icons";
 import { supabase } from "../lib/supabase";
 import { sendPushEvent } from "../lib/push";
-import { countdown, goalProgress, localInputToISO, moodAverage, moodByDay, pairKey, suggestedTouch, type Mark, type MoodRow, type TouchKind } from "../lib/pairTogether";
+import { countdown, goalProgress, localInputToISO, moodAverage, moodByDay, monthExtras, monthRange, monthSummary, pairKey, suggestedTouch, type Mark, type MoodRow, type TouchKind } from "../lib/pairTogether";
 import { makeTogether } from "../pair-together-strings";
 import { fromISO, shiftISO, todayISO } from "../store";
 import type { FriendOpt } from "./SharedMemories";
@@ -79,6 +79,7 @@ export default function PairTogether({ userId, lang, friends, moods, moodEmoji }
           <MoodShare linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} moods={moods} moodEmoji={moodEmoji} />
           <Goals linkId={linkId} userId={userId} lang={lang} name={other.name} />
           <Events linkId={linkId} userId={userId} lang={lang} />
+          <MonthRecap linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} moodEmoji={moodEmoji} />
         </>
       )}
     </div>
@@ -451,6 +452,106 @@ function Events({ linkId, userId, lang }: SectionProps) {
             );
           })}
         </ul>
+      )}
+    </FriendsSection>
+  );
+}
+
+
+/** Итог месяца пары: тёплые слова, отметки, достигнутые цели и настроение (если поделились оба). */
+function MonthRecap({ linkId, userId, lang, otherId, name, moodEmoji }: WithOther & { moodEmoji: string[] }) {
+  const t = makeTogether(lang);
+  const [offset, setOffset] = useState(0);
+  const [data, setData] = useState<{ touches: { sender: string; day: string }[]; goals: { id: string; target: number }[]; marks: Mark[]; moods: MoodRow[]; nights: { user_id: string; day: string; hours: number }[]; checkins: { user_id: string; day: string }[] } | null>(null);
+  const range = useMemo(() => monthRange(todayISO(), offset), [offset]);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let off = false;
+    setData(null);
+    (async () => {
+      const [tc, gl, md] = await Promise.all([
+        supabase!.from("pair_touches").select("sender,day").eq("link_id", linkId).gte("day", range.start).lt("day", range.end),
+        supabase!.from("pair_goals").select("id,target").eq("link_id", linkId),
+        supabase!.from("pair_moods").select("user_id,day,mood").eq("link_id", linkId).gte("day", range.start).lt("day", range.end),
+      ]);
+      const goals = (gl.data ?? []) as { id: string; target: number }[];
+      const mk = goals.length ? await supabase!.from("pair_goal_marks").select("goal_id,user_id,day").in("goal_id", goals.map((g) => g.id)) : { data: [] };
+      if (off) return;
+      // сон и привычки пары: берём только то, чем вы уже делитесь в «Парных» разделах
+      const parties = await supabase!.from("sleep_parties").select("id,owner,buddy");
+      const party = ((parties.data ?? []) as { id: string; owner: string; buddy: string }[]).find((p) => (p.owner === userId && p.buddy === otherId) || (p.owner === otherId && p.buddy === userId));
+      const sl = party ? await supabase!.from("sleep_party_nights").select("user_id,day,hours").eq("party_id", party.id).gte("day", range.start).lt("day", range.end) : { data: [] };
+      const hb = await supabase!.from("buddy_habits").select("id,owner,buddy");
+      const habitIds = ((hb.data ?? []) as { id: string; owner: string; buddy: string }[]).filter((h) => (h.owner === userId && h.buddy === otherId) || (h.owner === otherId && h.buddy === userId)).map((h) => h.id);
+      const ck = habitIds.length ? await supabase!.from("buddy_checkins").select("user_id,day").in("habit_id", habitIds).gte("day", range.start).lt("day", range.end) : { data: [] };
+      if (off) return;
+      setData({
+        touches: (tc.data ?? []) as { sender: string; day: string }[], goals, marks: (mk.data ?? []) as Mark[], moods: (md.data ?? []) as MoodRow[],
+        nights: (sl.data ?? []) as { user_id: string; day: string; hours: number }[], checkins: (ck.data ?? []) as { user_id: string; day: string }[],
+      });
+    })();
+    return () => { off = true; };
+  }, [linkId, userId, otherId, range.start, range.end]);
+
+  const sum = useMemo(() => data && monthSummary(range, userId, otherId, data.touches, data.goals, data.marks, data.moods), [data, range, userId, otherId]);
+  const extra = useMemo(() => data && monthExtras(range, userId, otherId, data.nights, data.checkins), [data, range, userId, otherId]);
+  const label = new Intl.DateTimeFormat(localeOf(lang), { month: "long", year: "numeric" }).format(fromISO(range.start));
+  const nav = "grid h-9 w-9 place-items-center rounded-lg text-[16px] text-[var(--ink-soft)] hover:bg-[var(--hover)] disabled:opacity-30";
+  const hasSleep = !!extra && (extra.sleepMine !== null || extra.sleepTheirs !== null);
+  const hasHabits = !!extra && extra.habitsMine + extra.habitsTheirs > 0;
+  const empty = !!sum && sum.touchesMine + sum.touchesTheirs + sum.marksMine + sum.marksTheirs + sum.goalsDone === 0 && !hasSleep && !hasHabits;
+  const moodLabel = (v: number) => `${moodEmoji[Math.round(v)] ?? ""} ${MOODS[lang][Math.round(v)]}`;
+
+  const row = (title: string, mine: number, theirs: number) => (
+    <li className="flex items-center justify-between gap-3 rounded-xl bg-[var(--hover)] px-3 py-2.5">
+      <span className="min-w-0 text-[13px] font-semibold">{title}</span>
+      <span className="shrink-0 text-right text-[12px] tabular-nums text-[var(--ink-soft)]">
+        {t("mYou")}: <b className="text-[var(--ink)]">{mine}</b> · <span className="inline-block max-w-[7rem] truncate align-bottom">{name}</span>: <b className="text-[var(--ink)]">{theirs}</b>
+      </span>
+    </li>
+  );
+
+  return (
+    <FriendsSection icon="📅" title={t("sTitle")} hint={t("sHint")} action={
+      <div className="flex items-center gap-1">
+        <button onClick={() => setOffset(offset - 1)} aria-label={t("sPrev")} className={nav}>‹</button>
+        <button onClick={() => setOffset(Math.min(0, offset + 1))} disabled={offset >= 0} aria-label={t("sNext")} className={nav}>›</button>
+      </div>
+    }>
+      <div className="mb-3 text-[14px] font-bold capitalize" aria-live="polite">{label}</div>
+      {!sum ? <p className="text-[12.5px] text-[var(--ink-faint)]">…</p> : empty ? <EmptyState icon="📅">{t("sEmpty")}</EmptyState> : (
+        <>
+          <ul className="flex flex-col gap-2">
+            {row(t("sTouches"), sum.touchesMine, sum.touchesTheirs)}
+            {row(t("sMarks"), sum.marksMine, sum.marksTheirs)}
+            <li className="flex items-center justify-between gap-3 rounded-xl bg-[var(--hover)] px-3 py-2.5">
+              <span className="text-[13px] font-semibold">{t("sGoals")}</span>
+              <b className="text-[14px] tabular-nums">{sum.goalsDone}</b>
+            </li>
+            {hasHabits && extra && row(t("sHabits"), extra.habitsMine, extra.habitsTheirs)}
+            {hasSleep && extra && (
+              <li className="flex items-center justify-between gap-3 rounded-xl bg-[var(--hover)] px-3 py-2.5">
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-semibold">{t("sSleep")}</span>
+                  {extra.sleepBoth > 0 && <span className="block text-[11px] text-[var(--ink-faint)]">{t("sSleepNights").replace("{n}", String(extra.sleepBoth))}</span>}
+                </span>
+                <span className="shrink-0 text-right text-[12px] tabular-nums text-[var(--ink-soft)]">
+                  {t("mYou")}: <b className="text-[var(--ink)]">{extra.sleepMine ?? "–"}</b> {t("sHoursUnit")} · <span className="inline-block max-w-[7rem] truncate align-bottom">{name}</span>: <b className="text-[var(--ink)]">{extra.sleepTheirs ?? "–"}</b> {t("sHoursUnit")}
+                </span>
+              </li>
+            )}
+            <li className="flex items-center justify-between gap-3 rounded-xl bg-[var(--hover)] px-3 py-2.5">
+              <span className="min-w-0 text-[13px] font-semibold">{t("sMood")}</span>
+              {sum.moodMine !== null && sum.moodTheirs !== null
+                ? <span className="shrink-0 text-right text-[12px] text-[var(--ink-soft)]">{t("mYou")}: {moodLabel(sum.moodMine)} · {name}: {moodLabel(sum.moodTheirs)}</span>
+                : <span className="max-w-[60%] text-right text-[11.5px] leading-snug text-[var(--ink-faint)]">{t("sMoodOff")}</span>}
+            </li>
+          </ul>
+          <p className="mt-3 rounded-xl bg-[var(--accent-soft)] px-3 py-2.5 text-[13px] font-semibold text-[var(--accent-deep)]">
+            {sum.activeDays > 0 ? `${t("sDays").replace("{n}", String(sum.activeDays))} · ${t("sWarm")}` : t("sWarmQuiet")}
+          </p>
+        </>
       )}
     </FriendsSection>
   );
