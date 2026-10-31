@@ -7,10 +7,6 @@ import ProfilePage from "./ProfilePage";
 import FriendsAnswers from "./FriendsAnswers";
 import GratitudeFeed from "./GratitudeFeed";
 import SosPanel from "./SosPanel";
-import SharedMemories from "./SharedMemories";
-import SharedEntries from "./SharedEntries";
-import BuddyHabits from "./BuddyHabits";
-import Challenges from "./Challenges";
 import FriendsSection, { EmptyState } from "./FriendsSection";
 import { makeUI } from "../ui-strings";
 import { makeChat } from "../chat-strings";
@@ -19,8 +15,7 @@ import { localeOf } from "../i18n";
 import PresenceDot from "./PresenceDot";
 import { PRESENCE_COLOR, PRESENCE_MODES, cachePresenceMode, PRESENCE_MODE_EVENT, type PresenceMode, type PresenceState } from "../lib/presence";
 import FriendChat from "./FriendChat";
-import PairView from "./PairView";
-import PairTogether from "./PairTogether";
+import PairHub from "./PairHub";
 import { useStored } from "../store";
 import type { SleepData } from "../store";
 import { HeartIcon, SunIcon, UsersIcon } from "../icons";
@@ -346,7 +341,6 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
       </span>
     );
 
-  const friendOpts = friends.map(({ profile }) => ({ id: profile.id, name: nameOf(profile) }));
 
   const person = (p: Profile) => (
     <span className="flex min-w-0 items-center gap-2.5">
@@ -559,14 +553,9 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
       </>}
 
       {sub === "together" && <>
-      <PairTogether userId={userId} lang={lang} friends={friendOpts} moods={moods} moodEmoji={moodEmoji} />
-      <PairView userId={userId} lang={lang} sleep={sleep} />
-      <div className="gap-4 lg:columns-2 [&>*]:break-inside-avoid">
-      <BuddyHabits userId={userId} lang={lang} friends={friendOpts} />
-      <Challenges userId={userId} lang={lang} friends={friendOpts} myName={me?.display_name || "—"} />
-      <SharedMemories userId={userId} lang={lang} friends={friendOpts} />
-      <SharedEntries userId={userId} lang={lang} friends={friendOpts} moodEmoji={moodEmoji} />
-      </div>
+      <PairHub userId={userId} lang={lang} sleep={sleep} moods={moods} moodEmoji={moodEmoji} myName={me?.display_name || "—"}
+        me={{ avatar: me?.avatar ?? null, avatarUrl: me?.avatar_url ?? null }}
+        friends={friends.map(({ profile }) => ({ id: profile.id, name: nameOf(profile), avatar: profile.avatar, avatarUrl: profile.avatar_url, presence: presenceText(profile), presenceState: profile.presence_state ?? null }))} />
       </>}
 
       {sub === "care" && <>
