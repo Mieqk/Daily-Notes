@@ -549,3 +549,117 @@ html[data-contrast="high"] {
   --ink-soft: color-mix(in srgb, var(--ink) 90%, var(--bg)) !important;
   --ink-faint: color-mix(in srgb, var(--ink) 76%, var(--bg)) !important;
 }
+
+/* ============ Background patterns (BgLayer) ============ */
+.bgx { position: absolute; inset: 0; overflow: hidden; }
+:where(.bgx) > i { position: absolute; inset: 0; display: block; }
+.bgx-m {
+  -webkit-mask-image: var(--m); mask-image: var(--m);
+  -webkit-mask-size: var(--mw) var(--mh); mask-size: var(--mw) var(--mh);
+  -webkit-mask-repeat: repeat; mask-repeat: repeat;
+}
+/* Плиточный узор целиком; в плитке-превью чуть мельче, чтобы форма читалась */
+.bgx-static .bgx-m:not(.bgx-bottom):not(.bgx-sea) { -webkit-mask-size: calc(var(--mw) * .55) calc(var(--mh) * .55); mask-size: calc(var(--mw) * .55) calc(var(--mh) * .55); }
+.bgx-static .bgx-marble { -webkit-mask-size: 260px 260px; mask-size: 260px 260px; }
+
+.bgx-sky { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%); }
+.bgx-night { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 16%, transparent), color-mix(in srgb, #6b5cff 10%, transparent) 60%, transparent); }
+
+/* бумага: линейка и поле */
+.bgx-paper { background: repeating-linear-gradient(180deg, transparent 0 27px, var(--dot) 27px 28px); }
+.bgx-paper-margin { background: linear-gradient(90deg, transparent 56px, color-mix(in srgb, #e05a5a 28%, transparent) 56px 57px, transparent 57px); }
+.bgx-static .bgx-paper { background: repeating-linear-gradient(180deg, transparent 0 10px, var(--dot) 10px 11px); }
+.bgx-static .bgx-paper-margin { background: linear-gradient(90deg, transparent 14px, color-mix(in srgb, #e05a5a 35%, transparent) 14px 15px, transparent 15px); }
+
+/* космос и звёзды */
+.bgx-space { background:
+  radial-gradient(60% 50% at 15% 10%, color-mix(in srgb, #6b5cff 22%, transparent), transparent 70%),
+  radial-gradient(50% 45% at 90% 85%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%); }
+.bgx-stars {
+  background-image:
+    radial-gradient(1.2px 1.2px at 20px 30px, var(--ink), transparent),
+    radial-gradient(1px 1px at 90px 80px, var(--ink), transparent),
+    radial-gradient(1.6px 1.6px at 150px 20px, var(--ink), transparent),
+    radial-gradient(1px 1px at 60px 150px, var(--ink), transparent),
+    radial-gradient(1.4px 1.4px at 180px 130px, var(--ink), transparent);
+  background-size: 200px 200px; opacity: .5;
+}
+.bgx-stars-b { background-size: 130px 130px; background-position: 40px 60px; opacity: .35; animation: bgx-twinkle 4s ease-in-out infinite alternate; }
+.bgx-stars-a { animation: bgx-twinkle 6s ease-in-out infinite alternate-reverse; }
+@keyframes bgx-twinkle { from { opacity: .15; } to { opacity: .6; } }
+
+/* северное сияние */
+.bgx-aurora { filter: blur(36px); opacity: .55; }
+.bgx-aurora-a { background: linear-gradient(100deg, transparent 10%, color-mix(in srgb, #3ee0b0 55%, transparent) 40%, transparent 70%); transform: skewY(-8deg) translateY(-18%); animation: bgx-sway 14s ease-in-out infinite alternate; }
+.bgx-aurora-b { background: linear-gradient(80deg, transparent 20%, color-mix(in srgb, #8b6bff 50%, transparent) 55%, transparent 85%); transform: skewY(6deg) translateY(-6%); animation: bgx-sway 18s ease-in-out infinite alternate-reverse; }
+.bgx-aurora-c { background: linear-gradient(120deg, transparent 30%, color-mix(in srgb, var(--accent) 45%, transparent) 60%, transparent 90%); transform: translateY(8%); animation: bgx-sway 22s ease-in-out infinite alternate; }
+@keyframes bgx-sway { from { translate: -8% 0; } to { translate: 8% 4%; } }
+
+/* падающее: дождь, снег, листья, лепестки */
+.bgx-fall { will-change: -webkit-mask-position, mask-position; }
+.bgx-rain-a { animation: bgx-fall-140 .9s linear infinite; --fh: 140px; }
+.bgx-rain-b { animation: bgx-fall-190 .6s linear infinite; --fh: 190px; }
+.bgx-snow-a { animation: bgx-fall-160 14s linear infinite; }
+.bgx-snow-b { animation: bgx-fall-240 22s linear infinite; }
+.bgx-leaves-a { animation: bgx-fall-240 30s linear infinite; }
+.bgx-leaves-b { animation: bgx-fall-240 44s linear infinite reverse; -webkit-mask-position: 90px 0; mask-position: 90px 0; }
+.bgx-petals-a { animation: bgx-fall-220 26s linear infinite; }
+.bgx-petals-b { animation: bgx-fall-220 38s linear infinite; -webkit-mask-position: 80px 0; mask-position: 80px 0; }
+@keyframes bgx-fall-140 { to { -webkit-mask-position: -20px 140px; mask-position: -20px 140px; } }
+@keyframes bgx-fall-190 { to { -webkit-mask-position: -30px 190px; mask-position: -30px 190px; } }
+@keyframes bgx-fall-160 { to { -webkit-mask-position: 40px 160px; mask-position: 40px 160px; } }
+@keyframes bgx-fall-240 { to { -webkit-mask-position: 60px 240px; mask-position: 60px 240px; } }
+@keyframes bgx-fall-220 { to { -webkit-mask-position: 80px 220px; mask-position: 80px 220px; } }
+
+/* горы, океан, город: силуэты у нижнего края */
+.bgx-bottom { top: auto; height: 46%; -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x; -webkit-mask-size: 600px 100%; mask-size: 600px 100%; -webkit-mask-position: bottom; mask-position: bottom; }
+.bgx-bottom-near { height: 34%; -webkit-mask-position: 140px bottom; mask-position: 140px bottom; }
+.bgx-city { height: 38%; -webkit-mask-size: 520px 100%; mask-size: 520px 100%; }
+.bgx-static .bgx-bottom { -webkit-mask-size: 300px 100%; mask-size: 300px 100%; }
+.bgx-static .bgx-city { -webkit-mask-size: 260px 100%; mask-size: 260px 100%; }
+.bgx-glow { background: radial-gradient(70% 40% at 50% 100%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%); }
+.bgx-sea { top: auto; -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x; -webkit-mask-size: 240px 60px; mask-size: 240px 60px; }
+.bgx-sea-a { height: 26%; bottom: 14%; animation: bgx-sea-a 16s linear infinite; }
+.bgx-sea-b { height: 22%; bottom: 0; -webkit-mask-size: 320px 60px; mask-size: 320px 60px; animation: bgx-sea-b 11s linear infinite reverse; }
+.bgx-static .bgx-sea-a { bottom: 8%; height: 50%; -webkit-mask-size: 120px 40px; mask-size: 120px 40px; }
+.bgx-static .bgx-sea-b { height: 40%; -webkit-mask-size: 160px 40px; mask-size: 160px 40px; }
+@keyframes bgx-sea-a { to { -webkit-mask-position: 240px 100%; mask-position: 240px 100%; } }
+@keyframes bgx-sea-b { to { -webkit-mask-position: 320px 100%; mask-position: 320px 100%; } }
+
+/* неоновая сетка: перспективный пол */
+.bgx-neon { top: 45%; background-image:
+  linear-gradient(color-mix(in srgb, var(--accent) 70%, transparent) 1.5px, transparent 1.5px),
+  linear-gradient(90deg, color-mix(in srgb, #ff4fd8 55%, transparent) 1.5px, transparent 1.5px);
+  background-size: 48px 48px; transform: perspective(300px) rotateX(58deg); transform-origin: top center; height: 140%;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 40%); mask-image: linear-gradient(180deg, transparent, #000 40%); opacity: .6; animation: bgx-neon-run 3s linear infinite; }
+@keyframes bgx-neon-run { to { background-position: 0 48px, 0 0; } }
+.bgx-static .bgx-neon { background-size: 22px 22px; transform: perspective(120px) rotateX(58deg); animation: none; }
+.bgx-neon-sun { background: radial-gradient(34% 22% at 50% 45%, color-mix(in srgb, #ff4fd8 38%, transparent), transparent 70%); }
+
+/* зерно, мрамор, песок */
+.bgx-grain { opacity: .22 !important; }
+.bgx-sand-base { background: linear-gradient(180deg, color-mix(in srgb, #e3c78f 22%, transparent), color-mix(in srgb, #c9a45e 14%, transparent)), repeating-linear-gradient(100deg, transparent 0 46px, rgba(120,90,40,.07) 46px 50px); }
+
+/* туман */
+.bgx-fog { filter: blur(50px); background: color-mix(in srgb, var(--ink) 16%, transparent); border-radius: 50%; inset: auto; width: 70%; height: 38%; }
+.bgx-fog-a { left: -15%; top: 8%; animation: bgx-fog 24s ease-in-out infinite alternate; }
+.bgx-fog-b { right: -20%; top: 38%; width: 80%; animation: bgx-fog 30s ease-in-out infinite alternate-reverse; }
+.bgx-fog-c { left: 5%; bottom: -8%; animation: bgx-fog 36s ease-in-out infinite alternate; }
+@keyframes bgx-fog { from { translate: -10% 0; } to { translate: 14% 6%; } }
+
+.bgx-static, .bgx-static * { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .bgx, .bgx * { animation: none !important; } }
+
+/* подстройка видимости в плитках-превью и на светлых темах */
+.bgx-aurora { opacity: .8; }
+.bgx-static .bgx-aurora { opacity: 1; filter: blur(14px); }
+.bgx-static .bgx-stars { background-size: 70px 70px; opacity: .75; }
+.bgx-static .bgx-stars-b { background-size: 46px 46px; }
+.bgx-static .bgx-grain { opacity: .5 !important; }
+.bgx-static .bgx-fog { filter: blur(18px); background: color-mix(in srgb, var(--ink) 28%, transparent); }
+.bgx-static .bgx-city { height: 62%; -webkit-mask-size: 200px 100%; mask-size: 200px 100%; }
+.bgx-static .bgx-bottom-near { height: 40%; }
+.bgx-marble { opacity: .3 !important; }
+.bgx-sand-grain { opacity: .3 !important; }
+.bgx-static .bgx-sand-grain { opacity: .45 !important; }
+.bgx-grain { background-size: 140px 140px; }

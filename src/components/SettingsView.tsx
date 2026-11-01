@@ -11,7 +11,11 @@ import { applyRestore, parseBackup, summarize } from "../lib/backup";
 import type { Backup, RestoreMode, RestoreSummary } from "../lib/backup";
 import { THEMES } from "../themes";
 import type { ThemeId } from "../themes";
-import { BG_IMAGES } from "../bg";
+import { BUILTIN_BGS, MAX_CUSTOM_BGS, compressImage, resolveBg, isCustomBg } from "../bg";
+import type { BuiltinBg, CustomBg, CustomBgOpts } from "../bg";
+import BgLayer from "./BgLayer";
+import { makeBg } from "../bg-strings";
+import type { BgKey } from "../bg-strings";
 import StatsVisibility from "./StatsVisibility";
 import LookEditor from "./LookEditor";
 import ThemeShare from "./ThemeShare";
@@ -60,6 +64,10 @@ interface SettingsViewProps {
   onFontScale: (n: number) => void;
   bg: BgId;
   onBg: (b: BgId) => void;
+  customBgs: CustomBg[];
+  onCustomBgs: (c: CustomBg[]) => void;
+  bgOpts: CustomBgOpts;
+  onBgOpts: (o: CustomBgOpts) => void;
   moodEmoji: string[];
   onMoodEmoji: (e: string[]) => void;
   pinHash: string | null;
@@ -92,15 +100,10 @@ const FONTS: { id: WritingFontId; key: TKey }[] = [
   { id: "mono", key: "fontMono" },
 ];
 
-const BGS: { id: BgId; key: TKey }[] = [
-  { id: "dots", key: "bgDots" },
-  { id: "grid", key: "bgGrid" },
-  { id: "paper", key: "bgPaper" },
-  { id: "space", key: "bgSpace" },
-  { id: "lines", key: "bgLines" },
-  { id: "hex", key: "bgHex" },
-  { id: "waves", key: "bgWaves" },
-];
+const LEGACY_BG_KEYS: Partial<Record<BuiltinBg, TKey>> = {
+  dots: "bgDots", grid: "bgGrid", paper: "bgPaper", space: "bgSpace", lines: "bgLines", hex: "bgHex", waves: "bgWaves",
+};
+const BGS: BuiltinBg[] = [...BUILTIN_BGS];
 
 /** Сворачиваемая вкладка: внутри обычная сетка из карточек. Состояние помним в браузере. */
 function DesignGroup({ title, sub, openLabel, closeLabel, children, storeKey = "dn.designOpen", icon = <PaletteIcon className="h-4.5 w-4.5" /> }: { title: string; sub: string; openLabel: string; closeLabel: string; children: ReactNode; storeKey?: string; icon?: ReactNode }) {
@@ -204,6 +207,10 @@ export default function SettingsView(props: SettingsViewProps) {
     onFontScale,
     bg,
     onBg,
+    customBgs,
+    onCustomBgs,
+    bgOpts,
+    onBgOpts,
     moodEmoji,
     onMoodEmoji,
     pinHash,
@@ -390,44 +397,107 @@ export default function SettingsView(props: SettingsViewProps) {
 
         {/* Background */}
         <Section icon={<PaletteIcon className="h-4.5 w-4.5" />} title={t("secBg")} sub={t("secBgSub")} delay={180}>
-          <div className="grid grid-cols-4 gap-2">
-            {BGS.map((b) => {
-              const active = bg === b.id;
+          <div className="grid grid-cols-3 gap-2 min-[420px]:grid-cols-4">
+            {BGS.map((id) => {
+              const active = bg === id;
+              const legacy = LEGACY_BG_KEYS[id];
+              const label = legacy ? t(legacy) : makeBg(lang)(id as BgKey);
               return (
                 <button
-                  key={b.id}
-                  onClick={() => onBg(b.id)}
-                  className={`overflow-hidden rounded-xl border transition-all duration-200 active:scale-[0.96] ${
+                  key={id}
+                  onClick={() => onBg(id)}
+                  className={`min-w-0 overflow-hidden rounded-xl border transition-all duration-200 active:scale-[0.96] ${
                     active
                       ? "border-[var(--accent)] ring-2 ring-[var(--accent)]"
                       : "border-[var(--line)] hover:-translate-y-0.5 hover:border-[var(--ink-faint)]"
                   }`}
                 >
-                  <span className="block h-14 w-full">
-                    {b.id === "dots" && <span className="bg-dots block h-full w-full bg-[var(--panel-2)]" />}
-                    {b.id === "grid" && <span className="bg-grid block h-full w-full bg-[var(--panel-2)]" />}
-                    {b.id === "paper" && (
-                      <img src={BG_IMAGES.paper} alt="" className="h-full w-full object-cover" />
-                    )}
-                    {b.id === "space" && (
-                      <img src={BG_IMAGES.space} alt="" className="h-full w-full object-cover" />
-                    )}
-                    {b.id === "lines" && (
-                      <img src={BG_IMAGES.lines} alt="" className="h-full w-full object-cover" />
-                    )}
-                    {b.id === "hex" && (
-                      <img src={BG_IMAGES.hex} alt="" className="h-full w-full object-cover" />
-                    )}
-                    {b.id === "waves" && (
-                      <img src={BG_IMAGES.waves} alt="" className="h-full w-full object-cover" />
-                    )}
+                  <span className="relative block h-14 w-full overflow-hidden bg-[var(--panel-2)]">
+                    <BgLayer id={id} customs={customBgs} opts={bgOpts} preview />
                   </span>
-                  <span className={`block py-1.5 text-center text-[11px] font-bold ${active ? "bg-[var(--accent-soft)] text-[var(--accent-deep)]" : ""}`}>
-                    {t(b.key)}
+                  <span className={`block truncate px-1 py-1.5 text-center text-[11px] font-bold ${active ? "bg-[var(--accent-soft)] text-[var(--accent-deep)]" : ""}`}>
+                    {label}
                   </span>
                 </button>
               );
             })}
+          </div>
+
+          {/* Свои фоны: картинка сжимается и хранится только на этом устройстве */}
+          <div className="mt-4 border-t border-[var(--line)] pt-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{makeBg(lang)("bgOwn")}</p>
+                <p className="text-[11px] text-[var(--ink-faint)]">{makeBg(lang)("bgLocal")}</p>
+              </div>
+              <label className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel-2)] px-3 py-1.5 text-xs font-semibold hover:border-[var(--ink-faint)] ${customBgs.length >= MAX_CUSTOM_BGS ? "pointer-events-none opacity-50" : ""}`}>
+                <PlusIcon className="h-3.5 w-3.5" />
+                {makeBg(lang)("bgAdd")}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!file) return;
+                    if (customBgs.length >= MAX_CUSTOM_BGS) { showToast(makeBg(lang)("bgFull")); return; }
+                    try {
+                      const data = await compressImage(file);
+                      const item: CustomBg = { id: Date.now().toString(36), data };
+                      onCustomBgs([...customBgs, item]);
+                      onBg(`custom:${item.id}`);
+                    } catch {
+                      showToast(makeBg(lang)("bgBad"));
+                    }
+                  }}
+                />
+              </label>
+            </div>
+            <p className="mt-2 text-[11px] leading-snug text-[var(--ink-faint)]">{makeBg(lang)("bgAddHint")}</p>
+
+            {customBgs.length > 0 && (
+              <div className="mt-3 grid grid-cols-3 gap-2 min-[420px]:grid-cols-4">
+                {customBgs.map((c) => {
+                  const id: BgId = `custom:${c.id}`;
+                  const active = bg === id;
+                  return (
+                    <div key={c.id} className={`relative min-w-0 overflow-hidden rounded-xl border ${active ? "border-[var(--accent)] ring-2 ring-[var(--accent)]" : "border-[var(--line)]"}`}>
+                      <button onClick={() => onBg(id)} className="block w-full" aria-label={makeBg(lang)("bgYours")}>
+                        <span className="relative block h-14 w-full overflow-hidden bg-[var(--panel-2)]">
+                          <BgLayer id={id} customs={customBgs} opts={bgOpts} preview />
+                        </span>
+                        <span className={`block truncate px-1 py-1.5 text-center text-[11px] font-bold ${active ? "bg-[var(--accent-soft)] text-[var(--accent-deep)]" : ""}`}>{makeBg(lang)("bgYours")}</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          onCustomBgs(customBgs.filter((x) => x.id !== c.id));
+                          if (active) onBg("dots");
+                        }}
+                        className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/55 text-sm leading-none text-white hover:bg-black/75"
+                        aria-label={makeBg(lang)("bgDelete")}
+                        title={makeBg(lang)("bgDelete")}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {isCustomBg(bg) && resolveBg(bg, customBgs) === bg && (
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className="block text-xs font-semibold">
+                  {makeBg(lang)("bgDim")} <span className="font-normal text-[var(--ink-faint)]">{bgOpts.dim}%</span>
+                  <input type="range" min={0} max={90} step={5} value={bgOpts.dim} onChange={(e) => onBgOpts({ ...bgOpts, dim: Number(e.target.value) })} className="mt-1 w-full accent-[var(--accent)]" />
+                </label>
+                <label className="block text-xs font-semibold">
+                  {makeBg(lang)("bgBlur")} <span className="font-normal text-[var(--ink-faint)]">{bgOpts.blur}px</span>
+                  <input type="range" min={0} max={16} step={1} value={bgOpts.blur} onChange={(e) => onBgOpts({ ...bgOpts, blur: Number(e.target.value) })} className="mt-1 w-full accent-[var(--accent)]" />
+                </label>
+              </div>
+            )}
           </div>
         </Section>
 
