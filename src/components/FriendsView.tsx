@@ -4,16 +4,17 @@ import { sendPushEvent } from "../lib/push";
 import { supabase } from "../lib/supabase";
 import { fetchProfiles } from "../lib/profiles";
 import ProfilePage from "./ProfilePage";
-import FriendsAnswers from "./FriendsAnswers";
-import GratitudeFeed from "./GratitudeFeed";
-import SosPanel from "./SosPanel";
+import CareHub from "./CareHub";
+import FriendsHero from "./FriendsHero";
+import { makeFh } from "../friends-hub-strings";
+import { filterFriends, toggleFav, type FriendFilter } from "../lib/friendsFilter";
 import FriendsSection, { EmptyState } from "./FriendsSection";
 import { makeUI } from "../ui-strings";
 import { makeChat } from "../chat-strings";
 import { makePresence } from "../presence-strings";
 import { localeOf } from "../i18n";
 import PresenceDot from "./PresenceDot";
-import { PRESENCE_COLOR, PRESENCE_MODES, cachePresenceMode, PRESENCE_MODE_EVENT, type PresenceMode, type PresenceState } from "../lib/presence";
+import { PRESENCE_COLOR, cachePresenceMode, PRESENCE_MODE_EVENT, type PresenceMode, type PresenceState } from "../lib/presence";
 import FriendChat from "./FriendChat";
 import PairHub from "./PairHub";
 import { useStored } from "../store";
@@ -153,7 +154,6 @@ function genCode(): string {
 
 export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, chatUnread = {} }: FriendsViewProps) {
   const t = (k: string) => (L[lang] ?? L.en)[k] ?? L.en[k];
-  const card = "rounded-xl border border-[var(--line)] bg-[var(--panel)]";
 
   const [me, setMe] = useState<Profile | null>(null);
   const [friends, setFriends] = useState<{ row: Friendship; profile: Profile }[]>([]);
@@ -170,6 +170,12 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
   const chat = makeChat(lang);
   const pr = makePresence(lang);
   const fn = makeFriendNotes(lang);
+  const fh = makeFh(lang);
+  const [favs, setFavs] = useStored<string[]>("dn.favFriends", []);
+  const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<FriendFilter>("all");
+  const [addPref, setAddPref] = useState<boolean | null>(null);
+  const addOpen = addPref ?? friends.length === 0;
   const [modeBusy, setModeBusy] = useState(false);
   const [notes, setNotes] = useState<Record<string, FriendNote>>({});
   const [noteOpen, setNoteOpen] = useState<string | null>(null);
@@ -221,6 +227,16 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
     setMsg({ kind: "ok", text: u("gSentOk") });
   };
   const confirmTimer = useRef<number>(0);
+
+  /** Благодарность из раздела «Забота»: возвращает true, если отправилась. */
+  const sendThanksTo = async (toId: string, text: string): Promise<boolean> => {
+    const { data: row, error } = await supabase!.from("gratitude").insert({ from_user: userId, to_user: toId, text }).select("id").single();
+    if (error) { setMsg({ kind: "err", text: error.code === "23505" ? u("gAlready") : t("already") }); return false; }
+    if (row?.id) sendPushEvent("gratitude", row.id);
+    setFeedKey((k) => k + 1);
+    setMsg({ kind: "ok", text: u("gSentOk") });
+    return true;
+  };
 
   useEffect(() => {
     if (!msg) return;
@@ -332,6 +348,8 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
     confirmTimer.current = window.setTimeout(() => setConfirmId(null), 3000);
   };
 
+  const shown = filterFriends(friends, { q, filter, favs, id: (x) => x.profile.id, name: (x) => nameOf(x.profile), online: (x) => x.profile.presence_state === "online" });
+
   const avaNode = (p: Profile | null, emojiSize: string) =>
     p?.avatar_url ? (
       <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
@@ -392,44 +410,37 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
 
       {sub === "friends" && <>
 
-      {/* блоки раскладываются в две колонки, на телефоне в одну */}
-      <div className="gap-4 lg:columns-2 [&>*]:break-inside-avoid">
-      {/* ===== Мой статус в сети ===== */}
-      <FriendsSection icon="🟢" title={pr("title")} hint={pr("hint")}>
-        <div className="grid grid-cols-2 gap-2" role="group" aria-label={pr("title")}>
-          {PRESENCE_MODES.map((m) => {
-            const active = (me?.presence_mode ?? "auto") === m;
-            const color = m === "auto" ? PRESENCE_COLOR.online : m === "away" ? PRESENCE_COLOR.away : m === "dnd" ? PRESENCE_COLOR.dnd : PRESENCE_COLOR.offline;
-            return (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                aria-pressed={active}
-                disabled={modeBusy}
-                className={`flex h-11 items-center gap-2 rounded-xl border px-3 text-left text-[13px] font-semibold transition-all active:scale-95 ${active ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "border-[var(--line)] text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}
-              >
-                <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
-                <span className="truncate">{pr(m)}</span>
+      <FriendsHero lang={lang} name={me?.display_name || "—"} avatar={me?.avatar ?? null} avatarUrl={me?.avatar_url ?? null} code={me?.friend_code ?? null}
+        mode={me?.presence_mode ?? "auto"} modeBusy={modeBusy} onMode={setMode} friends={friends.length} online={friends.filter((x) => x.profile.presence_state === "online").length}
+        requests={incoming.length} copied={copied} copyLabel={t("copy")} copiedLabel={t("copied")} onCopy={copyCode} />
+
+      <div className="mx-auto max-w-2xl">
+      {/* ===== Входящие запросы ===== */}
+      {incoming.length > 0 && (
+      <FriendsSection icon="📬" title={t("incoming")} count={incoming.length} accent>
+        <div className="flex flex-col gap-2">
+          {incoming.map(({ row, profile }) => (
+            <div key={row.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
+              <button onClick={() => setViewId(profile.id)} className="min-w-0 flex-1 text-left transition-opacity hover:opacity-80">
+                {person(profile)}
               </button>
-            );
-          })}
+              <span className="flex shrink-0 gap-2">
+                <button onClick={() => answer(row, "accepted")} className="h-9 rounded-lg bg-[var(--accent)] px-3.5 text-[12.5px] font-semibold text-[var(--accent-ink)] active:scale-95">
+                  {t("accept")}
+                </button>
+                <button onClick={() => answer(row, "declined")} className="h-9 rounded-lg border border-[var(--line)] px-3.5 text-[12.5px] font-semibold text-[var(--ink-faint)] active:scale-95">
+                  {t("decline")}
+                </button>
+              </span>
+            </div>
+          ))}
         </div>
-        {me?.presence_mode === "dnd" && <p className="mt-2.5 text-[12px] leading-snug text-[var(--ink-faint)]">{pr("dndNote")}</p>}
       </FriendsSection>
+      )}
 
       {/* ===== Добавить друга ===== */}
-      <FriendsSection icon="➕" title={t("addFriend")} hint={t("addHint")}>
-        <button
-          onClick={copyCode}
-          aria-label={t("copy")}
-          className="mb-3 flex w-full items-center justify-between gap-2 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-3.5 py-2.5 text-left active:scale-[0.99]"
-        >
-          <span className="text-[12px] font-semibold text-[var(--ink-soft)]">{t("myCode")}</span>
-          <span className="flex items-center gap-2.5">
-            <span className="font-mono text-[15px] font-bold tracking-[0.2em] text-[var(--accent-deep)]">{me?.friend_code ?? "…"}</span>
-            <span className="rounded-md bg-[var(--panel)] px-2 py-1 text-[11.5px] font-semibold text-[var(--ink-soft)]">{copied ? t("copied") : t("copy")}</span>
-          </span>
-        </button>
+      <FriendsSection icon="➕" title={t("addFriend")} hint={t("addHint")} action={<button onClick={() => setAddPref(!addOpen)} aria-expanded={addOpen} className="h-8 rounded-lg px-3 text-[12px] font-semibold text-[var(--accent-deep)] hover:bg-[var(--accent-soft)]">{addOpen ? fh("addClose") : fh("addOpen")}</button>}>
+        {addOpen && <>
         <div className="flex gap-2">
           <input
             value={searchCode}
@@ -450,36 +461,30 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
             </button>
           </div>
         )}
+        </>}
       </FriendsSection>
 
-      {/* ===== Входящие запросы ===== */}
-      <FriendsSection icon="📬" title={t("incoming")} count={incoming.length} accent={incoming.length > 0}>
-        {incoming.length === 0 && <EmptyState icon="📭">{t("noReqs")}</EmptyState>}
-        <div className="flex flex-col gap-2">
-          {incoming.map(({ row, profile }) => (
-            <div key={row.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
-              <button onClick={() => setViewId(profile.id)} className="min-w-0 flex-1 text-left transition-opacity hover:opacity-80">
-                {person(profile)}
-              </button>
-              <span className="flex shrink-0 gap-2">
-                <button onClick={() => answer(row, "accepted")} className="h-9 rounded-lg bg-[var(--accent)] px-3.5 text-[12.5px] font-semibold text-[var(--accent-ink)] active:scale-95">
-                  {t("accept")}
-                </button>
-                <button onClick={() => answer(row, "declined")} className="h-9 rounded-lg border border-[var(--line)] px-3.5 text-[12.5px] font-semibold text-[var(--ink-faint)] active:scale-95">
-                  {t("decline")}
-                </button>
-              </span>
-            </div>
-          ))}
-        </div>
-      </FriendsSection>
 
       {/* ===== Мои друзья ===== */}
       <FriendsSection icon="💚" title={t("friends")} count={friends.length}>
         {friends.length === 0 && <EmptyState icon="💌">{t("noFriends")}</EmptyState>}
+        {friends.length > 0 && <>
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={fh("search")} aria-label={fh("search")}
+            className="mb-2.5 h-11 w-full rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3.5 text-sm outline-none focus:border-[var(--accent)]" />
+          <div className="mb-3 flex flex-wrap gap-1.5" role="group">
+            {(["all", "online", "fav"] as const).map((k) => (
+              <button key={k} onClick={() => setFilter(k)} aria-pressed={filter === k}
+                className={`h-8 rounded-full border px-3.5 text-[12.5px] font-semibold transition-colors ${filter === k ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "border-[var(--line)] text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>
+                {k === "all" ? fh("fAll") : k === "online" ? fh("fOnline") : `⭐ ${fh("fFav")}`}
+              </button>
+            ))}
+          </div>
+          {favs.length === 0 && filter === "all" && !q && <p className="mb-3 text-[12px] text-[var(--ink-faint)]">{fh("favTip")}</p>}
+          {shown.length === 0 && <EmptyState icon="🔍">{fh("none")}</EmptyState>}
+        </>}
         <div className="flex flex-col gap-2">
-          {friends.map(({ row, profile }) => (
-            <div key={row.id} className="rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
+          {shown.map(({ row, profile }) => (
+            <div key={row.id} className="rounded-2xl border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5">
             <button onClick={() => setViewId(profile.id)} className="block w-full min-w-0 text-left transition-opacity hover:opacity-80">
               {person(profile)}
             </button>
@@ -510,8 +515,17 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
                 {u("gThank")}
               </button>
               <button
+                onClick={() => setFavs((fv) => toggleFav(fv, profile.id))}
+                aria-pressed={favs.includes(profile.id)}
+                aria-label={favs.includes(profile.id) ? fh("favDel") : fh("favAdd")}
+                title={favs.includes(profile.id) ? fh("favDel") : fh("favAdd")}
+                className="ml-auto h-8 w-8 shrink-0 rounded-lg text-[16px] transition-colors hover:bg-[var(--accent-soft)] active:scale-90"
+              >
+                {favs.includes(profile.id) ? "⭐" : "☆"}
+              </button>
+              <button
                 onClick={() => askRemove(row)}
-                className={`ml-auto h-8 shrink-0 rounded-lg px-2.5 text-[11.5px] font-semibold transition-colors ${
+                className={`h-8 shrink-0 rounded-lg px-2.5 text-[11.5px] font-semibold transition-colors ${
                   confirmId === row.id
                     ? "bg-[var(--danger)] text-white"
                     : "text-[var(--ink-faint)] hover:bg-[var(--danger-soft)] hover:text-[var(--danger)]"
@@ -558,13 +572,10 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
         friends={friends.map(({ profile }) => ({ id: profile.id, name: nameOf(profile), avatar: profile.avatar, avatarUrl: profile.avatar_url, presence: presenceText(profile), presenceState: profile.presence_state ?? null }))} />
       </>}
 
-      {sub === "care" && <>
-      <div className="gap-4 lg:columns-2 [&>*]:break-inside-avoid">
-      <SosPanel userId={userId} lang={lang} />
-      <FriendsAnswers userId={userId} lang={lang} />
-      <GratitudeFeed userId={userId} lang={lang} refreshKey={feedKey} />
-      </div>
-      </>}
+      {sub === "care" && (
+        <CareHub userId={userId} lang={lang} feedKey={feedKey} onThank={sendThanksTo}
+          friends={friends.map(({ profile }) => ({ id: profile.id, name: nameOf(profile), avatar: profile.avatar, avatarUrl: profile.avatar_url }))} />
+      )}
 
       {chatWith && (
         <FriendChat
