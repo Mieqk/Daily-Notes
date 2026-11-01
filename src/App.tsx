@@ -14,7 +14,9 @@ import { buildBackup } from "./lib/backup";
 import { applyDeepLink } from "./lib/deepLink";
 import { syncWidget } from "./lib/widget";
 import { buildMarkdown, downloadText, hashPin, shiftISO, toISO, todayISO, useNow, useStored } from "./store";
-import { BG_IMAGES } from "./bg";
+import { DEFAULT_CUSTOM_OPTS } from "./bg";
+import type { CustomBg, CustomBgOpts } from "./bg";
+import BgLayer from "./components/BgLayer";
 import Sidebar from "./components/Sidebar";
 import DailyView from "./components/DailyView";
 import type { Reminder } from "./components/DailyView";
@@ -103,6 +105,8 @@ export default function App() {
   const [moodEmoji, setMoodEmoji] = useStored<string[]>("dn.emoji", ["", "", "", "", ""]);
   const [writingFont, setWritingFont] = useStored<WritingFontId>("dn.wfont", "body");
   const [bg, setBg] = useStored<BgId>("dn.bg", "dots");
+  const [customBgs, setCustomBgs] = useStored<CustomBg[]>("dn.bgCustom", []);
+  const [bgOpts, setBgOpts] = useStored<CustomBgOpts>("dn.bgCustomOpts", DEFAULT_CUSTOM_OPTS);
   const [pinHash, setPinHash] = useStored<string | null>("dn.pin", null);
   const [bioId, setBioId] = useStored<string | null>("dn.bio", null);
   const [sleep, setSleep] = useStored<Record<string, SleepData>>("dn.sleep", {});
@@ -442,9 +446,7 @@ export default function App() {
   return (
     <div className="relative flex h-full flex-col overflow-hidden overscroll-none bg-[var(--bg)] text-[var(--ink)] md:flex-row">
       <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
-        {bg === "dots" && <div className="bg-dots absolute inset-0 opacity-70" />}
-        {bg === "grid" && <div className="bg-grid absolute inset-0 opacity-70" />}
-        {(bg === "paper" || bg === "space" || bg === "lines" || bg === "hex" || bg === "waves") && <img src={BG_IMAGES[bg]} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ opacity: bg === "paper" ? 0.5 : bg === "space" ? 0.32 : 0.15 }} />}
+        <BgLayer id={bg} customs={customBgs} opts={bgOpts} />
         <div className="animate-drift1 absolute -left-32 -top-32 h-[480px] w-[480px] rounded-full blur-3xl" style={{ background: "var(--glow1)" }} />
         <div className="animate-drift2 absolute -bottom-40 -right-24 h-[520px] w-[520px] rounded-full blur-3xl" style={{ background: "var(--glow2)" }} />
         <div className="noise absolute inset-0 opacity-[0.05]" />
@@ -486,7 +488,7 @@ export default function App() {
             </div>
           )}
           {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} moodEmoji={moodEmoji} moods={moods} sleep={sleep} streak={streak} notesCount={notesCount} chatUnread={chatUnread.byFriend} />}
-          {tab === "settings" && <SettingsView userId={userId} look={look} onLook={setLook} theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={(h) => { setPinHash(h); if (!h) setBioId(null); }} bioId={bioId} onBioChange={setBioId} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} tasks={tasks} showToast={showToast} />}
+          {tab === "settings" && <SettingsView userId={userId} look={look} onLook={setLook} theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} customBgs={customBgs} onCustomBgs={setCustomBgs} bgOpts={bgOpts} onBgOpts={setBgOpts} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={(h) => { setPinHash(h); if (!h) setBioId(null); }} bioId={bioId} onBioChange={setBioId} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} tasks={tasks} showToast={showToast} />}
         </main>
       </div>
 

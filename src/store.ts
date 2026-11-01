@@ -155,5 +155,9 @@ export interface SleepData {
 }
 
 export type WritingFontId = "body" | "serif" | "mono";
-export type BgId = "dots" | "grid" | "paper" | "space" | "lines" | "hex" | "waves";
+export type BgId =
+  | "dots" | "grid" | "paper" | "space" | "lines" | "hex" | "waves"
+  | "aurora" | "stars" | "rain" | "snow" | "leaves" | "sakura" | "mountains"
+  | "ocean" | "city" | "neon" | "grain" | "marble" | "sand" | "geometry" | "fog"
+  | `custom:${string}`;
 export type Tab = "daily" | "plan" | "stats" | "notes" | "sleep" | "hobby" | "friends" | "settings";
