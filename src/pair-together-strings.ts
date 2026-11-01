@@ -73,6 +73,17 @@ const ru = {
   sSleepNights: "общих ночей: {n}",
   sHabits: "Отметки привычек",
   sHoursUnit: "ч",
+  aTitle: "Когда мы свободны",
+  aHint: "Отметьте дни: свободно или занято. Видно только вам двоим, без подробностей.",
+  aFree: "Свободно",
+  aBusy: "Занято",
+  aUnset: "Не отмечено",
+  aTap: "нажмите, чтобы изменить",
+  aBoth: "Свободны вместе: {days}",
+  aNone: "Пока нет общих свободных дней",
+  aWait: "У {name} пока нет отметок",
+  aThis: "Эта неделя",
+  aNext: "Следующая неделя",
 };
 type Strings = typeof ru;
 
@@ -147,6 +158,17 @@ const en: Strings = {
   sSleepNights: "nights shared: {n}",
   sHabits: "Habit check-ins",
   sHoursUnit: "h",
+  aTitle: "When we're free",
+  aHint: "Mark each day as free or busy. Only the two of you see it, with no details.",
+  aFree: "Free",
+  aBusy: "Busy",
+  aUnset: "Not set",
+  aTap: "tap to change",
+  aBoth: "Both free: {days}",
+  aNone: "No shared free days yet",
+  aWait: "{name} hasn't marked any days yet",
+  aThis: "This week",
+  aNext: "Next week",
 };
 
 const be: Strings = {
@@ -220,6 +242,17 @@ const be: Strings = {
   sSleepNights: "агульных начэй: {n}",
   sHabits: "Адзнакі звычак",
   sHoursUnit: "г",
+  aTitle: "Калі мы вольныя",
+  aHint: "Пазначайце дні: ёсць час ці няма. Бачыце толькі вы ўдваіх, без падрабязнасцей.",
+  aFree: "Ёсць час",
+  aBusy: "Няма часу",
+  aUnset: "Не пазначана",
+  aTap: "націсніце, каб змяніць",
+  aBoth: "Абодва вольныя: {days}",
+  aNone: "Пакуль няма агульных вольных дзён",
+  aWait: "У {name} пакуль няма адзнак",
+  aThis: "Гэты тыдзень",
+  aNext: "Наступны тыдзень",
 };
 
 const uk: Strings = {
@@ -293,6 +326,17 @@ const uk: Strings = {
   sSleepNights: "спільних ночей: {n}",
   sHabits: "Позначки звичок",
   sHoursUnit: "г",
+  aTitle: "Коли ми вільні",
+  aHint: "Позначайте дні: вільно чи зайнято. Бачите лише ви вдвох, без подробиць.",
+  aFree: "Вільно",
+  aBusy: "Зайнято",
+  aUnset: "Не позначено",
+  aTap: "натисніть, щоб змінити",
+  aBoth: "Обоє вільні: {days}",
+  aNone: "Поки немає спільних вільних днів",
+  aWait: "У {name} поки немає позначок",
+  aThis: "Цей тиждень",
+  aNext: "Наступний тиждень",
 };
 
 const de: Strings = {
@@ -366,6 +410,17 @@ const de: Strings = {
   sSleepNights: "gemeinsame Nächte: {n}",
   sHabits: "Gewohnheits-Häkchen",
   sHoursUnit: "Std.",
+  aTitle: "Wann wir Zeit haben",
+  aHint: "Markiere jeden Tag als frei oder beschäftigt. Nur ihr beide seht es, ohne Details.",
+  aFree: "Frei",
+  aBusy: "Beschäftigt",
+  aUnset: "Nicht gesetzt",
+  aTap: "tippen zum Ändern",
+  aBoth: "Beide frei: {days}",
+  aNone: "Noch keine gemeinsamen freien Tage",
+  aWait: "{name} hat noch keine Tage markiert",
+  aThis: "Diese Woche",
+  aNext: "Nächste Woche",
 };
 
 const fr: Strings = {
@@ -439,6 +494,17 @@ const fr: Strings = {
   sSleepNights: "nuits communes : {n}",
   sHabits: "Pointages d’habitudes",
   sHoursUnit: "h",
+  aTitle: "Quand on est dispo",
+  aHint: "Indiquez chaque jour : dispo ou pris. Vous seuls le voyez, sans détails.",
+  aFree: "Dispo",
+  aBusy: "Pris",
+  aUnset: "Non indiqué",
+  aTap: "touchez pour changer",
+  aBoth: "Dispos tous les deux : {days}",
+  aNone: "Pas encore de jours libres en commun",
+  aWait: "{name} n'a encore rien indiqué",
+  aThis: "Cette semaine",
+  aNext: "Semaine suivante",
 };
 
 const es: Strings = {
@@ -512,6 +578,17 @@ const es: Strings = {
   sSleepNights: "noches compartidas: {n}",
   sHabits: "Marcas de hábitos",
   sHoursUnit: "h",
+  aTitle: "Cuándo estamos libres",
+  aHint: "Marca cada día como libre u ocupado. Solo lo veis vosotros dos, sin detalles.",
+  aFree: "Libre",
+  aBusy: "Ocupado",
+  aUnset: "Sin marcar",
+  aTap: "toca para cambiar",
+  aBoth: "Libres los dos: {days}",
+  aNone: "Aún no hay días libres en común",
+  aWait: "{name} aún no ha marcado días",
+  aThis: "Esta semana",
+  aNext: "Próxima semana",
 };
 
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };

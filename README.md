@@ -281,6 +281,7 @@ VITE_SUPABASE_ANON_KEY=YOUR-ANON-KEY
 | `20261112_pair_touch_push` | пуш о «тёплом слове» |
 | `20261113_pair_plant` | общее растение |
 | `20261114_pair_distance` | расстояние пары |
+| `20261115_pair_availability` | «свободно / занято» по дням |
 
 Файл `supabase/hotfix_auth.sql` нужен только для разового исправления входа.
 
