@@ -1,3 +1,4 @@
+import { usePairKind } from "../lib/pairKindContext";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
@@ -8,7 +9,7 @@ import FriendsSection from "./FriendsSection";
 
 /** Расстояние пары: по согласию обоих; на сервер уходят координаты с точностью ~11 км, партнёру отдаются только километры. */
 export default function PairDistance({ linkId, userId, lang, name }: { linkId: string; userId: string; lang: Lang; name: string }) {
-  const t = makeDistance(lang);
+  const t = makeDistance(lang, usePairKind());
   const [updatedAt, setUpdatedAt] = useState<string | null | undefined>(undefined); // undefined: ещё грузим
   const [km, setKm] = useState<number | null>(null);
   const [otherOn, setOtherOn] = useState(false);

@@ -1,4 +1,5 @@
 import type { Lang } from "./i18n";
+import { neutralText } from "./pair-neutral-strings";
 
 /** Строки вкладки «Пара»: сон близкого человека рядом с вашим. */
 const ru = {
@@ -96,4 +97,4 @@ const es: Strings = {
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };
 
 export type PairKey = keyof Strings;
-export const makePair = (lang: Lang) => (k: PairKey): string => (ALL[lang] ?? en)[k];
+export const makePair = (lang: Lang, kind?: string) => (k: PairKey): string => neutralText(lang, "pair", k, kind) ?? (ALL[lang] ?? en)[k];
