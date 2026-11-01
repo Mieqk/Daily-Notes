@@ -21,6 +21,7 @@ import {
   LockIcon,
   NotebookIcon,
   PaletteIcon,
+  PenIcon,
   StatsIcon,
   SleepIcon,
   UsersIcon,
@@ -323,7 +324,12 @@ export default function Sidebar({
     <aside className="relative z-30 hidden w-[300px] shrink-0 flex-col gap-5 overflow-visible border-r border-[var(--line)] bg-[var(--panel)] px-5 pb-5 pt-6 short:gap-3 short:pb-3 short:pt-4 md:flex">
       {/* Logo */}
       <div className="flex items-center gap-3 px-1">
-        <img src="/icons/icon.svg" alt="" className="h-11 w-11 shrink-0" style={{ filter: "drop-shadow(0 1px 2px rgb(0 0 0 / 0.25))" }} />
+        <span
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[var(--accent)] text-[var(--accent-ink)]"
+          style={{ boxShadow: "var(--shadow-sm)" }}
+        >
+          <PenIcon className="h-5 w-5" />
+        </span>
         <span>
           <span className="font-display block text-[15px] font-bold leading-tight tracking-tight">
             {t("name")}

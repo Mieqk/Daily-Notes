@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { TKey } from "../i18n";
-import { BackspaceIcon, FingerprintIcon, LockIcon } from "../icons";
+import { BackspaceIcon, FingerprintIcon, LockIcon, PenIcon } from "../icons";
 
 interface LockScreenProps {
   pinLength: number;
@@ -81,7 +81,12 @@ export default function LockScreen({ pinLength, onTry, t, onBiometric, bioLabel,
       </div>
 
       <div className={`relative flex flex-col items-center ${wrong ? "animate-shake" : "animate-rise"}`}>
-        <img src="/icons/icon.svg" alt="" className="h-16 w-16" style={{ filter: "drop-shadow(0 4px 10px rgb(0 0 0 / 0.3))" }} />
+        <span
+          className="grid h-16 w-16 place-items-center rounded-2xl bg-[var(--accent)] text-[var(--accent-ink)]"
+          style={{ boxShadow: "var(--shadow)" }}
+        >
+          <PenIcon className="h-7 w-7" />
+        </span>
         <h1 className="font-display mt-5 text-xl font-bold tracking-tight">{t("lockTitle")}</h1>
         <p className="mt-1 flex items-center gap-1.5 text-[13px] text-[var(--ink-faint)]">
           <LockIcon className="h-3.5 w-3.5" />
