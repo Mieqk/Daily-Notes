@@ -175,7 +175,8 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<FriendFilter>("all");
   const [addPref, setAddPref] = useState<boolean | null>(null);
-  const addOpen = addPref ?? friends.length === 0;
+  const [loaded, setLoaded] = useState(false);
+  const addOpen = addPref ?? (loaded && friends.length === 0);
   const [modeBusy, setModeBusy] = useState(false);
   const [notes, setNotes] = useState<Record<string, FriendNote>>({});
   const [noteOpen, setNoteOpen] = useState<string | null>(null);
@@ -278,6 +279,7 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
 
     setFriends(await withProfiles(accepted));
     setIncoming(await withProfiles(inc));
+    setLoaded(true);
   };
 
   useEffect(() => { load(); }, [userId]);
@@ -348,7 +350,8 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
     confirmTimer.current = window.setTimeout(() => setConfirmId(null), 3000);
   };
 
-  const shown = filterFriends(friends, { q, filter, favs, id: (x) => x.profile.id, name: (x) => nameOf(x.profile), online: (x) => x.profile.presence_state === "online" });
+  const isOn = (p: Profile) => !!p.presence_state && p.presence_state !== "offline";
+  const shown = filterFriends(friends, { q, filter, favs, id: (x) => x.profile.id, name: (x) => nameOf(x.profile), online: (x) => isOn(x.profile) });
 
   const avaNode = (p: Profile | null, emojiSize: string) =>
     p?.avatar_url ? (
@@ -411,7 +414,7 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
       {sub === "friends" && <>
 
       <FriendsHero lang={lang} name={me?.display_name || "—"} avatar={me?.avatar ?? null} avatarUrl={me?.avatar_url ?? null} code={me?.friend_code ?? null}
-        mode={me?.presence_mode ?? "auto"} modeBusy={modeBusy} onMode={setMode} friends={friends.length} online={friends.filter((x) => x.profile.presence_state === "online").length}
+        mode={me?.presence_mode ?? "auto"} modeBusy={modeBusy} onMode={setMode} friends={friends.length} online={friends.filter((x) => isOn(x.profile)).length}
         requests={incoming.length} copied={copied} copyLabel={t("copy")} copiedLabel={t("copied")} onCopy={copyCode} />
 
       <div className="mx-auto max-w-2xl">
