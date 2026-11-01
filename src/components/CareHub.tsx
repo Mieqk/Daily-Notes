@@ -33,7 +33,7 @@ export default function CareHub({ userId, lang, friends, feedKey, onThank }: {
   const [to, setTo] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
-  const pick = to ?? friends[0]?.id ?? null;
+  const pick = friends.some((x) => x.id === to) ? to : friends[0]?.id ?? null;
 
   const dayNum = Math.floor(new Date(todayISO()).getTime() / 86_400_000);
   const tip = TIPS[dayNum % TIPS.length];
