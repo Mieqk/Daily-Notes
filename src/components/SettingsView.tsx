@@ -12,6 +12,7 @@ import type { Backup, RestoreMode, RestoreSummary } from "../lib/backup";
 import { THEMES } from "../themes";
 import type { ThemeId } from "../themes";
 import { BG_IMAGES } from "../bg";
+import StatsVisibility from "./StatsVisibility";
 import LookEditor from "./LookEditor";
 import ThemeShare from "./ThemeShare";
 import AddonsManager from "./AddonsManager";
@@ -480,22 +481,24 @@ export default function SettingsView(props: SettingsViewProps) {
                 <button
                   key={l.id}
                   onClick={() => onLang(l.id)}
-                  className={`flex h-14 items-center gap-3 rounded-xl border px-4 transition-all duration-200 active:scale-[0.97] ${
+                  className={`flex h-14 min-w-0 items-center gap-2.5 rounded-xl border px-3 transition-all duration-200 active:scale-[0.97] ${
                     active
                       ? "border-[var(--accent)] bg-[var(--accent-soft)]"
                       : "border-[var(--line)] bg-[var(--panel-2)] hover:-translate-y-0.5 hover:border-[var(--ink-faint)]"
                   }`}
                 >
-                  <span className="grid h-8 w-11 place-items-center rounded-lg bg-[var(--hover)] text-[11px] font-bold text-[var(--ink-soft)]">
+                  <span className="grid h-8 w-11 shrink-0 place-items-center rounded-lg bg-[var(--hover)] text-[11px] font-bold text-[var(--ink-soft)]">
                     {l.badge}
                   </span>
-                  <span className="flex-1 text-left text-[14px] font-bold">{l.native}</span>
-                  {active && <CheckIcon className="animate-checkpop h-4 w-4 text-[var(--accent)]" />}
+                  <span className="min-w-0 flex-1 truncate text-left text-[14px] font-bold">{l.native}</span>
+                  {active && <CheckIcon className="animate-checkpop h-4 w-4 shrink-0 text-[var(--accent)]" />}
                 </button>
               );
             })}
           </div>
         </Section>
+
+        <StatsVisibility lang={lang} />
 
         {/* Privacy */}
         <NotificationSettings lang={lang} signedIn={Boolean(user)} />
