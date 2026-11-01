@@ -40,7 +40,7 @@ function Avatar({ p, size }: { p?: Person; size: number }) {
 }
 
 /** Вкладка «Пара»: сон любимого человека и друзей из Sleep Party рядом с вашим. */
-export default function PairView({ userId, lang, sleep }: { userId: string; lang: Lang; sleep: Record<string, SleepData> }) {
+export default function PairView({ userId, lang, sleep, partnerId }: { userId: string; lang: Lang; sleep: Record<string, SleepData>; partnerId?: string }) {
   const pr = makePair(lang);
   const s = makeSocial(lang);
   const [parties, setParties] = useState<Party[] | null>(null);
@@ -88,7 +88,7 @@ export default function PairView({ userId, lang, sleep }: { userId: string; lang
   const person = (id: string) => people.find((p) => p.id === id);
 
   const pairs = (parties ?? []).map((p) => ({ party: p, otherId: p.owner === userId ? p.buddy : p.owner }));
-  const hero = pairs.find((x) => x.otherId === heroId) ?? pairs[0];
+  const hero = partnerId ? pairs.find((x) => x.otherId === partnerId) : (pairs.find((x) => x.otherId === heroId) ?? pairs[0]);
   const pickHero = (id: string) => { setHeroId(id); try { localStorage.setItem(HERO_KEY, id); } catch { /* ignore */ } };
 
   const today = todayISO();
@@ -226,7 +226,7 @@ export default function PairView({ userId, lang, sleep }: { userId: string; lang
 
   return (
     <div className="mx-auto w-full max-w-2xl">
-      {pairs.length > 1 && (
+      {!partnerId && pairs.length > 1 && (
         <div className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1" role="tablist">
           {pairs.map(({ otherId }) => {
             const p = person(otherId);

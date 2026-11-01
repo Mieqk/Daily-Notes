@@ -16,7 +16,6 @@ interface Goal { id: string; title: string; target: number; created_by: string }
 interface PairEvent { id: string; title: string; emoji: string; starts_at: string }
 interface Touch { sender: string; kind: TouchKind }
 
-const HERO_KEY = "dn.pairHero";
 const read = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const write = (k: string, v: string | null) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* ignore */ } };
 
@@ -28,19 +27,19 @@ const TOUCHES: { kind: TouchKind; icon: string }[] = [
 const EMOJIS = ["💞", "✈️", "🎂", "🏠", "🎉"];
 
 /** «Вдвоём»: тёплые слова, настроение, общие цели и обратный отсчёт. Видно только двоим из пары. */
-export default function PairTogether({ userId, lang, friends, moods, moodEmoji }: {
-  userId: string; lang: Lang; friends: FriendOpt[]; moods: Record<string, number>; moodEmoji: string[];
+export type PairSection = "today" | "plans" | "memories";
+
+export default function PairTogether({ userId, lang, other, section, moods, moodEmoji }: {
+  userId: string; lang: Lang; other: FriendOpt; section: PairSection; moods: Record<string, number>; moodEmoji: string[];
 }) {
   const t = makeTogether(lang);
-  const [otherId, setOtherId] = useState<string | null>(() => read(HERO_KEY));
-  const other = friends.find((f) => f.id === otherId) ?? friends[0];
   const [linkId, setLinkId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
   // у каждой пары одна строка pair_links: находим или создаём
   useEffect(() => {
     setLinkId(null); setFailed(false);
-    if (!supabase || !other) return;
+    if (!supabase) return;
     let off = false;
     const key = pairKey(userId, other.id);
     (async () => {
@@ -54,39 +53,31 @@ export default function PairTogether({ userId, lang, friends, moods, moodEmoji }
       if (error || !data) setFailed(true); else setLinkId(data.id as string);
     })();
     return () => { off = true; };
-  }, [userId, other?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId, other.id]);
 
-  if (friends.length === 0 || !other) {
-    return <FriendsSection icon="💞" title={t("title")} hint={t("hint")}><EmptyState icon="💞">{t("noFriend")}</EmptyState></FriendsSection>;
+  if (!linkId) {
+    return failed
+      ? <p className="mb-4 rounded-xl bg-[var(--hover)] px-4 py-3 text-[12.5px] leading-snug text-[var(--ink-soft)]">{t("setup")}</p>
+      : <p className="mb-4 px-1 text-[12.5px] text-[var(--ink-faint)]" aria-live="polite">…</p>;
   }
-
-  const pick = (id: string) => { setOtherId(id); write(HERO_KEY, id); };
-
   return (
-    <div className="mx-auto w-full max-w-2xl">
-      <FriendsSection icon="💞" title={t("title")} hint={t("hint")}>
-        {friends.length > 1 && (
-          <label className="block text-[12px] font-semibold text-[var(--ink-soft)]">{t("pick")}
-            <select value={other.id} onChange={(e) => pick(e.target.value)} className={`${field} mt-1 h-10`}>
-              {friends.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-            </select>
-          </label>
-        )}
-        {failed && <p className="mt-3 rounded-lg bg-[var(--hover)] px-3 py-2.5 text-[12.5px] leading-snug text-[var(--ink-soft)]">{t("setup")}</p>}
-        {!failed && !linkId && <p className="mt-3 text-[12.5px] text-[var(--ink-faint)]" aria-live="polite">…</p>}
-      </FriendsSection>
-      {linkId && (
+    <>
+      {section === "today" && (
         <>
           <Touches linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} />
           <MoodShare linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} moods={moods} moodEmoji={moodEmoji} />
           <PairPlant linkId={linkId} userId={userId} lang={lang} name={other.name} />
           <PairDistance linkId={linkId} userId={userId} lang={lang} name={other.name} />
-          <Goals linkId={linkId} userId={userId} lang={lang} name={other.name} />
-          <Events linkId={linkId} userId={userId} lang={lang} />
-          <MonthRecap linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} moodEmoji={moodEmoji} />
         </>
       )}
-    </div>
+      {section === "plans" && (
+        <>
+          <Goals linkId={linkId} userId={userId} lang={lang} name={other.name} />
+          <Events linkId={linkId} userId={userId} lang={lang} />
+        </>
+      )}
+      {section === "memories" && <MonthRecap linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} moodEmoji={moodEmoji} />}
+    </>
   );
 }
 
