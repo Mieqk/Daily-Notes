@@ -46,7 +46,7 @@ export default function SosPanel({ userId, lang }: { userId: string; lang: Lang 
   const mine = signals.find((s) => s.user_id === userId);
   const others = signals.filter((s) => s.user_id !== userId);
   const nameOf = (id: string) => people.get(id)?.display_name || "—";
-  const btn = "h-10 rounded-lg px-4 text-[13px] font-semibold transition-all active:scale-95 disabled:opacity-50";
+  const btn = "h-10 whitespace-nowrap rounded-lg px-4 text-[13px] font-semibold transition-all active:scale-95 disabled:opacity-50";
 
   const send = async () => {
     setBusy(true);
@@ -120,10 +120,10 @@ export default function SosPanel({ userId, lang }: { userId: string; lang: Lang 
               <button key={k} onClick={() => setText(f(k))} className="rounded-full border border-[var(--line)] px-3 py-1.5 text-[12.5px] text-[var(--ink-soft)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)]">{f(k)}</button>
             ))}
           </div>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <button onClick={send} disabled={busy} className={`${btn} bg-[var(--accent)] text-[var(--accent-ink)]`}>{u("sosSend")}</button>
             <button onClick={() => setComposing(false)} className={`${btn} text-[var(--ink-soft)] hover:bg-[var(--hover)]`}>{u("capCancel")}</button>
-            <span className="ml-auto text-[12px] text-[var(--ink-faint)]">{u("sosNote")}</span>
+            <span className="basis-full text-[12px] text-[var(--ink-faint)] sm:ml-auto sm:basis-auto">{u("sosNote")}</span>
           </div>
         </div>
       ) : (
