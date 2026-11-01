@@ -86,19 +86,31 @@ jobs:
           PY
           grep -n "uses-permission" android/app/src/main/AndroidManifest.xml
 
-      # Иконка из public/icons/icon-512.png вместо стандартной от Capacitor.
+      # Иконка: adaptive (фон + рисунок из public/icons/android-*-432.png) и обычная для старых Android.
       - name: Set launcher icon
         run: |
           RES=android/app/src/main/res
           IM=$(command -v magick || command -v convert || true)
           if [ -z "$IM" ]; then sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick; IM=$(command -v magick || command -v convert); fi
           rm -rf "$RES"/mipmap-anydpi-v26
-          for pair in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
-            d="$RES/mipmap-${pair%%:*}"; sz="${pair##*:}"
+          mkdir -p "$RES/mipmap-anydpi-v26"
+          cat > "$RES/mipmap-anydpi-v26/ic_launcher.xml" <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@mipmap/ic_launcher_background"/>
+              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+          </adaptive-icon>
+          XML
+          sed -i 's/^          //' "$RES/mipmap-anydpi-v26/ic_launcher.xml"
+          cp "$RES/mipmap-anydpi-v26/ic_launcher.xml" "$RES/mipmap-anydpi-v26/ic_launcher_round.xml"
+          for pair in mdpi:48:108 hdpi:72:162 xhdpi:96:216 xxhdpi:144:324 xxxhdpi:192:432; do
+            IFS=: read -r dens sz lay <<< "$pair"
+            d="$RES/mipmap-$dens"
             mkdir -p "$d"
             "$IM" public/icons/icon-512.png -resize ${sz}x${sz} "$d/ic_launcher.png"
             cp "$d/ic_launcher.png" "$d/ic_launcher_round.png"
-            rm -f "$d/ic_launcher_foreground.png"
+            "$IM" public/icons/android-foreground-432.png -resize ${lay}x${lay} "$d/ic_launcher_foreground.png"
+            "$IM" public/icons/android-background-432.png -resize ${lay}x${lay} "$d/ic_launcher_background.png"
           done
 
       - name: Set version
