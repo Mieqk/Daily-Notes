@@ -18,12 +18,12 @@ import FriendChat from "./FriendChat";
 import PairHub from "./PairHub";
 import { useStored } from "../store";
 import type { SleepData } from "../store";
-import { HeartIcon, SunIcon, UsersIcon } from "../icons";
+import { PairIcon, SunIcon, UsersIcon } from "../icons";
 
 type Sub = "friends" | "together" | "care";
 const SUBS: { id: Sub; icon: (p: { className?: string }) => ReactNode; label: "gConnect" | "gTogether" | "gCare" }[] = [
   { id: "friends", icon: UsersIcon, label: "gConnect" },
-  { id: "together", icon: HeartIcon, label: "gTogether" },
+  { id: "together", icon: PairIcon, label: "gTogether" },
   { id: "care", icon: SunIcon, label: "gCare" },
 ];
 import FriendNoteEditor from "./FriendNoteEditor";

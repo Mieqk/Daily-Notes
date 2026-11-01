@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Lang } from "../i18n";
 import { PRESENCE_COLOR, type PresenceState } from "../lib/presence";
+import { PAIR_KINDS, kindMeta, readKind, writeKind, type PairKind } from "../lib/pairKind";
 import { makeHub } from "../pair-hub-strings";
 import type { SleepData } from "../store";
 import { useStored } from "../store";
@@ -43,11 +44,16 @@ export default function PairHub({ userId, lang, friends, me, sleep, moods, moodE
   const [saved, setTab] = useStored<Tab>("dn.pairTab", "today");
   const tab: Tab = TABS.some((x) => x.id === saved) ? saved : "today";
   const partner = friends.find((f) => f.id === savedId) ?? friends[0];
+  const [kinds, setKinds] = useState<Record<string, PairKind>>({});
+  const [choosing, setChoosing] = useState(false);
+  const kind: PairKind = partner ? (kinds[partner.id] ?? readKind(partner.id)) : "friend";
+  const meta = kindMeta(kind);
+  const setKind = (k: PairKind) => { if (partner) { writeKind(partner.id, k); setKinds((m) => ({ ...m, [partner.id]: k })); } setChoosing(false); };
   const opts = friends.map((f) => ({ id: f.id, name: f.name }));
   const pick = (id: string) => { setSavedId(id); try { localStorage.setItem(HERO_KEY, id); } catch { /* ignore */ } };
 
   if (!partner) {
-    return <div className="mx-auto w-full max-w-2xl"><EmptyState icon="💞">{h("empty")}</EmptyState></div>;
+    return <div className="mx-auto w-full max-w-2xl"><EmptyState icon="🤝">{h("empty")}</EmptyState></div>;
   }
 
   return (
@@ -72,11 +78,11 @@ export default function PairHub({ userId, lang, friends, me, sleep, moods, moodE
       {/* шапка пары: два аватара, сердце между ними, статус в сети */}
       <section className="animate-rise relative mb-4 overflow-hidden rounded-3xl border border-[var(--line)] px-4 pb-5 pt-6 text-center"
         style={{ background: "linear-gradient(160deg, var(--accent-soft) 0%, var(--panel) 75%)", boxShadow: "var(--shadow-sm)" }}>
-        <span aria-hidden className="pointer-events-none absolute -left-6 -top-6 text-[88px] opacity-[0.07]">💞</span>
-        <span aria-hidden className="pointer-events-none absolute -bottom-8 -right-4 text-[96px] opacity-[0.07]">🌿</span>
+        <span aria-hidden className="pointer-events-none absolute -left-6 -top-6 text-[88px] opacity-[0.07]">{meta.decor[0]}</span>
+        <span aria-hidden className="pointer-events-none absolute -bottom-8 -right-4 text-[96px] opacity-[0.07]">{meta.decor[1]}</span>
         <div className="relative flex items-center justify-center">
           <Face avatar={me.avatar} url={me.avatarUrl} size={68} ring />
-          <span aria-hidden className="relative z-10 -mx-2.5 grid h-9 w-9 place-items-center rounded-full border border-[var(--line)] bg-[var(--panel)] text-[17px]" style={{ boxShadow: "var(--shadow-sm)" }}>💗</span>
+          <span aria-hidden className="relative z-10 -mx-2.5 grid h-9 w-9 place-items-center rounded-full border border-[var(--line)] bg-[var(--panel)] text-[17px]" style={{ boxShadow: "var(--shadow-sm)" }}>{meta.icon}</span>
           <Face avatar={partner.avatar} url={partner.avatarUrl} size={68} ring />
         </div>
         <h2 className="font-display relative mt-3.5 break-words text-[19px] font-semibold leading-tight">{h("with").replace("{name}", partner.name)}</h2>
@@ -84,6 +90,26 @@ export default function PairHub({ userId, lang, friends, me, sleep, moods, moodE
           <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: PRESENCE_COLOR[partner.presenceState ?? "offline"] }} aria-hidden />
           <span className="truncate">{partner.presence ?? h("offline")}</span>
         </p>
+        <div className="relative mt-3">
+          {!choosing ? (
+            <button onClick={() => setChoosing(true)} aria-label={`${h(kind)}: ${h("kindChange")}`}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--panel)] px-3 text-[12px] font-semibold text-[var(--ink-soft)] transition-all active:scale-95">
+              <span aria-hidden>{meta.icon}</span>{h(kind)}<span className="text-[var(--ink-faint)]">· {h("kindChange")}</span>
+            </button>
+          ) : (
+            <div>
+              <p className="mb-2 text-[12px] font-semibold text-[var(--ink-soft)]">{h("kindAsk").replace("{name}", partner.name)}</p>
+              <div className="flex flex-wrap justify-center gap-1.5" role="radiogroup" aria-label={h("kindAsk").replace("{name}", partner.name)}>
+                {PAIR_KINDS.map((k) => (
+                  <button key={k.id} role="radio" aria-checked={k.id === kind} onClick={() => setKind(k.id)}
+                    className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-semibold transition-all active:scale-95 ${k.id === kind ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "border-[var(--line)] bg-[var(--panel)] text-[var(--ink-soft)]"}`}>
+                    <span aria-hidden>{k.icon}</span>{h(k.id)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <span className="sr-only">{myName}</span>
       </section>
 
