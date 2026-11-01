@@ -122,7 +122,7 @@ export default function Achievements({ userId, lang }: { userId: string; lang: L
     return () => { cancelled = true; };
   }, [userId]);
 
-  if (!counts) return null;
+  if (!counts || localStorage.getItem("dn.badgesHidden") === "1") return null;
 
   return (
     <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>

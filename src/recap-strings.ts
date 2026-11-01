@@ -46,6 +46,10 @@ const ru = {
   hrs: "ч",
   hide: "Скрыть",
   show: "Показать",
+  setTitle: "Статистика",
+  setRecap: "Итоги недели и месяца",
+  setBadges: "Серии и значки",
+  setBadgesNote: "Скрывает блоки на вкладке «Статистика» и значки в профиле",
 };
 
 type Strings = Record<keyof typeof ru, string>;
@@ -95,6 +99,10 @@ const en: Strings = {
   hrs: "h",
   hide: "Hide",
   show: "Show",
+  setTitle: "Statistics",
+  setRecap: "Weekly and monthly recap",
+  setBadges: "Streaks and badges",
+  setBadgesNote: "Hides these blocks on the Statistics tab and badges in your profile",
 };
 
 const be: Strings = {
@@ -142,6 +150,10 @@ const be: Strings = {
   hrs: "г",
   hide: "Схаваць",
   show: "Паказаць",
+  setTitle: "Статыстыка",
+  setRecap: "Вынікі тыдня і месяца",
+  setBadges: "Серыі і значкі",
+  setBadgesNote: "Хавае блокі на ўкладцы «Статыстыка» і значкі ў профілі",
 };
 
 const uk: Strings = {
@@ -189,6 +201,10 @@ const uk: Strings = {
   hrs: "г",
   hide: "Сховати",
   show: "Показати",
+  setTitle: "Статистика",
+  setRecap: "Підсумки тижня та місяця",
+  setBadges: "Серії та значки",
+  setBadgesNote: "Ховає блоки на вкладці «Статистика» та значки в профілі",
 };
 
 const de: Strings = {
@@ -236,6 +252,10 @@ const de: Strings = {
   hrs: "Std.",
   hide: "Ausblenden",
   show: "Einblenden",
+  setTitle: "Statistik",
+  setRecap: "Wochen- und Monatsrückblick",
+  setBadges: "Serien und Abzeichen",
+  setBadgesNote: "Blendet diese Blöcke im Tab „Statistik“ und die Abzeichen im Profil aus",
 };
 
 const fr: Strings = {
@@ -283,6 +303,10 @@ const fr: Strings = {
   hrs: "h",
   hide: "Masquer",
   show: "Afficher",
+  setTitle: "Statistiques",
+  setRecap: "Bilan de la semaine et du mois",
+  setBadges: "Séries et badges",
+  setBadgesNote: "Masque ces blocs dans l’onglet « Statistiques » et les badges du profil",
 };
 
 const es: Strings = {
@@ -330,6 +354,10 @@ const es: Strings = {
   hrs: "h",
   hide: "Ocultar",
   show: "Mostrar",
+  setTitle: "Estadísticas",
+  setRecap: "Resumen semanal y mensual",
+  setBadges: "Rachas e insignias",
+  setBadgesNote: "Oculta estos bloques en la pestaña «Estadísticas» y las insignias del perfil",
 };
 
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };
