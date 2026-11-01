@@ -12,6 +12,7 @@ import type { FriendOpt } from "./SharedMemories";
 import FriendsSection, { EmptyState } from "./FriendsSection";
 import PairPlant from "./PairPlant";
 import PairDistance from "./PairDistance";
+import PairAvailability from "./PairAvailability";
 
 interface Goal { id: string; title: string; target: number; created_by: string }
 interface PairEvent { id: string; title: string; emoji: string; starts_at: string }
@@ -66,6 +67,7 @@ export default function PairTogether({ userId, lang, other, section, moods, mood
       {section === "today" && (
         <>
           <Touches linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} />
+          <PairAvailability linkId={linkId} userId={userId} otherId={other.id} lang={lang} name={other.name} view="today" />
           <MoodShare linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} moods={moods} moodEmoji={moodEmoji} />
           <PairPlant linkId={linkId} userId={userId} lang={lang} name={other.name} />
           <PairDistance linkId={linkId} userId={userId} lang={lang} name={other.name} />
@@ -73,6 +75,7 @@ export default function PairTogether({ userId, lang, other, section, moods, mood
       )}
       {section === "plans" && (
         <>
+          <PairAvailability linkId={linkId} userId={userId} otherId={other.id} lang={lang} name={other.name} view="plans" />
           <Goals linkId={linkId} userId={userId} lang={lang} name={other.name} />
           <Events linkId={linkId} userId={userId} lang={lang} />
         </>
