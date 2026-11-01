@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CalendarIcon, PlanIcon, StatsIcon, NotebookIcon, SleepIcon, SparkIcon, GearIcon, UsersIcon, XIcon } from "../icons";
+import { CalendarIcon, PlanIcon, StatsIcon, NotebookIcon, SleepIcon, SparkIcon, GearIcon, UsersIcon, XIcon, PenIcon } from "../icons";
 import type { Tab } from "../store";
 import type { Lang, TKey } from "../i18n";
 import { MiniCalendar } from "./Sidebar";
@@ -67,7 +67,12 @@ export default function MobileMenu({ tab, onTab, t, lang, selectedDate, onPickDa
           <button className="animate-fadein absolute inset-0 bg-black/45" aria-label={l.close} onClick={() => setOpen(false)} />
           <nav className="animate-fadein safe-top safe-bottom absolute inset-y-0 left-0 flex w-[min(80vw,300px)] flex-col border-r border-[var(--line)] bg-[var(--panel)]" style={{ boxShadow: "var(--shadow)" }}>
             <div className="flex items-center justify-between px-5 pb-3 pt-5">
-              <span className="font-display text-[17px] font-bold">{t("name")}</span>
+              <span className="flex items-center gap-2.5">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--accent)] text-[var(--accent-ink)]" style={{ boxShadow: "var(--shadow-sm)" }}>
+                  <PenIcon className="h-4.5 w-4.5" />
+                </span>
+                <span className="font-display text-[17px] font-bold">{t("name")}</span>
+              </span>
               <button onClick={() => setOpen(false)} aria-label={l.close} className="grid h-9 w-9 place-items-center rounded-lg text-[var(--ink-faint)] hover:bg-[var(--hover)]">
                 <XIcon className="h-4.5 w-4.5" />
               </button>
