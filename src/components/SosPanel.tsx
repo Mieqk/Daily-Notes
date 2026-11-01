@@ -4,6 +4,7 @@ import { sendPushEvent } from "../lib/push";
 import { supabase } from "../lib/supabase";
 import { fetchProfiles } from "../lib/profiles";
 import { makeUI } from "../ui-strings";
+import { makeFh } from "../friends-hub-strings";
 import FriendsSection from "./FriendsSection";
 
 interface Signal { id: string; user_id: string; message: string | null; created_at: string; resolved_at: string | null }
@@ -15,6 +16,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** SOS-сигналы поддержки: свой сигнал и сигналы друзей за последние сутки. */
 export default function SosPanel({ userId, lang }: { userId: string; lang: Lang }) {
   const u = makeUI(lang);
+  const f = makeFh(lang);
   const [signals, setSignals] = useState<Signal[] | null>(null);
   const [support, setSupport] = useState<Support[]>([]);
   const [people, setPeople] = useState<Map<string, Person>>(new Map());
@@ -113,6 +115,11 @@ export default function SosPanel({ userId, lang }: { userId: string; lang: Lang 
             aria-label={u("sosPh")}
             className="w-full resize-y rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
           />
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {(["sosP0", "sosP1", "sosP2", "sosP3"] as const).map((k) => (
+              <button key={k} onClick={() => setText(f(k))} className="rounded-full border border-[var(--line)] px-3 py-1.5 text-[12.5px] text-[var(--ink-soft)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)]">{f(k)}</button>
+            ))}
+          </div>
           <div className="mt-2 flex items-center gap-2">
             <button onClick={send} disabled={busy} className={`${btn} bg-[var(--accent)] text-[var(--accent-ink)]`}>{u("sosSend")}</button>
             <button onClick={() => setComposing(false)} className={`${btn} text-[var(--ink-soft)] hover:bg-[var(--hover)]`}>{u("capCancel")}</button>
