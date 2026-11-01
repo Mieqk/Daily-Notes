@@ -1,4 +1,5 @@
 import type { Lang } from "./i18n";
+import { neutralText } from "./pair-neutral-strings";
 
 /** Строки раздела «Вдвоём»: настроение пары, общие цели, обратный отсчёт и тёплые слова. */
 const ru = {
@@ -516,4 +517,4 @@ const es: Strings = {
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };
 
 export type TogetherKey = keyof Strings;
-export const makeTogether = (lang: Lang) => (k: TogetherKey): string => (ALL[lang] ?? en)[k];
+export const makeTogether = (lang: Lang, kind?: string) => (k: TogetherKey): string => neutralText(lang, "together", k, kind) ?? (ALL[lang] ?? en)[k];

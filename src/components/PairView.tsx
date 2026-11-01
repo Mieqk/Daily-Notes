@@ -1,3 +1,4 @@
+import { usePairKind } from "../lib/pairKindContext";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
@@ -41,7 +42,7 @@ function Avatar({ p, size }: { p?: Person; size: number }) {
 
 /** Вкладка «Пара»: сон любимого человека и друзей из Sleep Party рядом с вашим. */
 export default function PairView({ userId, lang, sleep, partnerId }: { userId: string; lang: Lang; sleep: Record<string, SleepData>; partnerId?: string }) {
-  const pr = makePair(lang);
+  const pr = makePair(lang, usePairKind());
   const s = makeSocial(lang);
   const [parties, setParties] = useState<Party[] | null>(null);
   const [nights, setNights] = useState<Night[]>([]);

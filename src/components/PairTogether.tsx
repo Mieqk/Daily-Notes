@@ -1,3 +1,4 @@
+import { usePairKind } from "../lib/pairKindContext";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Lang } from "../i18n";
 import { MOODS, localeOf } from "../i18n";
@@ -32,7 +33,7 @@ export type PairSection = "today" | "plans" | "memories";
 export default function PairTogether({ userId, lang, other, section, moods, moodEmoji }: {
   userId: string; lang: Lang; other: FriendOpt; section: PairSection; moods: Record<string, number>; moodEmoji: string[];
 }) {
-  const t = makeTogether(lang);
+  const t = makeTogether(lang, usePairKind());
   const [linkId, setLinkId] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -86,7 +87,7 @@ interface WithOther extends SectionProps { otherId: string; name: string }
 
 /** Доброе утро / Спокойной ночи / Думаю о тебе: раз в день каждого вида. */
 function Touches({ linkId, userId, lang, otherId, name }: WithOther) {
-  const t = makeTogether(lang);
+  const t = makeTogether(lang, usePairKind());
   const [rows, setRows] = useState<Touch[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(false);
@@ -150,7 +151,7 @@ function Touches({ linkId, userId, lang, otherId, name }: WithOther) {
 
 /** Настроение за неделю: уходит в базу только после явного включения «делиться». */
 function MoodShare({ linkId, userId, lang, otherId, name, moods, moodEmoji }: WithOther & { moods: Record<string, number>; moodEmoji: string[] }) {
-  const t = makeTogether(lang);
+  const t = makeTogether(lang, usePairKind());
   const shareKey = `dn.pairMood.${linkId}`;
   const [share, setShare] = useState(() => read(shareKey) === "1");
   const [rows, setRows] = useState<MoodRow[]>([]);
@@ -239,7 +240,7 @@ function MoodShare({ linkId, userId, lang, otherId, name, moods, moodEmoji }: Wi
 
 /** Общие цели: общий прогресс, каждый отмечает свой вклад не чаще раза в день. */
 function Goals({ linkId, userId, lang, name }: SectionProps & { name: string }) {
-  const t = makeTogether(lang);
+  const t = makeTogether(lang, usePairKind());
   const [goals, setGoals] = useState<Goal[] | null>(null);
   const [marks, setMarks] = useState<Mark[]>([]);
   const [composing, setComposing] = useState(false);
@@ -348,7 +349,7 @@ function Goals({ linkId, userId, lang, name }: SectionProps & { name: string }) 
 
 /** Обратный отсчёт до встречи, поездки или годовщины. */
 function Events({ linkId, userId, lang }: SectionProps) {
-  const t = makeTogether(lang);
+  const t = makeTogether(lang, usePairKind());
   const [events, setEvents] = useState<PairEvent[] | null>(null);
   const [composing, setComposing] = useState(false);
   const [title, setTitle] = useState("");
@@ -455,7 +456,7 @@ function Events({ linkId, userId, lang }: SectionProps) {
 
 /** Итог месяца пары: тёплые слова, отметки, достигнутые цели и настроение (если поделились оба). */
 function MonthRecap({ linkId, userId, lang, otherId, name, moodEmoji }: WithOther & { moodEmoji: string[] }) {
-  const t = makeTogether(lang);
+  const t = makeTogether(lang, usePairKind());
   const [offset, setOffset] = useState(0);
   const [data, setData] = useState<{ touches: { sender: string; day: string }[]; goals: { id: string; target: number }[]; marks: Mark[]; moods: MoodRow[]; nights: { user_id: string; day: string; hours: number }[]; checkins: { user_id: string; day: string }[] } | null>(null);
   const range = useMemo(() => monthRange(todayISO(), offset), [offset]);

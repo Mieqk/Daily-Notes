@@ -1,4 +1,5 @@
 import type { Lang } from "./i18n";
+import { neutralText } from "./pair-neutral-strings";
 
 /** Строки карточки «Расстояние» пары. */
 const ru = {
@@ -61,4 +62,4 @@ const es: Strings = {
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };
 
 export type DistanceKey = keyof Strings;
-export const makeDistance = (lang: Lang) => (k: DistanceKey): string => (ALL[lang] ?? en)[k];
+export const makeDistance = (lang: Lang, kind?: string) => (k: DistanceKey): string => neutralText(lang, "distance", k, kind) ?? (ALL[lang] ?? en)[k];

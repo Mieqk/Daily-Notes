@@ -1,4 +1,5 @@
 import type { Lang } from "./i18n";
+import { neutralText } from "./pair-neutral-strings";
 
 /** Строки шапки и разделов вкладки «Парное». */
 const ru = {
@@ -46,4 +47,4 @@ const es: Strings = {
 };
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };
 export type HubKey = keyof Strings;
-export const makeHub = (lang: Lang) => (k: HubKey): string => (ALL[lang] ?? en)[k];
+export const makeHub = (lang: Lang, kind?: string) => (k: HubKey): string => neutralText(lang, "hub", k, kind) ?? (ALL[lang] ?? en)[k];

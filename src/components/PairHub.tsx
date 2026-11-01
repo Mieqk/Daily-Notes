@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Lang } from "../i18n";
 import { PRESENCE_COLOR, type PresenceState } from "../lib/presence";
+import { PairKindContext } from "../lib/pairKindContext";
 import { PAIR_KINDS, kindMeta, readKind, writeKind, type PairKind } from "../lib/pairKind";
 import { makeHub } from "../pair-hub-strings";
 import type { SleepData } from "../store";
@@ -39,7 +40,6 @@ export default function PairHub({ userId, lang, friends, me, sleep, moods, moodE
   userId: string; lang: Lang; friends: PairFriend[]; me: { avatar: string | null; avatarUrl: string | null };
   sleep: Record<string, SleepData>; moods: Record<string, number>; moodEmoji: string[]; myName: string;
 }) {
-  const h = makeHub(lang);
   const [savedId, setSavedId] = useState<string | null>(readHero);
   const [saved, setTab] = useStored<Tab>("dn.pairTab", "today");
   const tab: Tab = TABS.some((x) => x.id === saved) ? saved : "today";
@@ -47,6 +47,7 @@ export default function PairHub({ userId, lang, friends, me, sleep, moods, moodE
   const [kinds, setKinds] = useState<Record<string, PairKind>>({});
   const [choosing, setChoosing] = useState(false);
   const kind: PairKind = partner ? (kinds[partner.id] ?? readKind(partner.id)) : "friend";
+  const h = makeHub(lang, kind);
   const meta = kindMeta(kind);
   const setKind = (k: PairKind) => { if (partner) { writeKind(partner.id, k); setKinds((m) => ({ ...m, [partner.id]: k })); } setChoosing(false); };
   const opts = friends.map((f) => ({ id: f.id, name: f.name }));
@@ -57,6 +58,7 @@ export default function PairHub({ userId, lang, friends, me, sleep, moods, moodE
   }
 
   return (
+    <PairKindContext.Provider value={kind}>
     <div className="mx-auto w-full max-w-2xl">
       {friends.length > 1 && (
         <div className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1" role="tablist" aria-label={h("pick")}>
@@ -145,5 +147,6 @@ export default function PairHub({ userId, lang, friends, me, sleep, moods, moodE
         )}
       </div>
     </div>
+    </PairKindContext.Provider>
   );
 }
