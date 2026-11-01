@@ -53,7 +53,7 @@ export default function Breathing({ lang }: { lang: Lang }) {
                 <div className="text-[26px] font-bold tabular-nums">{left}</div>
               </div>
             ) : (
-              <div className="px-3 text-[13px] font-semibold text-[var(--ink-soft)]">{finished ? `✨ ${f("done")}` : "🌿"}</div>
+              <div className="px-3 text-center">{finished ? <><div className="text-[30px] leading-none">✨</div><div className="mt-1 text-[13px] font-semibold text-[var(--ink-soft)]">{f("done")}</div></> : <div aria-hidden className="text-[44px] leading-none">🌿</div>}</div>
             )}
           </div>
         </div>
