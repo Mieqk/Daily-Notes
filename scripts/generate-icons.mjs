@@ -92,4 +92,5 @@ await png("public/favicon.svg", "public/favicon-32.png", 32, true);
 await png(I + "icon-foreground.svg", I + "android-foreground-432.png", 432, true);
 await png(I + "icon-background.svg", I + "android-background-432.png", 432);
 await browser.close();
+// eslint-disable-next-line no-undef
 process.stdout.write("Иконки сгенерированы\n");
