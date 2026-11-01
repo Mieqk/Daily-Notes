@@ -19,7 +19,10 @@ export default async function handler(req, res) {
   const { data: auth } = await admin.auth.getUser(token);
   if (!auth?.user?.id) return res.status(401).json({ error: "unauthorized" });
 
-  const { METERED_DOMAIN, METERED_API_KEY, TURN_URLS, TURN_USERNAME, TURN_CREDENTIAL } = process.env;
+  const { TURN_URLS, TURN_USERNAME, TURN_CREDENTIAL } = process.env;
+  // Терпим типичные ошибки при вводе: пробелы, "https://" и слэш в конце адреса
+  const METERED_DOMAIN = (process.env.METERED_DOMAIN || "").trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+  const METERED_API_KEY = (process.env.METERED_API_KEY || "").trim();
   try {
     if (METERED_DOMAIN && METERED_API_KEY) {
       const r = await fetch(`https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${encodeURIComponent(METERED_API_KEY)}`);
