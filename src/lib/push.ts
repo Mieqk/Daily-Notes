@@ -80,3 +80,21 @@ export async function sendPushEvent(kind: "gratitude" | "sos" | "chat" | "call" 
 }
 
 export const PUSH_SYNC_EVENT = "dn-push-sync";
+
+/** Тестовый пуш себе через сервер: показывает, что подписка есть и фоновая доставка работает. Возвращает число отправленных. */
+export async function testPush(userId: string, s: PushSettings): Promise<number> {
+  if (!supabase || !pushSupported() || Notification.permission !== "granted") return 0;
+  if (!(await syncPush(userId, s, true))) return 0;
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return 0;
+    const res = await fetch("/api/push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ kind: "test" }),
+    });
+    if (!res.ok) return 0;
+    return Number((await res.json()).sent) || 0;
+  } catch { return 0; }
+}
