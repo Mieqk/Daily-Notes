@@ -12,7 +12,9 @@ import { todayISO } from "../store";
 interface Reminder { time: string; enabled: boolean }
 
 /** Ежедневное напоминание и уведомления о благодарностях и SOS друзей. Пока приложение открыто, показывает их сам; при закрытом их присылает сервер (web-push). */
-export function useNotifications(userId: string | null, lang: Lang, reminder: Reminder) {
+export function useNotifications(userId: string | null, lang: Lang, reminder: Reminder, wroteToday: () => boolean = () => false) {
+  const wroteRef = useRef(wroteToday);
+  wroteRef.current = wroteToday;
   const s = makeSocial(lang);
   const sRef = useRef(s);
   sRef.current = s;
@@ -34,6 +36,7 @@ export function useNotifications(userId: string | null, lang: Lang, reminder: Re
       try { last = localStorage.getItem("dn.reminderFired"); } catch { /* ignore */ }
       if (last === today) return;
       try { localStorage.setItem("dn.reminderFired", today); } catch { /* ignore */ }
+      if (wroteRef.current()) return; // запись за сегодня уже есть: как и сервер, не напоминаем
       notify(sRef.current("ntReminder"), sRef.current("ntReminderBody"), "dn-reminder");
     };
     tick();
@@ -44,11 +47,15 @@ export function useNotifications(userId: string | null, lang: Lang, reminder: Re
   // Фоновые пуши: держим подписку и её настройки (язык, время напоминания) в Supabase актуальными
   useEffect(() => {
     if (!userId) return;
-    const sync = () => { syncPush(userId, { lang, reminderEnabled: reminder.enabled, reminderTime: reminder.time }); };
+    // create: разрешение уже выдано человеком, поэтому подписку создаём сами (и пересоздаём, если браузер её сбросил)
+    const sync = () => { void syncPush(userId, { lang, reminderEnabled: reminder.enabled, reminderTime: reminder.time }, true); };
+    const onVis = () => { if (!document.hidden) sync(); };
     sync();
     window.addEventListener(PUSH_SYNC_EVENT, sync);
     window.addEventListener(PRESENCE_MODE_EVENT, sync);
+    document.addEventListener("visibilitychange", onVis);
     return () => {
+      document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener(PUSH_SYNC_EVENT, sync);
       window.removeEventListener(PRESENCE_MODE_EVENT, sync);
     };

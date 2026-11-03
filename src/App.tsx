@@ -130,7 +130,7 @@ export default function App() {
   const localRef = useRef({ notes, tasks, moods, tags, photos, sleep });
   localRef.current = { notes, tasks, moods, tags, photos, sleep };
 
-  useNotifications(userId, lang, reminder);
+  useNotifications(userId, lang, reminder, () => Boolean((localRef.current.notes[todayISO()] ?? "").trim()));
   const chatUnread = useChatUnread(userId);
   const call = useCalls(userId, lang);
   useEffect(() => (userId ? startPresenceHeartbeat(userId) : undefined), [userId]);

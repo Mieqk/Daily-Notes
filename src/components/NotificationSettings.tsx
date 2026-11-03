@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Lang } from "../i18n";
 import { friendNotificationsEnabled, notificationPermission, notify, requestNotifications, setFriendNotifications } from "../lib/notify";
-import { PUSH_SYNC_EVENT, pushSupported } from "../lib/push";
+import { PUSH_SYNC_EVENT, pushSupported, testPush } from "../lib/push";
 import { makeSocial } from "../social-strings";
 import { makePwa } from "../pwa-strings";
 import { needsIosInstall } from "../lib/pwa";
@@ -9,11 +9,13 @@ import { isNativeApp } from "../lib/nativeAuth";
 import IosInstallGuide from "./IosInstallGuide";
 
 /** Карточка настроек уведомлений: разрешение браузера, вести от друзей, проверка. */
-export default function NotificationSettings({ lang, signedIn }: { lang: Lang; signedIn: boolean }) {
+export default function NotificationSettings({ lang, signedIn, userId }: { lang: Lang; signedIn: boolean; userId?: string | null }) {
   const s = makeSocial(lang);
   const [perm, setPerm] = useState(notificationPermission());
   const [friends, setFriends] = useState(friendNotificationsEnabled());
   const [guide, setGuide] = useState(false);
+  const [pushMsg, setPushMsg] = useState<string | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
   const iosNeedsInstall = needsIosInstall();
   const pwa = makePwa(lang);
   const nativeNoApi = perm === "unsupported" && isNativeApp();
@@ -21,6 +23,15 @@ export default function NotificationSettings({ lang, signedIn }: { lang: Lang; s
   const enable = async () => {
     setPerm(await requestNotifications());
     window.dispatchEvent(new Event(PUSH_SYNC_EVENT));
+  };
+  const checkPush = async () => {
+    if (!userId) return;
+    setPushBusy(true); setPushMsg(null);
+    let reminder = { enabled: false, time: "20:00" };
+    try { const r = JSON.parse(localStorage.getItem("dn.reminder") ?? "null"); if (r && typeof r.time === "string") reminder = { enabled: r.enabled === true, time: r.time }; } catch { /* ignore */ }
+    const n = await testPush(userId, { lang, reminderEnabled: reminder.enabled, reminderTime: reminder.time });
+    setPushMsg(n > 0 ? s("ntPushSent") : s("ntPushFail"));
+    setPushBusy(false);
   };
   const toggleFriends = () => { const next = !friends; setFriends(next); setFriendNotifications(next); window.dispatchEvent(new Event(PUSH_SYNC_EVENT)); };
 
@@ -42,7 +53,11 @@ export default function NotificationSettings({ lang, signedIn }: { lang: Lang; s
         {perm === "granted" && (
           <button onClick={() => notify(s("ntTitle"), s("ntOn"), "dn-test")} className="h-10 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-4 text-[13px] font-semibold transition-all hover:border-[var(--accent)] active:scale-95">{s("ntTest")}</button>
         )}
+        {perm === "granted" && signedIn && userId && pushSupported() && (
+          <button onClick={checkPush} disabled={pushBusy} className="h-10 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-4 text-[13px] font-semibold transition-all hover:border-[var(--accent)] active:scale-95 disabled:opacity-50">{s("ntPushTest")}</button>
+        )}
       </div>
+      {pushMsg && <p className="mt-2 text-[12.5px] text-[var(--ink-soft)]" role="status">{pushMsg}</p>}
 
       {signedIn && perm === "granted" && (
         <div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-[var(--hover)] px-3 py-2.5">

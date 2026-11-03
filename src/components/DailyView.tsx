@@ -1,4 +1,5 @@
 import { requestNotifications } from "../lib/notify";
+import { makeSocial } from "../social-strings";
 import QuickReminders from "./QuickReminders";
 import { useSwipe } from "../hooks/useSwipe";
 import { useEffect, useRef, useState } from "react";
@@ -556,7 +557,7 @@ useSwipe({
                 <div className="text-[13.5px] font-bold">{t("reminderTitle")}</div>
                 <div className="text-[11px] text-[var(--ink-faint)]">{t("reminderSub")}</div>
               </div>
-              <button onClick={() => { if (!reminder.enabled) requestNotifications(); setReminder((r) => ({ ...r, enabled: !r.enabled })); }} className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 ${reminder.enabled ? "bg-[var(--accent)]" : "bg-[var(--hover)]"}`} role="switch" aria-checked={reminder.enabled}>
+              <button onClick={() => { if (!reminder.enabled) void requestNotifications().then((p) => { if (p === "denied" || p === "unsupported") showToast(makeSocial(lang)(p === "denied" ? "ntDenied" : "ntUnsupported")); }); setReminder((r) => ({ ...r, enabled: !r.enabled })); }} className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 ${reminder.enabled ? "bg-[var(--accent)]" : "bg-[var(--hover)]"}`} role="switch" aria-checked={reminder.enabled}>
                 <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-[var(--panel-2)] shadow transition-all duration-200 ${reminder.enabled ? "left-[22px]" : "left-0.5"}`} />
               </button>
             </div>

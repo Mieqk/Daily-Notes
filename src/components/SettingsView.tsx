@@ -571,7 +571,7 @@ export default function SettingsView(props: SettingsViewProps) {
         <StatsVisibility lang={lang} />
 
         {/* Privacy */}
-        <NotificationSettings lang={lang} signedIn={Boolean(user)} />
+        <NotificationSettings lang={lang} signedIn={Boolean(user)} userId={user?.id ?? null} />
         <PlaceReminders lang={lang} showToast={showToast} />
         <GoogleCalendarSettings lang={lang} signedIn={Boolean(user)} tasks={tasks} showToast={showToast} />
 

@@ -1,4 +1,4 @@
-// POST /api/push { kind: "gratitude" | "sos" | "chat" | "call" | "touch", id }  +  Authorization: Bearer <JWT пользователя>
+// POST /api/push { kind: "gratitude" | "sos" | "chat" | "call" | "touch", id }  или { kind: "test" } (тестовый пуш себе)  +  Authorization: Bearer <JWT пользователя>
 // Рассылает фоновый web-push адресату благодарности или сообщения чата либо друзьям автора SOS-сигнала.
 import { config, sendMany, tr } from "./_push.js";
 
@@ -15,6 +15,7 @@ function tooMany(key, max = MAX_PER_WINDOW) {
   return list.length > max;
 }
 
+const TEST_BODY = { ru: "Пуши работают ✅", en: "Push works ✅", be: "Пушы працуюць ✅", uk: "Пуші працюють ✅", de: "Push funktioniert ✅", fr: "Le push fonctionne ✅", es: "Los push funcionan ✅" };
 const FRESH_MS = 10 * 60_000;
 const CALL_FRESH_MS = 60_000; // звонок, который не ответили минуту назад, уже не актуален
 
@@ -31,6 +32,13 @@ export default async function handler(req, res) {
   if (!me) return res.status(401).json({ error: "unauthorized" });
 
   const { kind, id } = req.body || {};
+  // Проверка пуша: присылает тестовое уведомление на устройства самого вызывающего
+  if (kind === "test") {
+    if (tooMany(`${me}:test`, 5)) return res.status(429).json({ error: "too many requests" });
+    const { data: mine } = await admin.from("push_subscriptions").select("*").eq("user_id", me);
+    const sent = await sendMany(admin, (mine || []).map((sub) => [sub, { title: "🔔 Daily Note", body: TEST_BODY[String(sub.lang).slice(0, 2)] || TEST_BODY.en, tag: "dn-test" }]));
+    return res.status(200).json({ sent, devices: (mine || []).length });
+  }
   if ((kind !== "gratitude" && kind !== "sos" && kind !== "chat" && kind !== "call" && kind !== "touch") || typeof id !== "string" || id.length > 64) {
     return res.status(400).json({ error: "bad request" });
   }
