@@ -6,7 +6,7 @@ import type { ThemeId } from '../themes';
 import { THEMES } from '../themes';
 import type { Lang } from '../i18n';
 import { makeUI } from '../ui-strings';
-import { isNativeApp, signInWithGoogleNative, nativeEnv, NATIVE_AUTH_ERROR, NATIVE_AUTH_LOG } from '../lib/nativeAuth';
+import { isNativeApp, isDesktopApp, signInWithGoogleNative, nativeEnv, NATIVE_AUTH_ERROR, NATIVE_AUTH_LOG } from '../lib/nativeAuth';
 
 interface AuthScreenProps {
   onContinueLocally: () => void;
@@ -76,7 +76,7 @@ export default function AuthScreen({ onContinueLocally, theme, onTheme, embedded
     }
     setError(null);
     setLoading(true);
-    if (isNativeApp()) {
+    if (isNativeApp() || isDesktopApp()) {
       const nativeError = await signInWithGoogleNative();
       if (nativeError) setError(friendly(nativeError));
       setLoading(false);

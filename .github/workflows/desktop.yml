@@ -1,0 +1,58 @@
+# Собирает приложение для ПК (Electron над сайтом): установщик Windows, DMG для macOS, AppImage для Linux.
+# Запуск: git tag v1.0.0 && git push origin v1.0.0 (или вручную: Actions → Desktop → Run workflow).
+# Файлы добавляются в тот же релиз, что и APK. Подробности — в README, раздел «Приложение для ПК».
+name: Desktop
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Версия для ручного запуска, например 1.0.0"
+        required: false
+        default: "0.0.0"
+permissions:
+  contents: write
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Version and icon
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then V="${{ github.event.inputs.version || '0.0.0' }}"; fi
+          npm version "$V" --no-git-tag-version --allow-same-version
+          mkdir -p build
+          cp ../public/icons/icon-512.png build/icon.png
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Build installer
+        run: npx electron-builder --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: |
+            desktop/dist/*.exe
+            desktop/dist/*.dmg
+            desktop/dist/*.AppImage
+      - name: Attach to release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop/dist/*.exe
+            desktop/dist/*.dmg
+            desktop/dist/*.AppImage

@@ -5,7 +5,7 @@ import globals from 'globals';
 
 // Правила мягкие: цель — ловить настоящие ошибки, а не переписывать код ради стиля.
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'android', 'ios', 'public', 'screenshots'] },
+  { ignores: ['desktop','dist', 'node_modules', 'android', 'ios', 'public', 'screenshots'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

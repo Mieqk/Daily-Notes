@@ -1,0 +1,30 @@
+{
+  "name": "daily-notes-desktop",
+  "productName": "Daily Note",
+  "version": "1.0.0",
+  "description": "Daily Note для ПК: обёртка Electron над сайтом",
+  "main": "main.js",
+  "author": "Mieqk",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "io.vercel.dailynotes.desktop",
+    "productName": "Daily Note",
+    "artifactName": "Daily-Note-${version}-${os}-${arch}.${ext}",
+    "directories": { "buildResources": "build", "output": "dist" },
+    "files": ["main.js", "preload.js", "package.json"],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "build/icon.png" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
+    "mac": { "target": [{ "target": "dmg", "arch": ["universal"] }], "category": "public.app-category.productivity", "icon": "build/icon.png", "identity": null },
+    "linux": { "target": ["AppImage"], "category": "Office", "icon": "build/icon.png" },
+    "protocols": [{ "name": "Daily Note", "schemes": ["io.vercel.dailynotes"] }]
+  }
+}
