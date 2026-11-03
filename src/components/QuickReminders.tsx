@@ -3,10 +3,11 @@ import type { Lang } from "../i18n";
 import { BellIcon } from "../icons";
 import { DEFAULT_DELAY_MS, MAX_QUICK, MAX_QUICK_TEXT, QUICK_EVENT, loadQuick, newQuick, parseQuick, presets, saveQuick, type PresetId, type QuickReminder } from "../lib/quickRemind";
 import { requestNotifications } from "../lib/notify";
+import { cancelQuickPush, scheduleQuickPush } from "../lib/quickPush";
 import { makeQuick, whenLabel } from "../quick-remind-strings";
 
 /** Карточка «Быстрое напоминание» на экране дня: одна строка, время из текста или одна кнопка. */
-export default function QuickReminders({ lang, showToast }: { lang: Lang; showToast: (msg: string) => void }) {
+export default function QuickReminders({ lang, showToast, userId, reminder }: { lang: Lang; showToast: (msg: string) => void; userId: string | null; reminder: { time: string; enabled: boolean } }) {
   const q = makeQuick(lang);
   const [list, setList] = useState<QuickReminder[]>(loadQuick);
   const [text, setText] = useState("");
@@ -27,14 +28,15 @@ export default function QuickReminders({ lang, showToast }: { lang: Lang; showTo
     const clean = parsed.text.trim();
     if (!clean) { showToast(q("empty")); return; }
     if (list.filter((r) => !r.done).length >= MAX_QUICK) { showToast(q("limit", { n: MAX_QUICK })); return; }
-    const next = [...list, newQuick(clean, at)].sort((a, b) => a.at - b.at);
+    const item = newQuick(clean, at);
+    const next = [...list, item].sort((a, b) => a.at - b.at);
     saveQuick(next);
     setList(next);
     setText("");
-    void requestNotifications();
+    void requestNotifications().then(() => scheduleQuickPush(userId, item, { lang, reminderEnabled: reminder.enabled, reminderTime: reminder.time }));
     showToast(q("saved", { when: whenLabel(lang, at, Date.now()) }));
   };
-  const remove = (id: string) => { const next = list.filter((r) => r.id !== id); saveQuick(next); setList(next); };
+  const remove = (id: string) => { void cancelQuickPush(id); const next = list.filter((r) => r.id !== id); saveQuick(next); setList(next); };
 
   const preset = (id: PresetId) => create(btns.find((b) => b.id === id)!.at);
   const visible = [...list].sort((a, b) => Number(a.done) - Number(b.done) || a.at - b.at);

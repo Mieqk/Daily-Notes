@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Lang } from "../i18n";
 import { notify } from "../lib/notify";
+import { cancelQuickPush } from "../lib/quickPush";
 import { QUICK_EVENT, dueQuick, loadQuick, saveQuick } from "../lib/quickRemind";
 import { makeQuick } from "../quick-remind-strings";
 
@@ -23,6 +24,7 @@ export function useQuickReminders(lang: Lang, showToast: (msg: string) => void) 
       for (const r of fire) {
         void notify(`⏰ ${q("fired")}`, r.text, `dn-quick-${r.id}`);
         toastRef.current(`⏰ ${r.text}`);
+        void cancelQuickPush(r.id); // приложение открыто и показало само: серверный пуш не нужен
       }
     };
     tick();

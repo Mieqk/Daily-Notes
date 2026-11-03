@@ -547,7 +547,7 @@ useSwipe({
             bumpStatus();
           }} />
 
-          <QuickReminders lang={lang} showToast={showToast} />
+          <QuickReminders lang={lang} showToast={showToast} userId={userId} reminder={reminder} />
 
           <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
             <div className="flex items-center gap-3">

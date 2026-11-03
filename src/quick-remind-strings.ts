@@ -9,7 +9,7 @@ const ru = {
   today: "сегодня", tmrw: "завтра", atTime: "в {time}",
   saved: "Напомню {when}", empty: "Сначала напишите, что напомнить", limit: "Можно до {n} напоминаний",
   delete: "Удалить", done: "Сработало", fired: "Напоминание",
-  note: "Напоминания хранятся только на этом устройстве. Они приходят, пока приложение открыто или свёрнуто, но не выгружено из памяти. Если приложение было закрыто, напоминание покажется при следующем открытии.",
+  note: "Напоминания хранятся на этом устройстве. Если вы вошли в аккаунт и разрешили уведомления, текст и время отправляются на сервер, и напоминание приходит пушем, даже когда приложение закрыто (с точностью до пяти минут). Без входа оно сработает, пока приложение открыто или свёрнуто, а закрытое покажет его при следующем открытии.",
 };
 type Strings = typeof ru;
 
@@ -21,7 +21,7 @@ const en: Strings = {
   today: "today", tmrw: "tomorrow", atTime: "at {time}",
   saved: "I'll remind you {when}", empty: "First write what to remind", limit: "Up to {n} reminders",
   delete: "Delete", done: "Done", fired: "Reminder",
-  note: "Reminders are stored only on this device. They arrive while the app is open, or minimised but not unloaded. If the app was closed, the reminder shows the next time you open it.",
+  note: "Reminders are stored on this device. If you are signed in and have allowed notifications, the text and time are sent to the server and the reminder arrives as a push even when the app is closed (accurate to about five minutes). Without signing in it fires while the app is open or minimised, and a closed app shows it the next time you open it.",
 };
 
 const be: Strings = {
@@ -32,7 +32,7 @@ const be: Strings = {
   today: "сёння", tmrw: "заўтра", atTime: "у {time}",
   saved: "Нагадаю {when}", empty: "Спачатку напішыце, што нагадаць", limit: "Можна да {n} напамінкаў",
   delete: "Выдаліць", done: "Спрацавала", fired: "Напамін",
-  note: "Напаміны захоўваюцца толькі на гэтай прыладзе. Яны прыходзяць, пакуль праграма адкрытая або згорнутая, але не выгружаная з памяці. Калі праграма была закрытая, напамін пакажацца пры наступным адкрыцці.",
+  note: "Напаміны захоўваюцца на гэтай прыладзе. Калі вы ўвайшлі ў акаунт і дазволілі апавяшчэнні, тэкст і час адпраўляюцца на сервер, і напамінак прыходзіць пушам, нават калі праграма закрытая (з дакладнасцю да пяці хвілін). Без уваходу ён спрацуе, пакуль праграма адкрытая або згорнутая, а закрытая пакажа яго пры наступным адкрыцці.",
 };
 
 const uk: Strings = {
@@ -43,7 +43,7 @@ const uk: Strings = {
   today: "сьогодні", tmrw: "завтра", atTime: "о {time}",
   saved: "Нагадаю {when}", empty: "Спочатку напишіть, що нагадати", limit: "Можна до {n} нагадувань",
   delete: "Видалити", done: "Спрацювало", fired: "Нагадування",
-  note: "Нагадування зберігаються лише на цьому пристрої. Вони приходять, поки застосунок відкритий або згорнутий, але не вивантажений з пам’яті. Якщо застосунок був закритий, нагадування покажеться під час наступного відкриття.",
+  note: "Нагадування зберігаються на цьому пристрої. Якщо ви увійшли в акаунт і дозволили сповіщення, текст і час надсилаються на сервер, і нагадування приходить пушем, навіть коли застосунок закритий (з точністю до п’яти хвилин). Без входу воно спрацює, поки застосунок відкритий або згорнутий, а закритий покаже його під час наступного відкриття.",
 };
 
 const de: Strings = {
@@ -54,7 +54,7 @@ const de: Strings = {
   today: "heute", tmrw: "morgen", atTime: "um {time}",
   saved: "Ich erinnere dich {when}", empty: "Schreibe zuerst, woran erinnert werden soll", limit: "Bis zu {n} Erinnerungen",
   delete: "Löschen", done: "Erledigt", fired: "Erinnerung",
-  note: "Erinnerungen werden nur auf diesem Gerät gespeichert. Sie kommen, solange die App offen oder minimiert, aber nicht aus dem Speicher entladen ist. War die App geschlossen, erscheint die Erinnerung beim nächsten Öffnen.",
+  note: "Erinnerungen werden auf diesem Gerät gespeichert. Bist du angemeldet und hast Benachrichtigungen erlaubt, werden Text und Zeit an den Server gesendet, und die Erinnerung kommt als Push, auch wenn die App geschlossen ist (auf etwa fünf Minuten genau). Ohne Anmeldung greift sie, solange die App offen oder minimiert ist, sonst beim nächsten Öffnen.",
 };
 
 const fr: Strings = {
@@ -65,7 +65,7 @@ const fr: Strings = {
   today: "aujourd’hui", tmrw: "demain", atTime: "à {time}",
   saved: "Je te rappellerai {when}", empty: "Écris d’abord quoi rappeler", limit: "Jusqu’à {n} rappels",
   delete: "Supprimer", done: "Fait", fired: "Rappel",
-  note: "Les rappels sont stockés uniquement sur cet appareil. Ils arrivent tant que l’appli est ouverte, ou réduite mais pas déchargée de la mémoire. Si l’appli était fermée, le rappel s’affiche à la prochaine ouverture.",
+  note: "Les rappels sont stockés sur cet appareil. Si tu es connecté et as autorisé les notifications, le texte et l’heure sont envoyés au serveur et le rappel arrive en push même quand l’appli est fermée (à cinq minutes près). Sans connexion, il se déclenche tant que l’appli est ouverte ou réduite, sinon à la prochaine ouverture.",
 };
 
 const es: Strings = {
@@ -76,7 +76,7 @@ const es: Strings = {
   today: "hoy", tmrw: "mañana", atTime: "a las {time}",
   saved: "Te lo recordaré {when}", empty: "Primero escribe qué recordar", limit: "Hasta {n} recordatorios",
   delete: "Eliminar", done: "Hecho", fired: "Recordatorio",
-  note: "Los recordatorios se guardan solo en este dispositivo. Llegan mientras la app está abierta, o minimizada pero no descargada de la memoria. Si la app estaba cerrada, el recordatorio aparece la próxima vez que la abras.",
+  note: "Los recordatorios se guardan en este dispositivo. Si has iniciado sesión y permitido las notificaciones, el texto y la hora se envían al servidor y el recordatorio llega como push aunque la app esté cerrada (con precisión de unos cinco minutos). Sin iniciar sesión, salta mientras la app está abierta o minimizada, o la próxima vez que la abras.",
 };
 
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };
