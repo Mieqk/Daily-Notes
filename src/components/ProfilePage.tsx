@@ -51,7 +51,7 @@ const L: Record<string, Record<string, string>> = {
     save: "Сохранить", cancel: "Отмена",
     bannerChange: "Сменить баннер", upload: "Загрузить фото", emojiPick: "Эмодзи",
     removeImg: "Убрать фото", uploading: "Загрузка…",
-    imgErr: "Не удалось загрузить изображение", imgTooBig: "Файл слишком большой (до 8 МБ)",
+    imgErr: "Не удалось загрузить изображение", imgTooBig: "Файл слишком большой (до 8 МБ)", imgAnimBig: "Анимация слишком тяжёлая (GIF/WebP: аватар до 3 МБ, баннер до 6 МБ)",
     imgNotImage: "Это не изображение", saved: "Сохранено",
     code: "Мой код друга", copy: "Копировать", copied: "Скопировано!",
     info: "Сводка", streak: "серия", notes: "заметок",
@@ -68,7 +68,7 @@ const L: Record<string, Record<string, string>> = {
     save: "Save", cancel: "Cancel",
     bannerChange: "Change banner", upload: "Upload photo", emojiPick: "Emoji",
     removeImg: "Remove photo", uploading: "Uploading…",
-    imgErr: "Failed to upload image", imgTooBig: "File is too big (max 8 MB)",
+    imgErr: "Failed to upload image", imgTooBig: "File is too big (max 8 MB)", imgAnimBig: "Animation is too big (GIF/WebP: avatar up to 3 MB, banner up to 6 MB)",
     imgNotImage: "Not an image", saved: "Saved",
     code: "My friend code", copy: "Copy", copied: "Copied!",
     info: "Summary", streak: "streak", notes: "notes",
@@ -85,7 +85,7 @@ const L: Record<string, Record<string, string>> = {
     save: "Захаваць", cancel: "Адмена",
     bannerChange: "Змяніць банер", upload: "Загрузіць фота", emojiPick: "Эмодзі",
     removeImg: "Прыбраць фота", uploading: "Загрузка…",
-    imgErr: "Не атрымалася загрузіць відарыс", imgTooBig: "Файл занадта вялікі (да 8 МБ)",
+    imgErr: "Не атрымалася загрузіць відарыс", imgTooBig: "Файл занадта вялікі (да 8 МБ)", imgAnimBig: "Анімацыя занадта цяжкая (GIF/WebP: аватар да 3 МБ, банер да 6 МБ)",
     imgNotImage: "Гэта не відарыс", saved: "Захавана",
     code: "Мой код сябра", copy: "Капіраваць", copied: "Скапіравана!",
     info: "Зводка", streak: "серыя", notes: "нататак",
@@ -102,7 +102,7 @@ const L: Record<string, Record<string, string>> = {
     save: "Зберегти", cancel: "Скасувати",
     bannerChange: "Змінити банер", upload: "Завантажити фото", emojiPick: "Емодзі",
     removeImg: "Прибрати фото", uploading: "Завантаження…",
-    imgErr: "Не вдалося завантажити зображення", imgTooBig: "Файл завеликий (до 8 МБ)",
+    imgErr: "Не вдалося завантажити зображення", imgTooBig: "Файл завеликий (до 8 МБ)", imgAnimBig: "Анімація занадто важка (GIF/WebP: аватар до 3 МБ, банер до 6 МБ)",
     imgNotImage: "Це не зображення", saved: "Збережено",
     code: "Мій код друга", copy: "Копіювати", copied: "Скопійовано!",
     info: "Зведення", streak: "серія", notes: "нотаток",
@@ -119,7 +119,7 @@ const L: Record<string, Record<string, string>> = {
     save: "Speichern", cancel: "Abbrechen",
     bannerChange: "Banner ändern", upload: "Foto hochladen", emojiPick: "Emoji",
     removeImg: "Foto entfernen", uploading: "Wird hochgeladen…",
-    imgErr: "Bild konnte nicht hochgeladen werden", imgTooBig: "Datei ist zu groß (max. 8 MB)",
+    imgErr: "Bild konnte nicht hochgeladen werden", imgTooBig: "Datei ist zu groß (max. 8 MB)", imgAnimBig: "Animation ist zu groß (GIF/WebP: Avatar bis 3 MB, Banner bis 6 MB)",
     imgNotImage: "Das ist kein Bild", saved: "Gespeichert",
     code: "Mein Freundescode", copy: "Kopieren", copied: "Kopiert!",
     info: "Übersicht", streak: "Serie", notes: "Notizen",
@@ -136,7 +136,7 @@ const L: Record<string, Record<string, string>> = {
     save: "Enregistrer", cancel: "Annuler",
     bannerChange: "Changer la bannière", upload: "Importer une photo", emojiPick: "Émoji",
     removeImg: "Retirer la photo", uploading: "Importation…",
-    imgErr: "Échec de l'importation de l'image", imgTooBig: "Fichier trop volumineux (8 Mo max.)",
+    imgErr: "Échec de l'importation de l'image", imgTooBig: "Fichier trop volumineux (8 Mo max.)", imgAnimBig: "Animation trop lourde (GIF/WebP : avatar 3 Mo max., bannière 6 Mo max.)",
     imgNotImage: "Ce n'est pas une image", saved: "Enregistré",
     code: "Mon code ami", copy: "Copier", copied: "Copié !",
     info: "Résumé", streak: "série", notes: "notes",
@@ -153,7 +153,7 @@ const L: Record<string, Record<string, string>> = {
     save: "Guardar", cancel: "Cancelar",
     bannerChange: "Cambiar banner", upload: "Subir foto", emojiPick: "Emoji",
     removeImg: "Quitar foto", uploading: "Subiendo…",
-    imgErr: "No se pudo subir la imagen", imgTooBig: "El archivo es demasiado grande (máx. 8 MB)",
+    imgErr: "No se pudo subir la imagen", imgTooBig: "El archivo es demasiado grande (máx. 8 MB)", imgAnimBig: "La animación es demasiado pesada (GIF/WebP: avatar hasta 3 MB, banner hasta 6 MB)",
     imgNotImage: "No es una imagen", saved: "Guardado",
     code: "Mi código de amigo", copy: "Copiar", copied: "¡Copiado!",
     info: "Resumen", streak: "racha", notes: "notas",
@@ -232,7 +232,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
       setMsg({ kind: "ok", text: t("saved") });
     } catch (err) {
       const m = err instanceof Error ? err.message : "imgErr";
-      setMsg({ kind: "err", text: m === "too-big" ? t("imgTooBig") : m === "not-image" ? t("imgNotImage") : t("imgErr") });
+      setMsg({ kind: "err", text: m === "too-big" ? t("imgTooBig") : m === "anim-too-big" ? t("imgAnimBig") : m === "not-image" ? t("imgNotImage") : t("imgErr") });
     }
     setBusy(null);
   };
