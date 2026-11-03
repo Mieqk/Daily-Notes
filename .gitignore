@@ -69,3 +69,8 @@ Thumbs.db
 *.tar.bz2
 *.tar.xz
 *.tar.zst
+
+# Приложение для ПК
+desktop/node_modules/
+desktop/dist/
+desktop/build/

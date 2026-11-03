@@ -8,7 +8,7 @@ const { auth } = vi.hoisted(() => ({ auth: {
 } }));
 vi.mock('./supabase', () => ({ supabase: { auth } }));
 
-import { NATIVE_AUTH_ERROR, NATIVE_REDIRECT, initNativeAuthListener, isNativeApp, signInWithGoogleNative } from './nativeAuth';
+import { NATIVE_AUTH_ERROR, NATIVE_REDIRECT, initNativeAuthListener, isDesktopApp, isNativeApp, signInWithGoogleNative } from './nativeAuth';
 
 type UrlHandler = (e: { url: string }) => unknown;
 let onUrl: UrlHandler | null;
@@ -146,5 +146,25 @@ describe('signInWithGoogleNative', () => {
   it('исключение превращается в текст', async () => {
     auth.signInWithOAuth.mockRejectedValueOnce(new Error('network'));
     expect(await signInWithGoogleNative()).toBe('network');
+  });
+});
+
+describe('приложение для ПК (Electron)', () => {
+  afterEach(() => { delete (window as any).dailyNotesDesktop; });
+
+  it('вход открывает ссылку через мост, а ссылка возврата входит в аккаунт', async () => {
+    let cb: ((url: string) => void) | null = null;
+    const openExternal = vi.fn(async () => {});
+    (window as any).dailyNotesDesktop = { openExternal, onUrl: (f: (url: string) => void) => { cb = f; return () => { cb = null; }; } };
+    delete (window as any).Capacitor;
+    expect(isDesktopApp()).toBe(true);
+    expect(await signInWithGoogleNative()).toBeNull();
+    expect(openExternal).toHaveBeenCalledWith('https://accounts.example/auth');
+    const stop = initNativeAuthListener();
+    cb!(`${NATIVE_REDIRECT}#access_token=AT&refresh_token=RT`);
+    await flush();
+    expect(auth.setSession).toHaveBeenCalledWith({ access_token: 'AT', refresh_token: 'RT' });
+    stop();
+    expect(cb).toBeNull();
   });
 });

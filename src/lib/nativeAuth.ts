@@ -43,6 +43,17 @@ export const isNativeApp = () => {
   return Boolean(cap()?.isNativePlatform?.() || w.androidBridge);
 };
 
+/** Мост десктопной обёртки (Electron, папка desktop/): preload кладёт его в window.dailyNotesDesktop. */
+interface DesktopBridge {
+  openExternal: (url: string) => Promise<void> | void;
+  onUrl: (cb: (url: string) => void) => () => void;
+  getLaunchUrl?: () => Promise<string | null>;
+}
+const desktopBridge = (): DesktopBridge | undefined => (window as unknown as { dailyNotesDesktop?: DesktopBridge }).dailyNotesDesktop;
+
+/** Страница открыта в приложении для ПК (Electron), а не в браузере. */
+export const isDesktopApp = () => Boolean(desktopBridge()?.openExternal);
+
 /** Признаки окружения для строки диагностики на экране входа (на телефоне нет консоли). */
 export function nativeEnv(): string {
   const w = window as unknown as { androidBridge?: unknown };
@@ -60,6 +71,12 @@ export async function signInWithGoogleNative(): Promise<string | null> {
       options: { redirectTo: NATIVE_REDIRECT, skipBrowserRedirect: true },
     });
     if (error || !data?.url) return error?.message ?? 'No OAuth url';
+    const desktop = desktopBridge();
+    if (desktop?.openExternal) {
+      await desktop.openExternal(data.url);
+      nativeLog('вход: браузер открыт (ПК)');
+      return null;
+    }
     try {
       await callNative('Browser', 'open', { url: data.url });
       nativeLog('вход: браузер открыт');
@@ -77,7 +94,8 @@ export async function signInWithGoogleNative(): Promise<string | null> {
 /** Ловит возврат из браузера по ссылке io.vercel.dailynotes://auth#access_token=… и входит в аккаунт. */
 export function initNativeAuthListener(): () => void {
   const c = cap();
-  if (!isNativeApp() || !supabase) return () => {};
+  const desktop = desktopBridge();
+  if (!(isNativeApp() || desktop?.onUrl) || !supabase) return () => {};
   const client = supabase;
   nativeLog(`слушатель: addListener=${typeof c?.addListener}, nativePromise=${typeof c?.nativePromise}`);
   const onVisible = () => { if (document.visibilityState === 'visible') nativeLog('приложение снова на экране'); };
@@ -105,9 +123,14 @@ export function initNativeAuthListener(): () => void {
     } catch (e) {
       fail(e instanceof Error ? e.message : String(e));
     } finally {
-      await callNative('Browser', 'close').catch(() => {});
+      if (!desktop) await callNative('Browser', 'close').catch(() => {});
     }
   };
+  if (desktop?.onUrl) {
+    const stop = desktop.onUrl((url) => { void onOpen({ url }); });
+    desktop.getLaunchUrl?.().then((url) => { if (url) void onOpen({ url }); }).catch(() => {});
+    return stop;
+  }
   // Если страница перезагрузилась, пока шёл вход, ссылка возврата приходит как стартовая.
   callNative('App', 'getLaunchUrl').then((r) => { nativeLog(`стартовая ссылка: ${r?.url ? String(r.url).split(/[#?]/)[0] : 'нет'}`); if (r?.url) onOpen(r); }).catch((e) => nativeLog(`getLaunchUrl: ${e instanceof Error ? e.message : String(e)}`));
   if (!c?.addListener) {
