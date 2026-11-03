@@ -1,6 +1,7 @@
 // GET|POST /api/push-reminders  +  Authorization: Bearer <CRON_SECRET>
-// Вызывается по расписанию (каждые 5-15 минут): шлёт ежедневное напоминание тем, у кого наступило
+// Вызывается по расписанию (каждые 5 минут): шлёт ежедневное напоминание тем, у кого наступило
 // время (в часовом поясе подписки), если запись за сегодня ещё не сделана. Раз в сутки на подписку.
+// Заодно шлёт быстрые напоминания (таблица quick_reminders), чей час пришёл.
 import { timingSafeEqual } from "node:crypto";
 import { config, sendMany, tr } from "./_push.js";
 
@@ -29,6 +30,27 @@ function authorized(req) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+const QUICK_TITLE = { ru: "⏰ Напоминание", en: "⏰ Reminder", be: "⏰ Напамін", uk: "⏰ Нагадування", de: "⏰ Erinnerung", fr: "⏰ Rappel", es: "⏰ Recordatorio" };
+
+/** Быстрые напоминания, чей час пришёл: пуш на то устройство, где их создали. Возвращает число отправленных. */
+async function sendQuick(admin) {
+  const nowIso = new Date().toISOString();
+  const { data: rows } = await admin.from("quick_reminders").select("*").is("sent_at", null).lte("remind_at", nowIso).limit(200);
+  if (!rows?.length) return 0;
+  const { data: subs } = await admin.from("push_subscriptions").select("endpoint,p256dh,auth").in("endpoint", [...new Set(rows.map((r) => r.endpoint))]);
+  const byEndpoint = new Map((subs || []).map((s) => [s.endpoint, s]));
+  const jobs = rows.filter((r) => byEndpoint.has(r.endpoint)).map((r) => [
+    byEndpoint.get(r.endpoint),
+    { title: QUICK_TITLE[String(r.lang).slice(0, 2)] || QUICK_TITLE.en, body: r.body, tag: `dn-quick-${r.id}` },
+  ]);
+  const sent = await sendMany(admin, jobs);
+  // помечаем и те, у кого подписка пропала: слать им всё равно некуда
+  await admin.from("quick_reminders").update({ sent_at: nowIso }).in("id", rows.map((r) => r.id));
+  // старые отправленные убираем
+  await admin.from("quick_reminders").delete().lt("remind_at", new Date(Date.now() - 2 * 86_400_000).toISOString()).not("sent_at", "is", null);
+  return sent;
+}
+
 export default async function handler(req, res) {
   if (!authorized(req)) return res.status(401).json({ error: "unauthorized" });
   const cfg = config();
@@ -45,7 +67,8 @@ export default async function handler(req, res) {
     const diff = minutes - toMinutes(sub.reminder_time);
     if (diff >= 0 && diff < WINDOW_MIN && sub.last_reminder_date !== date) due.push({ sub, date });
   }
-  if (!due.length) return res.status(200).json({ due: 0, sent: 0 });
+  const quick = await sendQuick(admin).catch(() => 0);
+  if (!due.length) return res.status(200).json({ due: 0, sent: 0, quick });
 
   // Кто уже писал сегодня, тому напоминать не нужно
   const users = [...new Set(due.map((d) => d.sub.user_id))];
@@ -61,5 +84,5 @@ export default async function handler(req, res) {
 
   // Отмечаем день и для пропущенных (запись уже есть), чтобы не проверять их каждые 10 минут
   await Promise.all(due.map(({ sub, date }) => admin.from("push_subscriptions").update({ last_reminder_date: date }).eq("id", sub.id)));
-  return res.status(200).json({ due: due.length, sent });
+  return res.status(200).json({ due: due.length, sent, quick });
 }
