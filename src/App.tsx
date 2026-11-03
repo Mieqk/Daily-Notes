@@ -43,6 +43,7 @@ import FriendsView from "./components/FriendsView";
 import AccountMenu from "./components/AccountMenu";
 import { useNotifications } from "./hooks/useNotifications";
 import { usePlaceReminders } from "./hooks/usePlaceReminders";
+import { useQuickReminders } from "./hooks/useQuickReminders";
 import { useChatUnread } from "./hooks/useChatUnread";
 import { startPresenceHeartbeat } from "./lib/presence";
 import { useCalls } from "./hooks/useCalls";
@@ -144,6 +145,7 @@ export default function App() {
   const sleepAuto = useSleepAuto(autoSleep, sleep, saveSleep);
   useHealthSleep(healthSleep, sleep, (days) => { setSleep((prev) => { const next = { ...prev }; for (const [k, v] of Object.entries(days)) if (!next[k]?.bedtime && !next[k]?.waketime) next[k] = v; return next; }); showToast(makeHealthSleep(lang)("imported")); });
   usePlaceReminders(lang, showToast);
+  useQuickReminders(lang, showToast);
   useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(id); }, [toast]);
   useEffect(() => {
     const onFull = () => showToast(u('storageFull'));
