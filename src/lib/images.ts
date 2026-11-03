@@ -6,6 +6,10 @@ export interface ProcessedImage {
   ext: string;
 }
 
+/** Лимиты для анимированных файлов (грузятся как есть, без пережатия). */
+export const MAX_ANIM_AVATAR_MB = 3;
+export const MAX_ANIM_BANNER_MB = 6;
+
 const MAX_AVATAR = 256;
 const MAX_BANNER = 1280;
 
@@ -25,9 +29,40 @@ export function loadImage(file: File): Promise<HTMLImageElement> {
   });
 }
 
+/** Анимирован ли GIF (больше одного кадра) или WebP (флаг ANIM). Остальное считаем статикой. */
+export async function isAnimatedImage(file: File): Promise<boolean> {
+  try {
+    if (file.type === "image/gif") {
+      const b = new Uint8Array(await file.arrayBuffer());
+      let frames = 0;
+      // Графический блок управления 0x21 0xF9 есть у каждого кадра
+      for (let i = 0; i < b.length - 3; i++) {
+        if (b[i] === 0x21 && b[i + 1] === 0xf9 && b[i + 2] === 0x04) {
+          if (++frames > 1) return true;
+        }
+      }
+      return false;
+    }
+    if (file.type === "image/webp") {
+      const b = new Uint8Array(await file.slice(0, 4096).arrayBuffer());
+      const tag = (o: number) => String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
+      // RIFF....WEBPVP8X, 5-й байт флагов: бит 0x02 = анимация
+      return b.length > 20 && tag(0) === "RIFF" && tag(8) === "WEBP" && tag(12) === "VP8X" && (b[20] & 0x02) !== 0;
+    }
+  } catch { /* считаем статикой */ }
+  return false;
+}
+
 export async function prepareImage(file: File, kind: "avatar" | "banner"): Promise<ProcessedImage> {
   if (!file.type.startsWith("image/")) throw new Error("not-image");
-  if (file.size > 8 * 1024 * 1024) throw new Error("too-big");
+  if (file.size > 8 * 1024 * 1024 && !(await isAnimatedImage(file))) throw new Error("too-big");
+
+  // Анимацию canvas убил бы (останется один кадр), поэтому GIF/WebP с анимацией грузим как есть
+  if (await isAnimatedImage(file)) {
+    const limit = (kind === "avatar" ? MAX_ANIM_AVATAR_MB : MAX_ANIM_BANNER_MB) * 1024 * 1024;
+    if (file.size > limit) throw new Error("anim-too-big");
+    return { blob: file, ext: file.type === "image/gif" ? "gif" : "webp" };
+  }
 
   const img = await loadImage(file);
   const nw = img.naturalWidth;
