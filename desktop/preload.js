@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('dailyNotesDesktop', {
   openExternal: (url) => ipcRenderer.invoke('open-external', String(url)),
+  getLaunchUrl: () => ipcRenderer.invoke('launch-url'),
   onUrl: (cb) => {
     const handler = (_e, url) => cb(url);
     ipcRenderer.on('app-url', handler);

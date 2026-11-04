@@ -214,8 +214,9 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
   }, [profileId, viewerId]);
 
   const saveProfile = async (patch: Partial<Profile>) => {
-    const { data } = await supabase!.from("profiles").update(patch).eq("id", profileId).select().single();
+    const { data, error } = await supabase!.from("profiles").update(patch).eq("id", profileId).select().single();
     if (data) setP(data as Profile);
+    return !error && Boolean(data);
   };
 
   const uploadImage = async (file: File, kind: "banner" | "avatar") => {
@@ -228,7 +229,15 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
       const { error } = await supabase!.storage.from(bucket).upload(path, blob, { contentType: blob.type });
       if (error) throw new Error("imgErr");
       const url = supabase!.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-      await saveProfile(kind === "banner" ? { banner_url: url } : { avatar_url: url });
+      const oldUrl = kind === "banner" ? p?.banner_url : p?.avatar_url;
+      if (!(await saveProfile(kind === "banner" ? { banner_url: url } : { avatar_url: url }))) throw new Error("imgErr");
+      // прежний файл больше не нужен (иначе анимации до 6 МБ копятся в хранилище)
+      const marker = `/${bucket}/`;
+      const at = oldUrl ? oldUrl.indexOf(marker) : -1;
+      if (oldUrl && at >= 0) {
+        const oldPath = decodeURIComponent(oldUrl.slice(at + marker.length).split("?")[0]);
+        if (oldPath.startsWith(`${profileId}/`) && oldPath !== path) void supabase!.storage.from(bucket).remove([oldPath]).then(() => {}, () => {});
+      }
       setMsg({ kind: "ok", text: t("saved") });
     } catch (err) {
       const m = err instanceof Error ? err.message : "imgErr";

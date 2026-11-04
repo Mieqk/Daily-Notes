@@ -36,6 +36,25 @@ export function useStored<T>(key: string, defaultValue: T): [T, React.Dispatch<R
   return [value, setValue];
 }
 
+/** Флаг «0/1» в localStorage (скрыть итоги, значки): подхватывает правку с другого устройства и держит в согласии все места, где он показан. */
+export function useFlag(key: string): [boolean, () => void] {
+  const read = () => { try { return localStorage.getItem(key) === "1"; } catch { return false; } };
+  const [on, setOn] = useState(read);
+  useEffect(() => {
+    const h = (e: Event) => { if ((e as CustomEvent<{ key?: string }>).detail?.key === key) setOn(read()); };
+    window.addEventListener("dn-remote-write", h);
+    return () => window.removeEventListener("dn-remote-write", h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  const toggle = () => {
+    const next = !read();
+    try { localStorage.setItem(key, next ? "1" : "0"); } catch { /* ignore */ }
+    setOn(next);
+    window.dispatchEvent(new CustomEvent("dn-remote-write", { detail: { key } }));
+  };
+  return [on, toggle];
+}
+
 export function todayISO(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;

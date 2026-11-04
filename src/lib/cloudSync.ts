@@ -383,6 +383,8 @@ export function startCloudSync(userId: string): () => void {
         const doFull = full || !state.cursor || Date.now() - lastFull > 30 * 60_000;
         const got = await pullRows(userId, state.cursor, doFull);
         const local = readLocalDocs(localStorage, state);
+        // пока шёл запрос, человек мог поправить данные: ставим эти правки в очередь до разбора, иначе чужая версия их затрёт
+        scanChanges(state, local, Date.now());
         const writes = reconcileRemote(state, local, got.rows);
         if (doFull) Object.assign(writes, reconcileMissing(state, local, got.ids));
         for (const id of writeLocal(localStorage, writes)) delete state.docs[id];

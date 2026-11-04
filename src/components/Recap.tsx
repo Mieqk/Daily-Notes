@@ -6,7 +6,7 @@ import { makeRecap } from "../recap-strings";
 import type { RecapKey } from "../recap-strings";
 import { computeBadges, computeRecap, habitStreaks } from "../lib/recap";
 import type { HabitKey, RecapData } from "../lib/recap";
-import { fromISO, todayISO } from "../store";
+import { fromISO, todayISO, useFlag } from "../store";
 import { DownloadIcon, FlameIcon } from "../icons";
 
 const W = 1080;
@@ -151,18 +151,7 @@ async function shareCanvas(canvas: HTMLCanvasElement, title: string, name: strin
 }
 
 /** Свёрнутость блока помним на устройстве. */
-function useHidden(key: string): [boolean, () => void] {
-  const [hidden, setHidden] = useState(() => {
-    try { return localStorage.getItem(key) === "1"; } catch { return false; }
-  });
-  const toggle = () => {
-    setHidden((h) => {
-      try { localStorage.setItem(key, h ? "0" : "1"); } catch { /* ignore */ }
-      return !h;
-    });
-  };
-  return [hidden, toggle];
-}
+const useHidden = useFlag;
 
 const toggleBtn = "h-8 shrink-0 rounded-lg border border-[var(--line)] px-3 text-[12px] font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--hover)]";
 
