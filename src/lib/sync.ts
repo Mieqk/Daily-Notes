@@ -37,10 +37,10 @@ export async function decodeNote(userId: string, row: { date: string; note: stri
   try { return await openText(row.note ?? '', sleepAad(userId, row.date)); } catch { return null; }
 }
 
-export async function performInitialSync(userId: string) {
+export async function performInitialSync(userId: string, quiet = false) {
   if (!supabase) return null;
 
-  setSyncStatus('syncing');
+  if (!quiet) setSyncStatus('syncing');
 
   try {
     const [entriesRes, tasksRes, sleepRes, profileRes] = await Promise.all([
@@ -107,11 +107,11 @@ export async function performInitialSync(userId: string) {
       };
     }
 
-    setSyncStatus('synced');
+    if (!quiet) setSyncStatus('synced');
     return { notes, tasks, moods, tags, photos, sleep, settings: remoteSettings, writtenOn, unreadable, plainRows };
   } catch (error) {
     console.error('[SYNC] Initial sync failed:', error);
-    setSyncStatus('error');
+    if (!quiet) setSyncStatus('error');
     return null;
   }
 }
@@ -143,49 +143,150 @@ function debounceByKey<A extends unknown[]>(fn: (...args: A) => void | Promise<v
   };
 }
 
-const debouncedUpsertEntry = debounceByKey(async (userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) => {
-  if (isLocalMode() || !supabase || !canSync()) return;
-  let row: { content: string; tags: string[]; photos: string[] } = { content, tags, photos };
-  if (encryptionActive()) {
-    const hasBody = content.trim() || tags.length > 0 || photos.length > 0;
-    row = { content: hasBody ? await sealEntry(userId, date, { c: content, t: tags, p: photos }) : '', tags: [], photos: [] };
-  }
-  const { error } = await supabase.from('entries').upsert({ user_id: userId, date, ...row, mood, updated_at: new Date().toISOString() }, { onConflict: 'user_id,date' });
-  if (error) console.error('[SYNC] Failed to sync entry:', error);
+// ---------- офлайн-очередь ----------
+// Пока правка не дошла до сервера, её метка лежит в localStorage (dn.outbox). Нет сети, сервер ответил ошибкой,
+// вкладку закрыли раньше времени: метка остаётся, при возвращении сети или при следующем запуске правку отправим заново.
+
+const OUTBOX_KEY = 'dn.outbox';
+type OutKind = 'e' | 't' | 's' | 'p';
+const outId = (k: OutKind, date?: string) => (date ? `${k}:${date}` : k);
+
+function readOutbox(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]');
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+  } catch { return []; }
+}
+function writeOutbox(list: string[]) {
+  try { if (list.length) localStorage.setItem(OUTBOX_KEY, JSON.stringify(list)); else localStorage.removeItem(OUTBOX_KEY); } catch { /* квота */ }
+}
+
+const dirtySeq = new Map<string, number>();
+function markDirty(id: string): number {
+  const seq = (dirtySeq.get(id) ?? 0) + 1;
+  dirtySeq.set(id, seq);
+  const list = readOutbox();
+  if (!list.includes(id)) writeOutbox([...list, id]);
+  return seq;
+}
+function markClean(id: string, seq: number) {
+  if ((dirtySeq.get(id) ?? 0) !== seq) return; // за время отправки правили ещё раз: остаётся в очереди
+  writeOutbox(readOutbox().filter((x) => x !== id));
+}
+
+/** Есть ли неотправленная правка этой даты (запись, задачи, сон) или настроек (kind 'p'). */
+export function outboxHas(kind: OutKind, date?: string): boolean { return readOutbox().includes(outId(kind, date)); }
+export function outboxCount(): number { return readOutbox().length; }
+export function outboxHasAny(): boolean { return outboxCount() > 0 || pendingFlushers.size > 0; }
+
+export interface OutboxSource {
+  notes: Record<string, string>; moods: Record<string, number>; tags: Record<string, string[]>; photos: Record<string, string[]>;
+  tasks: Record<string, Task[]>; sleep: Record<string, SleepData>; settings: () => Record<string, unknown>;
+}
+let outboxSource: (() => OutboxSource) | null = null;
+export function setOutboxSource(fn: (() => OutboxSource) | null) { outboxSource = fn; }
+
+async function pushEntry(userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]): Promise<boolean> {
+  if (isLocalMode() || !supabase) return true;
+  if (!canSync()) return false;
+  try {
+    let row: { content: string; tags: string[]; photos: string[] } = { content, tags, photos };
+    if (encryptionActive()) {
+      const hasBody = content.trim() || tags.length > 0 || photos.length > 0;
+      row = { content: hasBody ? await sealEntry(userId, date, { c: content, t: tags, p: photos }) : '', tags: [], photos: [] };
+    }
+    const { error } = await supabase.from('entries').upsert({ user_id: userId, date, ...row, mood, updated_at: new Date().toISOString() }, { onConflict: 'user_id,date' });
+    if (error) { console.error('[SYNC] Failed to sync entry:', error); return false; }
+    return true;
+  } catch (e) { console.error('[SYNC] Failed to sync entry:', e); return false; }
+}
+
+async function pushTasks(userId: string, date: string, tasks: Task[]): Promise<boolean> {
+  if (isLocalMode() || !supabase) return true;
+  if (!canSync()) return false;
+  try {
+    const { data: existing, error: selErr } = await supabase.from('tasks').select('id').eq('user_id', userId).eq('date', date);
+    if (selErr) { console.error('[SYNC] Failed to read tasks:', selErr); return false; }
+    const toDelete = (existing ?? []).map((t) => t.id).filter((id) => !tasks.find((t) => t.id === id));
+    if (toDelete.length > 0) {
+      const { error: delErr } = await supabase.from('tasks').delete().in('id', toDelete).eq('user_id', userId);
+      if (delErr) { console.error('[SYNC] Failed to delete tasks:', delErr); return false; }
+    }
+    if (tasks.length === 0) return true;
+    const tasksToUpsert = await Promise.all(tasks.map(async (t) => ({ user_id: userId, date, id: t.id, title: encryptionActive() && t.text ? await sealText(t.text, taskAad(userId, t.id)) : t.text, completed: t.done })));
+    const { error } = await supabase.from('tasks').upsert(tasksToUpsert);
+    if (error) { console.error('[SYNC] Failed to sync tasks:', error); return false; }
+    return true;
+  } catch (e) { console.error('[SYNC] Failed to sync tasks:', e); return false; }
+}
+
+async function pushSleep(userId: string, date: string, sleepData: SleepData): Promise<boolean> {
+  if (isLocalMode() || !supabase) return true;
+  if (!canSync()) return false;
+  try {
+    const note = encryptionActive() && sleepData.note ? await sealText(sleepData.note, sleepAad(userId, date)) : sleepData.note || '';
+    const { error } = await supabase.from('sleep_logs').upsert({ user_id: userId, date, sleep_start: sleepData.bedtime || '', sleep_end: sleepData.waketime || '', hours: sleepData.hours || 0, quality: sleepData.quality || 0, awakenings: sleepData.awakenings || 0, note }, { onConflict: 'user_id,date' });
+    if (error) { console.error('[SYNC] Failed to sync sleep:', error); return false; }
+    return true;
+  } catch (e) { console.error('[SYNC] Failed to sync sleep:', e); return false; }
+}
+
+async function pushSettings(userId: string, settings: Record<string, unknown>): Promise<boolean> {
+  if (isLocalMode() || !supabase) return true;
+  try {
+    const { error } = await supabase.from('profiles').update({ settings }).eq('id', userId);
+    if (error) { console.error('[SYNC] Failed to sync settings:', error); return false; }
+    return true;
+  } catch (e) { console.error('[SYNC] Failed to sync settings:', e); return false; }
+}
+
+async function finish(id: string, seq: number, ok: boolean) {
+  if (ok) { markClean(id, seq); if (!outboxCount()) setSyncStatus('synced'); } else setSyncStatus('error');
+}
+
+const debouncedUpsertEntry = debounceByKey(async (userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[], seq: number) => {
+  await finish(outId('e', date), seq, await pushEntry(userId, date, content, mood, tags, photos));
 }, 2000, (userId, date) => `${userId}:${date}`);
 
-const debouncedUpsertTasks = debounceByKey(async (userId: string, date: string, tasks: Task[]) => {
-  if (isLocalMode() || !supabase || !canSync()) return;
-  const { data: existing, error: selErr } = await supabase.from('tasks').select('id').eq('user_id', userId).eq('date', date);
-  if (selErr) { console.error('[SYNC] Failed to read tasks:', selErr); return; }
-  const toDelete = (existing ?? []).map((t) => t.id).filter((id) => !tasks.find((t) => t.id === id));
-  if (toDelete.length > 0) {
-    const { error: delErr } = await supabase.from('tasks').delete().in('id', toDelete).eq('user_id', userId);
-    if (delErr) { console.error('[SYNC] Failed to delete tasks:', delErr); return; }
-  }
-  if (tasks.length === 0) return;
-  const tasksToUpsert = await Promise.all(tasks.map(async (t) => ({ user_id: userId, date, id: t.id, title: encryptionActive() && t.text ? await sealText(t.text, taskAad(userId, t.id)) : t.text, completed: t.done })));
-  const { error } = await supabase.from('tasks').upsert(tasksToUpsert);
-  if (error) console.error('[SYNC] Failed to sync tasks:', error);
+const debouncedUpsertTasks = debounceByKey(async (userId: string, date: string, tasks: Task[], seq: number) => {
+  await finish(outId('t', date), seq, await pushTasks(userId, date, tasks));
 }, 2000, (userId, date) => `${userId}:${date}`);
 
-const debouncedUpsertSleep = debounceByKey(async (userId: string, date: string, sleepData: SleepData) => {
-  if (isLocalMode() || !supabase || !canSync()) return;
-  const note = encryptionActive() && sleepData.note ? await sealText(sleepData.note, sleepAad(userId, date)) : sleepData.note || '';
-  const { error } = await supabase.from('sleep_logs').upsert({ user_id: userId, date, sleep_start: sleepData.bedtime || '', sleep_end: sleepData.waketime || '', hours: sleepData.hours || 0, quality: sleepData.quality || 0, awakenings: sleepData.awakenings || 0, note }, { onConflict: 'user_id,date' });
-  if (error) console.error('[SYNC] Failed to sync sleep:', error);
+const debouncedUpsertSleep = debounceByKey(async (userId: string, date: string, sleepData: SleepData, seq: number) => {
+  await finish(outId('s', date), seq, await pushSleep(userId, date, sleepData));
 }, 2000, (userId, date) => `${userId}:${date}`);
 
-const debouncedUpsertSettings = debounceByKey(async (userId: string, settings: Record<string, unknown>) => {
-  if (isLocalMode() || !supabase) return;
-  const { error } = await supabase.from('profiles').update({ settings }).eq('id', userId);
-  if (error) console.error('[SYNC] Failed to sync settings:', error);
+const debouncedUpsertSettings = debounceByKey(async (userId: string, settings: Record<string, unknown>, seq: number) => {
+  await finish(outId('p'), seq, await pushSettings(userId, settings));
 }, 2000, (userId) => userId);
 
-export function syncEntry(userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) { debouncedUpsertEntry(userId, date, content, mood, tags, photos); }
-export function syncTasks(userId: string, date: string, tasks: Task[]) { debouncedUpsertTasks(userId, date, tasks); }
-export function syncSleep(userId: string, date: string, sleepData: SleepData) { debouncedUpsertSleep(userId, date, sleepData); }
-export function syncSettings(userId: string, settings: { theme?: string; lang?: string; font?: number; writingFont?: string; bg?: string; moodEmoji?: string[]; capsules?: Record<string, string>; look?: unknown }) { debouncedUpsertSettings(userId, settings); }
+export function syncEntry(userId: string, date: string, content: string, mood: number | null, tags: string[], photos: string[]) { debouncedUpsertEntry(userId, date, content, mood, tags, photos, markDirty(outId('e', date))); }
+export function syncTasks(userId: string, date: string, tasks: Task[]) { debouncedUpsertTasks(userId, date, tasks, markDirty(outId('t', date))); }
+export function syncSleep(userId: string, date: string, sleepData: SleepData) { debouncedUpsertSleep(userId, date, sleepData, markDirty(outId('s', date))); }
+export function syncSettings(userId: string, settings: { theme?: string; lang?: string; font?: number; writingFont?: string; bg?: string; moodEmoji?: string[]; capsules?: Record<string, string>; look?: unknown }) { debouncedUpsertSettings(userId, settings, markDirty(outId('p'))); }
+
+let retrying = false;
+/** Отправляет то, что осталось в очереди (после обрыва сети или перезапуска). Берёт актуальные данные с устройства. */
+export async function retryOutbox(userId: string): Promise<void> {
+  if (retrying || isLocalMode() || !supabase || !outboxSource || !canSync()) return;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+  const ids = readOutbox();
+  if (!ids.length) return;
+  retrying = true;
+  try {
+    for (const id of ids) {
+      const src = outboxSource();
+      const seq = dirtySeq.get(id) ?? 0;
+      const [kind, date] = id.split(':') as [OutKind, string | undefined];
+      let ok = true;
+      if (kind === 'e' && date) ok = await pushEntry(userId, date, src.notes[date] ?? '', src.moods[date] ?? null, src.tags[date] ?? [], src.photos[date] ?? []);
+      else if (kind === 't' && date) ok = await pushTasks(userId, date, src.tasks[date] ?? []);
+      else if (kind === 's' && date) { const v = src.sleep[date]; ok = v ? await pushSleep(userId, date, v) : true; }
+      else if (kind === 'p') ok = await pushSettings(userId, src.settings());
+      await finish(id, seq, ok);
+    }
+  } finally { retrying = false; }
+}
 
 export interface LocalData {
   notes: Record<string, string>;
@@ -231,6 +332,21 @@ export function mergeLocalIntoRemote(remote: LocalData, local: LocalData) {
   return { merged, entries, taskDates, sleepDates };
 }
 
+/**
+ * Подтягивание чужих правок в уже работающее приложение (трёхсторонне): что в облаке изменилось с прошлого раза и чего мы
+ * сами не трогали (и не ждёт отправки), то берём; свои неотправленные правки не затираем.
+ * snap — то, что мы в последний раз знали об облаке; local — что на экране сейчас; remote — что в облаке сейчас.
+ */
+export function mergeRemoteChanges<V>(snap: Record<string, V>, local: Record<string, V>, remote: Record<string, V>, isDirty: (key: string) => boolean): Record<string, V> {
+  const out: Record<string, V> = { ...local };
+  for (const k of new Set([...Object.keys(snap), ...Object.keys(local), ...Object.keys(remote)])) {
+    if (isDirty(k)) continue;
+    if (JSON.stringify(snap[k] ?? null) === JSON.stringify(remote[k] ?? null)) continue;
+    if (remote[k] === undefined) delete out[k]; else out[k] = remote[k];
+  }
+  return out;
+}
+
 /** «Стереть все данные» для вошедшего пользователя: удаляем и на сервере, иначе синхронизация вернёт всё обратно. */
 export async function deleteAllRemote(userId: string): Promise<boolean> {
   if (isLocalMode() || !supabase) return true;
@@ -241,5 +357,6 @@ export async function deleteAllRemote(userId: string): Promise<boolean> {
   ]);
   const failed = results.find((r) => r.error);
   if (failed?.error) console.error('[SYNC] Failed to delete remote data:', failed.error);
+  else writeOutbox([]);
   return !failed;
 }

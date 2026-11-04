@@ -51,7 +51,8 @@ import CallOverlay from "./components/CallOverlay";
 import { useGcalSync } from "./hooks/useGcalSync";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
-import { isLocalMode, setLocalMode, performInitialSync, mergeLocalIntoRemote, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, deleteAllRemote, flushPendingSync, decodeTitle, decodeNote, type SyncStatus } from "./lib/sync";
+import { startCloudSync, stopCloudSync, deleteAllCloudDocs, wipeCloudLocal } from "./lib/cloudSync";
+import { isLocalMode, setLocalMode, performInitialSync, mergeLocalIntoRemote, subscribeToSyncStatus, syncEntry, syncTasks, syncSleep, syncSettings, deleteAllRemote, flushPendingSync, decodeTitle, decodeNote, mergeRemoteChanges, outboxHas, outboxHasAny, retryOutbox, setOutboxSource, outboxCount, type SyncStatus } from "./lib/sync";
 
 const FONT_SCALES = ["93.75%", "100%", "109%"];
 
@@ -165,6 +166,18 @@ export default function App() {
     lastLocalSettingsRef.current = { theme, lang, fontScale, writingFont, bg, moodEmoji, look: JSON.stringify(look) };
   }, [theme, lang, fontScale, writingFont, bg, moodEmoji, lookRaw]);
 
+  const applyRemoteSettings = (s: Record<string, any> | null | undefined) => {
+    if (!s) return;
+    if (s.theme) setTheme(s.theme);
+    if (s.lang) setLang(s.lang);
+    if (s.font !== undefined) setFontScale(Number(s.font));
+    if (s.writingFont) setWritingFont(s.writingFont);
+    if (s.bg) setBg(s.bg);
+    if (s.look) setLookRaw(sanitizeLook(s.look));
+    if (s.moodEmoji) setMoodEmoji(s.moodEmoji);
+    if (s.capsules && typeof s.capsules === 'object') setCapsules((local) => ({ ...local, ...s.capsules }));
+  };
+
   const markSnapshotAsSent = (n: typeof notes, tk: typeof tasks, md: typeof moods, tg: typeof tags, ph: typeof photos, sl: typeof sleep) => {
     remoteSnapshot.current = { notes: clone(n), tasks: clone(tk), moods: clone(md), tags: clone(tg), photos: clone(ph), sleep: clone(sl) };
   };
@@ -201,17 +214,7 @@ export default function App() {
           setSleep(data.sleep);
           setWrittenOn(remote.writtenOn || {});
 
-          const s = remote.settings as Record<string, any>;
-          if (s) {
-            if (s.theme) setTheme(s.theme);
-            if (s.lang) setLang(s.lang);
-            if (s.font !== undefined) setFontScale(Number(s.font));
-            if (s.writingFont) setWritingFont(s.writingFont);
-            if (s.bg) setBg(s.bg);
-            if (s.look) setLookRaw(sanitizeLook(s.look));
-            if (s.moodEmoji) setMoodEmoji(s.moodEmoji);
-            if (s.capsules && typeof s.capsules === 'object') setCapsules((local) => ({ ...local, ...s.capsules }));
-          }
+          applyRemoteSettings(remote.settings as Record<string, any>);
 
           remoteSnapshot.current = {
             notes: clone(data.notes), tasks: clone(data.tasks), moods: clone(data.moods),
@@ -238,6 +241,77 @@ export default function App() {
       setShowAuth(true);
     }
   }, [userId, authLoading, e2eeReady]);
+
+  // Остальные данные (настройки, свои фоны, напоминания, ответы, рекорды…) синхронизирует отдельный слой
+  useEffect(() => {
+    if (!userId || isLocalMode() || !e2eeReady) return;
+    return startCloudSync(userId);
+  }, [userId, e2eeReady]);
+
+  // Офлайн-очередь: правки, которые не дошли до сервера, отправляем при возвращении сети, при открытии и раз в полминуты
+  const settingsRef = useRef<Record<string, unknown>>({});
+  settingsRef.current = { theme, lang, font: fontScale, writingFont, bg, moodEmoji, capsules, look };
+  useEffect(() => {
+    setOutboxSource(() => ({ ...localRef.current, settings: () => settingsRef.current }));
+    return () => setOutboxSource(null);
+  }, []);
+
+  // Подтягиваем чужие правки без перезагрузки: при возвращении на вкладку, при появлении сети и раз в пару минут
+  const resyncBusy = useRef(false);
+  useEffect(() => {
+    if (!userId || isLocalMode() || !e2eeReady) return;
+    let cancelled = false;
+    const resync = async () => {
+      if (resyncBusy.current || !initialLoadDone.current || document.visibilityState !== 'visible' || navigator.onLine === false) return;
+      resyncBusy.current = true;
+      try {
+        await retryOutbox(userId);
+        if (cancelled || outboxHasAny()) return;
+        const remote = await performInitialSync(userId, true);
+        // за время запроса человек мог начать писать: тогда не трогаем, подтянем в следующий раз
+        if (!remote || cancelled || outboxHasAny() || Date.now() - Math.max(0, ...Object.values(lastUpdateTime.current)) < 5000) return;
+        const snap = remoteSnapshot.current;
+        if (!snap) return;
+        const loc = localRef.current;
+        const dirtyE = (d: string) => outboxHas('e', d);
+        const dirtyT = (d: string) => outboxHas('t', d);
+        const dirtyS = (d: string) => outboxHas('s', d);
+        const next = {
+          notes: mergeRemoteChanges(snap.notes, loc.notes, remote.notes, dirtyE),
+          moods: mergeRemoteChanges(snap.moods, loc.moods, remote.moods, dirtyE),
+          tags: mergeRemoteChanges(snap.tags, loc.tags, remote.tags, dirtyE),
+          photos: mergeRemoteChanges(snap.photos, loc.photos, remote.photos, dirtyE),
+          tasks: mergeRemoteChanges(snap.tasks, loc.tasks, remote.tasks, dirtyT),
+          sleep: mergeRemoteChanges(snap.sleep, loc.sleep, remote.sleep, dirtyS),
+        };
+        // сначала обновляем «что известно об облаке», чтобы подтянутое не ушло обратно как наша правка
+        remoteSnapshot.current = {
+          notes: mergeRemoteChanges(snap.notes, snap.notes, remote.notes, dirtyE),
+          moods: mergeRemoteChanges(snap.moods, snap.moods, remote.moods, dirtyE),
+          tags: mergeRemoteChanges(snap.tags, snap.tags, remote.tags, dirtyE),
+          photos: mergeRemoteChanges(snap.photos, snap.photos, remote.photos, dirtyE),
+          tasks: mergeRemoteChanges(snap.tasks, snap.tasks, remote.tasks, dirtyT),
+          sleep: mergeRemoteChanges(snap.sleep, snap.sleep, remote.sleep, dirtyS),
+        };
+        const differs = <V,>(a: V, b: V) => JSON.stringify(a) !== JSON.stringify(b);
+        if (differs(next.notes, loc.notes)) setNotes(next.notes);
+        if (differs(next.moods, loc.moods)) setMoods(next.moods);
+        if (differs(next.tags, loc.tags)) setTags(next.tags);
+        if (differs(next.photos, loc.photos)) setPhotos(next.photos);
+        if (differs(next.tasks, loc.tasks)) setTasks(next.tasks);
+        if (differs(next.sleep, loc.sleep)) setSleep(next.sleep);
+        setWrittenOn((prev) => ({ ...prev, ...(remote.writtenOn || {}) }));
+        if (!outboxHas('p')) applyRemoteSettings(remote.settings as Record<string, any>);
+      } finally { resyncBusy.current = false; }
+    };
+    const onVis = () => { void resync(); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('online', onVis);
+    const id = window.setInterval(onVis, 2 * 60_000);
+    // сразу после запуска отправляем то, что осталось в очереди с прошлого раза
+    const first = window.setTimeout(() => { if (outboxCount() > 0) void retryOutbox(userId); }, 4000);
+    return () => { cancelled = true; document.removeEventListener('visibilitychange', onVis); window.removeEventListener('online', onVis); window.clearInterval(id); window.clearTimeout(first); };
+  }, [userId, e2eeReady]);
 
   useEffect(() => {
     if (!userId || isLocalMode() || !supabase) return;
@@ -339,8 +413,15 @@ export default function App() {
       JSON.stringify(snap.photos) === JSON.stringify(photos);
     if (unchanged) return;
     setWrittenOn((prev) => (prev[date] !== undefined ? prev : { ...prev, [date]: date === todayISO() }));
-    lastUpdateTime.current[date] = Date.now();
-    syncEntry(userId, date, notes[date] ?? "", moods[date] ?? null, tags[date] ?? [], photos[date] ?? []);
+    // отправляем все даты, где что-то изменилось (а не только открытую): так доезжают восстановление из копии, автосон и т.п.
+    const tuple = (n: typeof notes, m: typeof moods, t: typeof tags, p: typeof photos, d: string) => JSON.stringify([n[d] ?? null, m[d] ?? null, t[d] ?? null, p[d] ?? null]);
+    const changed = [...new Set([...Object.keys(notes), ...Object.keys(moods), ...Object.keys(tags), ...Object.keys(photos), ...(snap ? [...Object.keys(snap.notes), ...Object.keys(snap.moods), ...Object.keys(snap.tags), ...Object.keys(snap.photos)] : []), date])]
+      .filter((d) => d === date || !snap || tuple(snap.notes, snap.moods, snap.tags, snap.photos, d) !== tuple(notes, moods, tags, photos, d))
+      .slice(0, 200);
+    for (const d of changed) {
+      lastUpdateTime.current[d] = Date.now();
+      syncEntry(userId, d, notes[d] ?? "", moods[d] ?? null, tags[d] ?? [], photos[d] ?? []);
+    }
     markSnapshotAsSent(notes, tasks, moods, tags, photos, sleep);
   }, [notes, moods, tags, photos, date, userId]);
 
@@ -366,12 +447,12 @@ export default function App() {
     if (!userId || isLocalMode() || !initialLoadDone.current) return;
     const snap = remoteSnapshot.current;
     if (snap && JSON.stringify(snap.sleep) === JSON.stringify(sleep)) return;
-    const s = sleep[date];
-    if (s) {
-      lastUpdateTime.current[`sleep-${date}`] = Date.now();
-      syncSleep(userId, date, s);
-      markSnapshotAsSent(notes, tasks, moods, tags, photos, sleep);
+    const changed = Object.keys(sleep).filter((d) => JSON.stringify(snap?.sleep[d] ?? null) !== JSON.stringify(sleep[d])).slice(0, 100);
+    for (const d of changed) {
+      lastUpdateTime.current[`sleep-${d}`] = Date.now();
+      syncSleep(userId, d, sleep[d]);
     }
+    if (changed.length) markSnapshotAsSent(notes, tasks, moods, tags, photos, sleep);
   }, [sleep, date, userId]);
 
   useEffect(() => {
@@ -408,7 +489,12 @@ export default function App() {
     if (userId && !isLocalMode()) {
       const ok = await deleteAllRemote(userId);
       if (!ok) { showToast(u('syncError')); return; }
+      stopCloudSync();
+      if (!(await deleteAllCloudDocs(userId))) { showToast(u('syncError')); return; }
       remoteSnapshot.current = { notes: {}, tasks: {}, moods: {}, tags: {}, photos: {}, sleep: {} };
+      // настройки, свои фоны, напоминания и т.п. тоже стираем на устройстве, иначе синхронизация вернёт их в облако
+      wipeCloudLocal(userId);
+      window.setTimeout(() => window.location.reload(), 500);
     }
     setNotes({}); setTasks({}); setMoods({}); setTags({}); setPhotos({}); setSleep({}); setDate(todayISO());
   };

@@ -17,6 +17,7 @@ import BgLayer from "./BgLayer";
 import { makeBg } from "../bg-strings";
 import type { BgKey } from "../bg-strings";
 import StatsVisibility from "./StatsVisibility";
+import SyncSettings from "./SyncSettings";
 import LookEditor from "./LookEditor";
 import ThemeShare from "./ThemeShare";
 import AddonsManager from "./AddonsManager";
@@ -569,6 +570,7 @@ export default function SettingsView(props: SettingsViewProps) {
         </Section>
 
         <StatsVisibility lang={lang} />
+        <SyncSettings lang={lang} signedIn={Boolean(user)} />
 
         {/* Privacy */}
         <NotificationSettings lang={lang} signedIn={Boolean(user)} userId={user?.id ?? null} />
