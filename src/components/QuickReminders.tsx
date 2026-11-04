@@ -7,11 +7,18 @@ import { cancelQuickPush, scheduleQuickPush } from "../lib/quickPush";
 import { makeQuick, whenLabel } from "../quick-remind-strings";
 
 /** Карточка «Быстрое напоминание» на экране дня: одна строка, время из текста или одна кнопка. */
+const pad = (n: number) => String(n).padStart(2, "0");
+/** Значение для <input type="datetime-local">: местное время «ГГГГ-ММ-ДДTЧЧ:ММ». */
+const toLocalInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
 export default function QuickReminders({ lang, showToast, userId, reminder }: { lang: Lang; showToast: (msg: string) => void; userId: string | null; reminder: { time: string; enabled: boolean } }) {
   const q = makeQuick(lang);
   const [list, setList] = useState<QuickReminder[]>(loadQuick);
   const [text, setText] = useState("");
   const [now, setNow] = useState(() => Date.now());
+  // своё время: поле даты и времени; пока оно открыто и заполнено, оно важнее времени из текста
+  const [customOpen, setCustomOpen] = useState(false);
+  const [custom, setCustom] = useState("");
 
   useEffect(() => {
     const on = () => { setList(loadQuick()); setNow(Date.now()); };
@@ -22,22 +29,32 @@ export default function QuickReminders({ lang, showToast, userId, reminder }: { 
 
   const parsed = useMemo(() => parseQuick(text, now), [text, now]);
   const btns = useMemo(() => presets(now), [now]);
-  const when = parsed.at ?? now + DEFAULT_DELAY_MS;
+  const customAt = customOpen && custom ? new Date(custom).getTime() : null;
+  const customValid = customAt !== null && Number.isFinite(customAt);
+  const when = customValid ? customAt! : parsed.at ?? now + DEFAULT_DELAY_MS;
 
   const create = (at: number) => {
     const clean = parsed.text.trim();
     if (!clean) { showToast(q("empty")); return; }
+    if (at <= Date.now()) { showToast(q("customPast")); return; }
     if (list.filter((r) => !r.done).length >= MAX_QUICK) { showToast(q("limit", { n: MAX_QUICK })); return; }
     const item = newQuick(clean, at);
     const next = [...list, item].sort((a, b) => a.at - b.at);
     saveQuick(next);
     setList(next);
     setText("");
+    setCustom(""); setCustomOpen(false);
     void requestNotifications().then(() => scheduleQuickPush(userId, item, { lang, reminderEnabled: reminder.enabled, reminderTime: reminder.time }));
     showToast(q("saved", { when: whenLabel(lang, at, Date.now()) }));
   };
   const remove = (id: string) => { void cancelQuickPush(id); const next = list.filter((r) => r.id !== id); saveQuick(next); setList(next); };
 
+  const toggleCustom = () => {
+    if (customOpen) { setCustomOpen(false); setCustom(""); return; }
+    // по умолчанию: ближайший ровный получас через час от сейчас
+    const d = new Date(Math.ceil((Date.now() + 3_600_000) / 1_800_000) * 1_800_000);
+    setCustom(toLocalInput(d)); setCustomOpen(true);
+  };
   const preset = (id: PresetId) => create(btns.find((b) => b.id === id)!.at);
   const visible = [...list].sort((a, b) => Number(a.done) - Number(b.done) || a.at - b.at);
 
@@ -57,9 +74,9 @@ export default function QuickReminders({ lang, showToast, userId, reminder }: { 
         <button type="submit" disabled={!parsed.text.trim()} className="h-10 shrink-0 rounded-lg bg-[var(--accent)] px-4 text-[13px] font-semibold text-[var(--accent-ink)] transition-all active:scale-95 disabled:opacity-50">{q("add")}</button>
       </form>
 
-      {text.trim() && parsed.text.trim() && (
+      {(text.trim() && parsed.text.trim()) && (
         <p className="mt-2 text-[12px] text-[var(--ink-soft)]">
-          {q("willAt", { when: whenLabel(lang, when, now) })}{parsed.at === null ? ` (${q("defaultNote")})` : ""}
+          {q("willAt", { when: whenLabel(lang, when, now) })}{parsed.at === null && !customValid ? ` (${q("defaultNote")})` : ""}
         </p>
       )}
 
@@ -67,7 +84,12 @@ export default function QuickReminders({ lang, showToast, userId, reminder }: { 
         {btns.map((b) => (
           <button key={b.id} type="button" onClick={() => preset(b.id)} className="h-9 rounded-full border border-[var(--line)] bg-[var(--panel-2)] px-3.5 text-[12.5px] font-semibold transition-all hover:border-[var(--accent)] active:scale-95">{q(b.id)}</button>
         ))}
+        <button type="button" onClick={toggleCustom} aria-pressed={customOpen} className={`h-9 rounded-full border px-3.5 text-[12.5px] font-semibold transition-all active:scale-95 ${customOpen ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-ink)]" : "border-[var(--line)] bg-[var(--panel-2)] hover:border-[var(--accent)]"}`}>🕐 {q("custom")}</button>
       </div>
+      {customOpen && (
+        <input type="datetime-local" value={custom} min={toLocalInput(new Date(now))} onChange={(e) => setCustom(e.target.value)} aria-label={q("custom")}
+          className="mt-2 h-10 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[13.5px] font-semibold tabular-nums outline-none focus:border-[var(--accent)]" />
+      )}
 
       {visible.length > 0 && (
         <ul className="mt-3 flex flex-col gap-2">
