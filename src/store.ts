@@ -10,6 +10,20 @@ export function useStored<T>(key: string, defaultValue: T): [T, React.Dispatch<R
     }
   });
 
+  // Значение пришло с другого устройства (синхронизация записала его в localStorage): подхватываем
+  useEffect(() => {
+    const onRemote = (e: Event) => {
+      if ((e as CustomEvent<{ key?: string }>).detail?.key !== key) return;
+      try {
+        const stored = localStorage.getItem(key);
+        setValue(stored ? JSON.parse(stored) : defaultValue);
+      } catch { /* битое значение: оставляем как есть */ }
+    };
+    window.addEventListener("dn-remote-write", onRemote);
+    return () => window.removeEventListener("dn-remote-write", onRemote);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
   useEffect(() => {
     try {
       localStorage.setItem(key, JSON.stringify(value));

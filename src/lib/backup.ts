@@ -1,5 +1,5 @@
 /** Ключи, которые не нужны в резервной копии: защита входа и служебные отметки синхронизации. */
-const SKIP = /^dn\.(pin|bio|syncedUser|reminderFired|tab|fitMerged\..*)$/;
+const SKIP = /^dn\.(pin|bio|syncedUser|reminderFired|tab|outbox|fitMerged\..*|fitDirty\..*|sync\..*)$/;
 
 export interface Backup {
   app: 'daily-notes';

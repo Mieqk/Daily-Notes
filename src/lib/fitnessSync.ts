@@ -93,7 +93,8 @@ export function useSyncedStored<T>(key: FitnessKey, defaultValue: T, merge: Merg
     void pull().finally(() => { if (alive) setReady(true); });
     const onFocus = () => { if (document.visibilityState === "visible") void pull(); };
     document.addEventListener("visibilitychange", onFocus);
-    return () => { alive = false; document.removeEventListener("visibilitychange", onFocus); };
+    window.addEventListener("online", onFocus);
+    return () => { alive = false; document.removeEventListener("visibilitychange", onFocus); window.removeEventListener("online", onFocus); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
