@@ -3,7 +3,7 @@
 // время (в часовом поясе подписки), если запись за сегодня ещё не сделана. Раз в сутки на подписку.
 // Заодно шлёт быстрые напоминания (таблица quick_reminders), чей час пришёл.
 import { timingSafeEqual } from "node:crypto";
-import { config, sendMany, tr } from "./_push.js";
+import { config, sendMany, sendTo, tr } from "./_push.js";
 
 // Окно после назначенного времени: если расписание пропустило запуск, напоминание ещё уйдёт
 const WINDOW_MIN = 180;
@@ -43,9 +43,21 @@ async function sendQuick(admin) {
     byEndpoint.get(r.endpoint),
     { title: QUICK_TITLE[String(r.lang).slice(0, 2)] || QUICK_TITLE.en, body: r.body, tag: `dn-quick-${r.id}` },
   ]);
-  const sent = await sendMany(admin, jobs);
-  // помечаем и те, у кого подписка пропала: слать им всё равно некуда
-  await admin.from("quick_reminders").update({ sent_at: nowIso }).in("id", rows.map((r) => r.id));
+  // Помечаем отправленными только доставленные и те, кому слать некуда. Если пуш не ушёл из-за сбоя,
+  // оставляем строку на следующий запуск, но не дольше 3 часов после назначенного времени.
+  let sent = 0;
+  const done = rows.filter((r) => !byEndpoint.has(r.endpoint)).map((r) => r.id);
+  const staleBefore = Date.now() - 3 * 3_600_000;
+  for (let i = 0; i < jobs.length; i += 20) {
+    const part = jobs.slice(i, i + 20);
+    const res = await Promise.all(part.map(([sub, payload]) => sendTo(admin, sub, payload)));
+    part.forEach(([, payload], k) => {
+      const id = payload.tag.slice("dn-quick-".length);
+      const row = rows.find((r) => r.id === id);
+      if (res[k]) { sent += 1; done.push(id); } else if (row && new Date(row.remind_at).getTime() < staleBefore) done.push(id);
+    });
+  }
+  if (done.length) await admin.from("quick_reminders").update({ sent_at: nowIso }).in("id", done);
   // старые отправленные убираем
   await admin.from("quick_reminders").delete().lt("remind_at", new Date(Date.now() - 2 * 86_400_000).toISOString()).not("sent_at", "is", null);
   return sent;
