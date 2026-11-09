@@ -1,6 +1,9 @@
 import { createPortal } from "react-dom";
 import { fetchProfiles } from "../lib/profiles";
 import Achievements from "./Achievements";
+import { MusicBar, MusicEditor } from "./NowPlaying";
+import { nowPlayingOf } from "../lib/nowPlaying";
+import { makeNowPlaying } from "../now-playing-strings";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type { Lang } from "../i18n";
@@ -30,6 +33,10 @@ interface Profile {
   status_emoji: string | null;
   status_text: string | null;
   privacy?: Record<string, string> | null;
+  music_title?: string | null;
+  music_artist?: string | null;
+  music_url?: string | null;
+  music_at?: string | null;
 }
 
 const AVATARS = ["😎", "🌙", "🌸", "🐶", "", "🐼", "🐸", "⭐", "🎧", "", "🌊", "🍩"];
@@ -472,13 +479,18 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
               </div>
             )}
 
+            {/* Музыка: у друга плашка, у себя редактор */}
+            {isOwn ? (
+              <MusicEditor lang={lang} music={nowPlayingOf(p)} onSave={(v) => saveProfile(v)} />
+            ) : nowPlayingOf(p) && <MusicBar music={nowPlayingOf(p)!} lang={lang} />}
+
             {/* Приватность (только свой) */}
             {isOwn && (
               <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
                 <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("privTitle")}</div>
                 <p className="mb-3 text-[12.5px] leading-relaxed text-[var(--ink-soft)]">{t("privNote")}</p>
                 <div className="flex flex-col gap-2">
-                  {([["status", t("privStatus")], ["bio", t("privBio")], ["banner", t("privBanner")]] as const).map(([key, title]) => {
+                  {([["status", t("privStatus")], ["bio", t("privBio")], ["banner", t("privBanner")], ["music", makeNowPlaying(lang)("privMusic")]] as const).map(([key, title]) => {
                     const value = p.privacy?.[key] === "nobody" ? "nobody" : "friends";
                     return (
                       <div key={key} className="flex items-center justify-between gap-3">
