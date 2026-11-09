@@ -31,7 +31,7 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
     <div className="fixed inset-0 z-[75] overflow-y-auto overscroll-contain bg-[var(--bg)]" role="dialog" aria-modal="true" aria-label={s("openPlayer")}>
       <PlayerBackdrop prefs={bg.prefs} fileUrl={bg.fileUrl} cover={cur.cover} />
       <div className="pointer-events-none fixed inset-0" style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 40%, transparent), var(--bg) 95%)" }} />
-      <div className="safe-top safe-bottom relative mx-auto flex min-h-full max-w-md flex-col px-5 pb-6 pt-3">
+      <div className="safe-top safe-bottom relative mx-auto flex min-h-full max-w-md flex-col px-5 pb-6 pt-3 md:max-w-xl lg:max-w-5xl lg:px-10">
         <div className="flex items-center justify-between">
           <button onClick={onClose} aria-label={s("collapse")} className="grid h-10 w-10 place-items-center rounded-full border border-[var(--line)] bg-[var(--panel)]/70 text-[var(--ink-soft)] backdrop-blur transition-transform active:scale-90">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 9l6 6 6-6" /></svg>
@@ -42,6 +42,8 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
           </button>
         </div>
 
+        <div className="grid grid-cols-1 lg:mt-4 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:gap-x-12">
+        <div className="lg:col-start-1 lg:row-start-1">
         <div className="mt-6 flex justify-center">
           <Cover src={cur.cover} size={Math.min(300, typeof window === "undefined" ? 300 : window.innerWidth - 56)} className="!rounded-3xl shadow-2xl" />
         </div>
@@ -56,7 +58,9 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
           {cur.url && <div className="text-center"><a href={cur.url} target="_blank" rel="noopener noreferrer" className="text-[12.5px] font-semibold text-[var(--accent-deep)] hover:underline">{s("full")} ›</a></div>}
         </div>
 
-        <div className="mt-4">
+        </div>
+
+        <div className="mt-4 lg:hidden">
           <button onClick={() => setShowLyrics((v) => !v)} aria-expanded={showLyrics}
             className={`mx-auto flex h-10 items-center gap-2 rounded-full border px-5 text-[13.5px] font-bold transition-transform active:scale-95 ${showLyrics ? "border-transparent bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel)]/70 text-[var(--ink)]"}`}>
             <span aria-hidden>♪</span>{showLyrics ? ls("hide") : ls("lyrics")}
@@ -67,8 +71,15 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
           {showLyrics && <div className="mt-3"><LyricsPanel lang={lang} title={cur.title} artist={cur.artist} /></div>}
         </div>
 
+        <div className="mt-2 hidden lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:block">
+          <LyricsPanel lang={lang} title={cur.title} artist={cur.artist} tall />
+          <button onClick={() => setShowBg((v) => !v)} aria-expanded={showBg}
+            className="mx-auto mt-2 flex h-9 items-center rounded-full px-4 text-[12.5px] font-semibold text-[var(--ink-soft)] transition-transform active:scale-95">{bs("bg")} {showBg ? "▴" : "▾"}</button>
+          {showBg && <div className="mt-1"><BackgroundPicker lang={lang} prefs={bg.prefs} onChange={bg.update} /></div>}
+        </div>
+
         {m.queue.length > 1 && (
-          <div className="mt-6">
+          <div className="mt-6 lg:col-start-1 lg:row-start-2">
             <div className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{s("queue")}</div>
             <ul className="flex flex-col gap-1">
               {m.queue.map((t) => (
@@ -87,6 +98,7 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
             </ul>
           </div>
         )}
+        </div>
       </div>
     </div>,
     document.body,

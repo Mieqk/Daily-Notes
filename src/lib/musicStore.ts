@@ -118,7 +118,7 @@ const ytStartTimer = () => {
       const d = ytPlayer.getDuration();
       emit({ time: ytPlayer.getCurrentTime() || 0, ...(d > 0 ? { dur: d } : {}) });
     } catch { /* игрок ещё не готов */ }
-  }, 500);
+  }, 250);
 };
 
 async function ensureYt(): Promise<YtPlayer | null> {
