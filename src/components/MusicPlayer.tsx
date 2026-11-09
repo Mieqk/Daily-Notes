@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Lang } from "../i18n";
+import { isOwnFileUrl } from "../lib/musicFiles";
 import { embedOf } from "../lib/musicEmbed";
 import { api, isPlayable, useMusic, ytIdOf, type PlayerTrack } from "../lib/musicStore";
 import { YoutubeError, findYoutube, youtubeConfigured } from "../lib/youtubeSearch";
@@ -77,14 +78,14 @@ export default function MusicPlayer({ tracks, selId, onSel, lang }: { tracks: Pl
             <SeekBar lang={lang} active={active} />
             <Transport lang={lang} active={active} onToggle={toggle} />
             <VolumeControl lang={lang} className="mx-auto w-full max-w-xs" />
-            {!hasVid && youtubeConfigured() && (
+            {!hasVid && !isOwnFileUrl(cur.preview) && youtubeConfigured() && (
               <button onClick={() => void findFull()} disabled={finding} title={s("fullHint")} className="mx-auto h-9 rounded-full bg-[var(--accent)] px-4 text-[12.5px] font-bold text-[var(--accent-ink)] transition-all hover:brightness-110 active:scale-95 disabled:opacity-60">{finding ? s("searching") : s("fullHere")}</button>
             )}
             {findMsg && <p className="text-center text-[12px] text-[var(--danger)]">{findMsg}</p>}
-            {canFull && !(!hasVid && youtubeConfigured()) && (
+            {canFull && !isOwnFileUrl(cur.preview) && !(!hasVid && youtubeConfigured()) && (
               <button onClick={openFull} title={s("fullHint")} className="mx-auto h-9 rounded-full bg-[var(--accent)] px-4 text-[12.5px] font-bold text-[var(--accent-ink)] transition-all hover:brightness-110 active:scale-95">{s("fullHere")}</button>
             )}
-            <p className="text-center text-[11px] text-[var(--ink-faint)]">{hasVid ? s("fullTrack") : s("preview")}{cur.url && !canFull && !hasVid && <> · <a href={cur.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--accent-deep)] hover:underline">{s("full")} ›</a></>}</p>
+            <p className="text-center text-[11px] text-[var(--ink-faint)]">{hasVid || isOwnFileUrl(cur.preview) ? s("fullTrack") : s("preview")}{cur.url && !canFull && !hasVid && !isOwnFileUrl(cur.preview) && <> · <a href={cur.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--accent-deep)] hover:underline">{s("full")} ›</a></>}</p>
           </div>
         ) : (
           <div className="mt-4">
