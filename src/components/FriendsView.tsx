@@ -18,14 +18,16 @@ import { PRESENCE_COLOR, cachePresenceMode, PRESENCE_MODE_EVENT, type PresenceMo
 import FriendChat from "./FriendChat";
 import PairHub from "./PairHub";
 import FriendsFeed from "./FriendsFeed";
+import MusicHub from "./MusicHub";
 import { useStored } from "../store";
 import type { SleepData } from "../store";
 import { ImageIcon, MusicNoteIcon, PairIcon, SunIcon, UsersIcon } from "../icons";
 
-type Sub = "friends" | "feed" | "together" | "care";
-const SUBS: { id: Sub; icon: (p: { className?: string }) => ReactNode; label: "gConnect" | "gFeed" | "gTogether" | "gCare" }[] = [
+type Sub = "friends" | "feed" | "together" | "care" | "music";
+const SUBS: { id: Sub; icon: (p: { className?: string }) => ReactNode; label: "gConnect" | "gFeed" | "gTogether" | "gCare" | "gMusic" }[] = [
   { id: "friends", icon: UsersIcon, label: "gConnect" },
   { id: "together", icon: PairIcon, label: "gTogether" },
+  { id: "music", icon: MusicNoteIcon, label: "gMusic" },
   { id: "care", icon: SunIcon, label: "gCare" },
   { id: "feed", icon: ImageIcon, label: "gFeed" },
 ];
@@ -81,7 +83,7 @@ const L: Record<string, Record<string, string>> = {
     noReqs: "Нет входящих запросов", notFound: "Не найдено. Проверь код",
     selfErr: "Нельзя добавить самого себя", already: "Вы уже друзья или запрос отправлен",
     remove: "Удалить", removeSure: "Точно удалить?",
-    addHint: "Введи код друга или поделись своим", gConnect: "Друзья", gTogether: "Парное", gFeed: "Лента", gCare: "Забота и поддержка",
+    addHint: "Введи код друга или поделись своим", gConnect: "Друзья", gTogether: "Парное", gFeed: "Лента", gCare: "Забота и поддержка", gMusic: "Музыка",
   },
   en: {
     myCode: "My friend code", copy: "Copy", copied: "Copied!",
@@ -92,7 +94,7 @@ const L: Record<string, Record<string, string>> = {
     noReqs: "No incoming requests", notFound: "Not found. Check the code",
     selfErr: "You cannot add yourself", already: "Already friends or request sent",
     remove: "Remove", removeSure: "Really remove?",
-    addHint: "Enter a friend's code or share yours", gConnect: "Friends", gTogether: "Paired", gFeed: "Feed", gCare: "Care & support",
+    addHint: "Enter a friend's code or share yours", gConnect: "Friends", gTogether: "Paired", gFeed: "Feed", gCare: "Care & support", gMusic: "Music",
   },
   be: {
     myCode: "Мой код сябра", copy: "Капіраваць", copied: "Скапіравана!",
@@ -103,7 +105,7 @@ const L: Record<string, Record<string, string>> = {
     noReqs: "Няма ўваходных запытаў", notFound: "Не знойдзена. Праверце код",
     selfErr: "Нельга дадаць самога сябе", already: "Вы ўжо сябры або запыт адпраўлены",
     remove: "Выдаліць", removeSure: "Дакладна выдаліць?",
-    addHint: "Увядзіце код сябра або падзяліцеся сваім", gConnect: "Сябры", gTogether: "Парнае", gFeed: "Стужка", gCare: "Клопат і падтрымка",
+    addHint: "Увядзіце код сябра або падзяліцеся сваім", gConnect: "Сябры", gTogether: "Парнае", gFeed: "Стужка", gCare: "Клопат і падтрымка", gMusic: "Музыка",
   },
   uk: {
     myCode: "Мій код друга", copy: "Копіювати", copied: "Скопійовано!",
@@ -114,7 +116,7 @@ const L: Record<string, Record<string, string>> = {
     noReqs: "Немає вхідних запитів", notFound: "Не знайдено. Перевірте код",
     selfErr: "Не можна додати самого себе", already: "Ви вже друзі або запит надіслано",
     remove: "Видалити", removeSure: "Точно видалити?",
-    addHint: "Введіть код друга або поділіться своїм", gConnect: "Друзі", gTogether: "Парне", gFeed: "Стрічка", gCare: "Турбота і підтримка",
+    addHint: "Введіть код друга або поділіться своїм", gConnect: "Друзі", gTogether: "Парне", gFeed: "Стрічка", gCare: "Турбота і підтримка", gMusic: "Музика",
   },
   de: {
     myCode: "Mein Freundescode", copy: "Kopieren", copied: "Kopiert!",
@@ -125,7 +127,7 @@ const L: Record<string, Record<string, string>> = {
     noReqs: "Keine eingehenden Anfragen", notFound: "Nicht gefunden. Prüfe den Code",
     selfErr: "Du kannst dich nicht selbst hinzufügen", already: "Ihr seid schon befreundet oder die Anfrage wurde gesendet",
     remove: "Entfernen", removeSure: "Wirklich entfernen?",
-    addHint: "Gib den Code eines Freundes ein oder teile deinen", gConnect: "Freunde", gTogether: "Zu zweit", gFeed: "Feed", gCare: "Fürsorge & Unterstützung",
+    addHint: "Gib den Code eines Freundes ein oder teile deinen", gConnect: "Freunde", gTogether: "Zu zweit", gFeed: "Feed", gCare: "Fürsorge & Unterstützung", gMusic: "Musik",
   },
   fr: {
     myCode: "Mon code ami", copy: "Copier", copied: "Copié !",
@@ -136,7 +138,7 @@ const L: Record<string, Record<string, string>> = {
     noReqs: "Aucune demande reçue", notFound: "Introuvable. Vérifiez le code",
     selfErr: "Vous ne pouvez pas vous ajouter vous-même", already: "Vous êtes déjà amis ou la demande est envoyée",
     remove: "Supprimer", removeSure: "Vraiment supprimer ?",
-    addHint: "Saisissez le code d'un ami ou partagez le vôtre", gConnect: "Amis", gTogether: "À deux", gFeed: "Fil", gCare: "Soin et soutien",
+    addHint: "Saisissez le code d'un ami ou partagez le vôtre", gConnect: "Amis", gTogether: "À deux", gFeed: "Fil", gCare: "Soin et soutien", gMusic: "Musique",
   },
   es: {
     myCode: "Mi código de amigo", copy: "Copiar", copied: "¡Copiado!",
@@ -147,7 +149,7 @@ const L: Record<string, Record<string, string>> = {
     noReqs: "No hay solicitudes recibidas", notFound: "No encontrado. Revisa el código",
     selfErr: "No puedes añadirte a ti mismo", already: "Ya sois amigos o la solicitud está enviada",
     remove: "Eliminar", removeSure: "¿Eliminar de verdad?",
-    addHint: "Introduce el código de un amigo o comparte el tuyo", gConnect: "Amigos", gTogether: "En pareja", gFeed: "Feed", gCare: "Cuidado y apoyo",
+    addHint: "Introduce el código de un amigo o comparte el tuyo", gConnect: "Amigos", gTogether: "En pareja", gFeed: "Feed", gCare: "Cuidado y apoyo", gMusic: "Música",
   },
 };
 
@@ -591,6 +593,8 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
         me={{ avatar: me?.avatar ?? null, avatarUrl: me?.avatar_url ?? null }}
         friends={friends.map(({ profile }) => ({ id: profile.id, name: nameOf(profile), avatar: profile.avatar, avatarUrl: profile.avatar_url, presence: presenceText(profile), presenceState: profile.presence_state ?? null }))} />
       </>}
+
+      {sub === "music" && <MusicHub userId={userId} lang={lang} />}
 
       {sub === "care" && (
         <CareHub userId={userId} lang={lang} feedKey={feedKey} onThank={sendThanksTo}

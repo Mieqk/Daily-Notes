@@ -68,6 +68,7 @@ export default function PairTogether({ userId, lang, other, section, moods, mood
       {section === "today" && (
         <>
           <Touches linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} />
+          <PairPlaylist linkId={linkId} userId={userId} lang={lang} name={other.name} />
           <PairAvailability linkId={linkId} userId={userId} otherId={other.id} lang={lang} name={other.name} view="today" />
           <MoodShare linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} moods={moods} moodEmoji={moodEmoji} />
           <PairPlant linkId={linkId} userId={userId} lang={lang} name={other.name} />
@@ -83,7 +84,6 @@ export default function PairTogether({ userId, lang, other, section, moods, mood
       )}
       {section === "memories" && (
         <>
-          <PairPlaylist linkId={linkId} userId={userId} lang={lang} name={other.name} />
           <MonthRecap linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} moodEmoji={moodEmoji} />
         </>
       )}

@@ -8,7 +8,7 @@ import { Cover } from "./MusicParts";
 import { BackgroundPicker, PlayerBackdrop, usePlayerBg } from "./PlayerBackground";
 import { makePlayerBg } from "../player-bg-strings";
 import { LyricsPanel } from "./LyricsPanel";
-import { Icon, NEXT, PAUSE, PLAY, PREV, SeekBar, Transport, VolumeControl } from "./PlayerControls";
+import { Equalizer, Icon, NEXT, PAUSE, PLAY, PREV, SeekBar, Transport, VolumeControl } from "./PlayerControls";
 
 /** Полноэкранный плеер: размытая обложка на фоне, большая обложка, перемотка, управление, громкость и очередь. */
 function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
@@ -28,10 +28,10 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
   useEffect(() => { if (!cur) onClose(); }, [cur, onClose]);
   if (!cur) return null;
   return createPortal(
-    <div className="fixed inset-0 z-[75] overflow-y-auto overscroll-contain bg-[var(--bg)]" role="dialog" aria-modal="true" aria-label={s("openPlayer")}>
+    <div className="animate-fadein fixed inset-0 z-[75] overflow-y-auto overscroll-contain bg-[var(--bg)]" role="dialog" aria-modal="true" aria-label={s("openPlayer")}>
       <PlayerBackdrop prefs={bg.prefs} fileUrl={bg.fileUrl} cover={cur.cover} />
       <div className="pointer-events-none fixed inset-0" style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 40%, transparent), var(--bg) 95%)" }} />
-      <div className="safe-top safe-bottom relative mx-auto flex min-h-full max-w-md flex-col px-5 pb-6 pt-3 md:max-w-xl lg:max-w-5xl lg:px-10">
+      <div className="safe-top safe-bottom relative mx-auto animate-rise flex min-h-full max-w-md flex-col px-5 pb-6 pt-3 md:max-w-xl lg:max-w-5xl lg:px-10">
         <div className="flex items-center justify-between">
           <button onClick={onClose} aria-label={s("collapse")} className="grid h-10 w-10 place-items-center rounded-full border border-[var(--line)] bg-[var(--panel)]/70 text-[var(--ink-soft)] backdrop-blur transition-transform active:scale-90">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 9l6 6 6-6" /></svg>
@@ -44,7 +44,7 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
 
         <div className="grid grid-cols-1 lg:mt-4 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:gap-x-12">
         <div className="lg:col-start-1 lg:row-start-1">
-        <div className="mt-6 flex justify-center">
+        <div className={`mt-6 flex justify-center transition-transform duration-500 ease-out ${m.playing ? "scale-100" : "scale-[0.92]"}`}>
           <Cover src={cur.cover} size={Math.min(300, typeof window === "undefined" ? 300 : window.innerWidth - 56)} className="!rounded-3xl shadow-2xl" />
         </div>
         <div className="mt-6 text-center">
@@ -91,7 +91,7 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
                       <span className={`block truncate text-[13.5px] font-bold ${t.id === m.curId ? "text-[var(--accent-deep)]" : ""}`}>{t.title}</span>
                       {t.artist && <span className="block truncate text-[12px] text-[var(--ink-soft)]">{t.artist}</span>}
                     </span>
-                    {t.id === m.curId && <span aria-hidden className="text-[var(--accent-deep)]">{m.playing ? "♪" : "❚❚"}</span>}
+                    {t.id === m.curId && <Equalizer playing={m.playing} className="text-[var(--accent-deep)]" />}
                   </button>
                 </li>
               ))}
@@ -133,13 +133,13 @@ export default function MiniPlayer({ lang }: { lang: Lang }) {
   const btn = "grid h-10 w-10 shrink-0 place-items-center rounded-full transition-transform active:scale-90 disabled:opacity-40";
   return (
     <>
-      <div className="safe-bottom relative z-20 shrink-0 border-t border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur" role="region" aria-label={s("openPlayer")} style={{ boxShadow: "0 -6px 24px -12px rgba(0,0,0,.35)" }}>
+      <div className="animate-slideup safe-bottom relative z-20 shrink-0 border-t border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur" role="region" aria-label={s("openPlayer")} style={{ boxShadow: "0 -6px 24px -12px rgba(0,0,0,.35)" }}>
         <div className="absolute inset-x-0 top-0 h-[3px] bg-[var(--line)]" aria-hidden><div className="h-full bg-[var(--accent)]" style={{ width: `${pct}%` }} /></div>
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2 sm:px-8">
           <button onClick={() => setFull(true)} aria-label={s("openPlayer")} className="flex min-w-0 flex-1 items-center gap-3 text-left active:scale-[0.99]">
             <Cover src={cur.cover} size={44} />
             <span className="min-w-0">
-              <span className="block truncate text-[13.5px] font-bold">{cur.title}</span>
+              <span className="flex items-center gap-1.5 text-[13.5px] font-bold"><Equalizer playing={m.playing} className="shrink-0 text-[var(--accent)]" /><span className="truncate">{cur.title}</span></span>
               {cur.artist && <span className="block truncate text-[12px] text-[var(--ink-soft)]">{cur.artist}</span>}
             </span>
           </button>

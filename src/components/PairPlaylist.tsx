@@ -92,10 +92,10 @@ export default function PairPlaylist({ linkId, userId, lang, name }: { linkId: s
           <>
             <MusicPlayer tracks={rows} selId={selId} onSel={setSelId} lang={lang} />
             <ul className="flex flex-col gap-2">
-              {rows.map((r) => {
+              {rows.map((r, i) => {
                 const active = r.id === selId;
                 return (
-                  <li key={r.id} className={`rounded-xl p-2.5 transition-colors ${active ? "bg-[var(--accent-soft)]" : "bg-[var(--panel-2)]"}`}>
+                  <li key={r.id} style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }} className={`animate-rise rounded-xl p-2.5 transition-all duration-300 ${active ? "bg-[var(--accent-soft)]" : "bg-[var(--panel-2)]"}`}>
                     <button onClick={() => select(r.id)} aria-current={active} className="flex w-full items-center gap-3 text-left active:scale-[0.99]">
                       <Cover src={r.cover} size={52} />
                       <span className="min-w-0 flex-1">

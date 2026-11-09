@@ -190,10 +190,10 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
         <>
         <MusicPlayer tracks={tracks} selId={selId} onSel={setSelId} lang={lang} />
         <ul className="flex flex-col gap-2">
-          {tracks.map((t) => {
+          {tracks.map((t, i) => {
             const active = t.id === selId;
             return (
-              <li key={t.id} className={`rounded-xl p-2.5 transition-colors ${active ? "bg-[var(--accent-soft)]" : "bg-[var(--panel-2)]"}`}>
+              <li key={t.id} style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }} className={`animate-rise rounded-xl p-2.5 transition-all duration-300 ${active ? "bg-[var(--accent-soft)]" : "bg-[var(--panel-2)]"}`}>
                 <button onClick={() => select(t.id)} aria-label={`${p("play")}: ${t.title}`} aria-current={active} className="flex w-full items-center gap-3 text-left active:scale-[0.99]">
                   <Cover src={t.cover} size={52} />
                   <span className="min-w-0 flex-1">
