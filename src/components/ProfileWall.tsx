@@ -5,7 +5,6 @@ import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { prepareWallImage } from "../lib/images";
-import { PlusIcon, TrashIcon, XIcon, ImageIcon } from "../icons";
 import { Cover, TrackPlayer } from "./MusicParts";
 import { safeCoverUrl } from "../lib/trackSearch";
 import { makePlaylist } from "../music-playlist-strings";
@@ -212,18 +211,17 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
       {/* Шапка доски */}
       <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ background: "linear-gradient(120deg, var(--accent-soft), var(--panel) 70%)" }}>
         <div className="flex items-center gap-2">
-          <span className="text-[18px]" aria-hidden>🖼️</span>
-          <span className="text-[15px] font-bold">{t("title")}</span>
+          <span className="text-[17px] font-bold tracking-tight">{t("title")}</span>
           {posts && posts.length > 0 && (
-            <span className="rounded-full bg-[var(--panel)] px-2 py-0.5 text-[11px] font-bold tabular-nums text-[var(--accent-deep)]">{posts.length}</span>
+            <span className="text-[13px] font-semibold tabular-nums text-[var(--ink-faint)]">{posts.length}</span>
           )}
         </div>
         {isOwn && !file && (
           <button
             onClick={() => input.current?.click()}
-            className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--accent)] pl-3 pr-4 text-[12.5px] font-semibold text-[var(--accent-ink)] transition-all hover:brightness-105 active:scale-95"
+            className="h-9 rounded-full bg-[var(--accent)] px-4 text-[12.5px] font-semibold text-[var(--accent-ink)] transition-all hover:brightness-105 active:scale-95"
           >
-            <PlusIcon className="h-4 w-4" />{t("add")}
+            {t("add")}
           </button>
         )}
         {isOwn && <input ref={input} type="file" accept="image/*" className="hidden" onChange={onPick} />}
@@ -278,10 +276,12 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
               drag ? "border-[var(--accent)] bg-[var(--accent-soft)]" : "border-[var(--line)] bg-[var(--panel-2)]"
             } ${isOwn ? "cursor-pointer hover:border-[var(--accent)]" : "cursor-default"}`}
           >
-            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--accent-soft)] text-[var(--accent-deep)]">
-              <ImageIcon className="h-7 w-7" />
+            <span className="relative mb-3 mt-1 block h-16 w-24" aria-hidden>
+              <span className="absolute inset-x-2 top-1 h-14 -rotate-6 rounded-xl border border-[var(--line)] bg-[var(--panel)]" style={{ boxShadow: "var(--shadow-sm)" }} />
+              <span className="absolute inset-x-2 top-1 h-14 rotate-6 rounded-xl border border-[var(--line)] bg-[var(--accent-soft)]" style={{ boxShadow: "var(--shadow-sm)" }} />
+              <span className="absolute inset-x-1 top-0 h-14 rounded-xl border border-[var(--line)] bg-[var(--panel)]" style={{ boxShadow: "var(--shadow-sm)" }} />
             </span>
-            <span className="text-[13.5px] font-semibold">{isOwn ? t("empty") : t("emptyOther")}</span>
+            <span className="text-[14px] font-bold">{isOwn ? t("empty") : t("emptyOther")}</span>
             {isOwn && <span className="text-[12px] text-[var(--ink-faint)]">{t("drop")}</span>}
           </button>
         ) : (
@@ -292,7 +292,7 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
                   <div className="flex items-center gap-3">
                     <Cover src={safeCoverUrl(p.track_cover)} size={72} className="shadow-md" />
                     <div className="min-w-0 flex-1">
-                      <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--accent-deep)]">♪ {makePlaylist(lang)("wallTrack")}</div>
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--accent-deep)]">{makePlaylist(lang)("wallTrack")}</div>
                       <div className="truncate text-[15px] font-bold">{p.track_title}</div>
                       {p.track_artist && <div className="truncate text-[13px] text-[var(--ink-soft)]">{p.track_artist}</div>}
                     </div>
@@ -304,11 +304,11 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
                   <button
                     onClick={() => remove(p)}
                     aria-label={t("del")}
-                    className={`absolute right-1.5 top-1.5 flex h-8 items-center gap-1 rounded-full px-2.5 text-[11.5px] font-semibold transition-all active:scale-90 ${
-                      confirmId === p.id ? "bg-[var(--danger)] text-white" : "bg-black/45 text-white hover:bg-[var(--danger)]"
+                    className={`absolute right-2 top-2 h-8 rounded-full px-3 text-[11.5px] font-semibold backdrop-blur transition-all active:scale-95 ${
+                      confirmId === p.id ? "bg-[var(--danger)] text-white" : "bg-[var(--panel)]/85 text-[var(--ink-soft)] hover:bg-[var(--danger-soft)] hover:text-[var(--danger)]"
                     }`}
                   >
-                    <TrashIcon className="h-3.5 w-3.5" />{confirmId === p.id && t("delSure")}
+                    {confirmId === p.id ? t("delSure") : t("del")}
                   </button>
                 )}
               </div>
@@ -321,7 +321,7 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
             {images.map((p, i) => (
               <figure
                 key={p.id}
-                className="group relative mb-3 break-inside-avoid overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel-2)] transition-all hover:-translate-y-0.5 [animation:rise_.35s_ease-out_both]"
+                className="group relative mb-3 break-inside-avoid overflow-hidden rounded-2xl bg-[var(--panel-2)] transition-all duration-200 hover:-translate-y-1 hover:shadow-lg [animation:rise_.35s_ease-out_both]"
                 style={{ boxShadow: "var(--shadow-sm)", animationDelay: `${Math.min(i, 8) * 40}ms` }}
               >
                 <button type="button" onClick={() => setOpen(p)} className="block w-full text-left" aria-label={p.caption ?? t("title")}>
@@ -330,20 +330,23 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
                   ) : (
                     <div className="h-32 animate-pulse bg-[var(--hover)]" />
                   )}
-                  <figcaption className="px-2.5 py-2">
-                      {p.caption && <p className="line-clamp-3 whitespace-pre-wrap break-words text-[12.5px] font-medium leading-snug">{p.caption}</p>}
-                      <span className="text-[10.5px] text-[var(--ink-faint)]">{fmt(p.created_at)}</span>
-                    </figcaption>
+                  <figcaption
+                    className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-10 text-white"
+                    style={{ background: "linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,0))" }}
+                  >
+                    {p.caption && <p className="line-clamp-3 whitespace-pre-wrap break-words text-[13px] font-semibold leading-snug">{p.caption}</p>}
+                    <span className="text-[10.5px] text-white/70">{fmt(p.created_at)}</span>
+                  </figcaption>
                 </button>
                 {isOwn && (
                   <button
                     onClick={() => remove(p)}
                     aria-label={t("del")}
-                    className={`absolute right-1.5 top-1.5 flex h-8 items-center gap-1 rounded-full px-2.5 text-[11.5px] font-semibold backdrop-blur transition-all active:scale-90 ${
-                      confirmId === p.id ? "bg-[var(--danger)] text-white" : "bg-black/45 text-white opacity-90 hover:bg-[var(--danger)] sm:opacity-0 sm:group-hover:opacity-100"
+                    className={`absolute right-2 top-2 h-8 rounded-full px-3 text-[11.5px] font-semibold backdrop-blur transition-all active:scale-95 ${
+                      confirmId === p.id ? "bg-[var(--danger)] text-white" : "bg-black/50 text-white hover:bg-[var(--danger)] sm:opacity-0 sm:group-hover:opacity-100"
                     }`}
                   >
-                    <TrashIcon className="h-3.5 w-3.5" />{confirmId === p.id && t("delSure")}
+                    {confirmId === p.id ? t("delSure") : t("del")}
                   </button>
                 )}
               </figure>
@@ -365,9 +368,9 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
           <button
             onClick={() => setOpen(null)}
             aria-label={t("close")}
-            className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
+            className="absolute right-4 top-4 h-10 rounded-full bg-white/15 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-white/25"
           >
-            <XIcon className="h-5 w-5" />
+            {t("close")}
           </button>
           {open.media_path && urls[open.media_path] && (
             <img src={urls[open.media_path!]} alt={open.caption ?? ""} className="max-h-[75vh] max-w-full rounded-xl object-contain" onClick={(e) => e.stopPropagation()} />
