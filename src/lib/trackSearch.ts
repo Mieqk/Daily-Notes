@@ -1,7 +1,7 @@
 /** Поиск трека по названию через бесплатный публичный поиск Apple (iTunes Search): даёт обложку и 30-секундное превью, ключи не нужны. */
 export interface FoundTrack { title: string; artist: string | null; url: string | null; cover: string | null; preview: string | null }
 
-const COVER_HOSTS = ["mzstatic.com", "ytimg.com"];
+const COVER_HOSTS = ["mzstatic.com", "ytimg.com", "scdn.co"];
 const AUDIO_HOSTS = ["apple.com", "mzstatic.com"];
 const URL_MAX = 300;
 
@@ -15,7 +15,7 @@ function hostOk(raw: string | null | undefined, hosts: string[]): string | null 
     return hosts.some((d) => h === d || h.endsWith("." + d)) ? u.toString() : null;
   } catch { return null; }
 }
-/** Обложка: только https и только с хостов Apple или YouTube (чужие картинки друзьям не подсунуть). */
+/** Обложка: только https и только с хостов Apple, YouTube или Spotify (scdn.co) (чужие картинки друзьям не подсунуть). */
 export const safeCoverUrl = (raw: string | null | undefined) => hostOk(raw, COVER_HOSTS);
 /** Превью: только https и только с хостов Apple. */
 export const safePreviewUrl = (raw: string | null | undefined) => hostOk(raw, AUDIO_HOSTS);
