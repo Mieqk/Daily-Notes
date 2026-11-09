@@ -20,7 +20,7 @@ export default function SpotifyImport({ lang, onImport }: { lang: Lang; onImport
   }, []);
   if (!connected) return null;
 
-  const fail = (e: unknown) => setMsg({ ok: false, text: e instanceof SpotifyError && e.status === 403 ? s("denied") : s("failed") });
+  const fail = (e: unknown) => setMsg({ ok: false, text: `${e instanceof SpotifyError && e.status === 403 ? s("denied") : s("failed")}${e instanceof SpotifyError ? ` (${e.status})` : ""}` });
   const toggle = async () => {
     setOpen((v) => !v);
     if (!open && !lists) {
