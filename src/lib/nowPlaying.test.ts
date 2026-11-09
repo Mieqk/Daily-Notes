@@ -13,7 +13,7 @@ describe("nowPlaying", () => {
   });
   it("чистит ввод", () => {
     expect(cleanMusic("  ", "x", "")).toBeNull();
-    expect(cleanMusic(" Feel Good Inc. ", " Gorillaz ", "bad")).toEqual({ title: "Feel Good Inc.", artist: "Gorillaz", url: null });
+    expect(cleanMusic(" Feel Good Inc. ", " Gorillaz ", "bad")).toEqual({ title: "Feel Good Inc.", artist: "Gorillaz", url: null, cover: null, preview: null });
     expect(cleanMusic("A", "", "")?.artist).toBeNull();
   });
   it("различает «сейчас» и «недавно»", () => {
@@ -24,6 +24,6 @@ describe("nowPlaying", () => {
   });
   it("читает колонки профиля", () => {
     expect(nowPlayingOf({ music_title: null })).toBeNull();
-    expect(nowPlayingOf({ music_title: "T", music_artist: " ", music_at: "x" })).toEqual({ title: "T", artist: null, url: null, at: "x" });
+    expect(nowPlayingOf({ music_title: "T", music_artist: " ", music_at: "x" })).toEqual({ title: "T", artist: null, url: null, cover: null, preview: null, at: "x" });
   });
 });

@@ -1,75 +1,62 @@
 import { useState } from "react";
 import type { Lang } from "../i18n";
-import { MusicNoteIcon } from "../icons";
-import { cleanMusic, isLive, MUSIC_ARTIST_MAX, MUSIC_TITLE_MAX, MUSIC_URL_MAX, type NowPlaying } from "../lib/nowPlaying";
+import { isLive, type NowPlaying } from "../lib/nowPlaying";
+import type { FoundTrack } from "../lib/trackSearch";
 import { makeNowPlaying } from "../now-playing-strings";
+import { makeSearch } from "../music-search-strings";
+import { Cover, PreviewButton, TrackSearch } from "./MusicParts";
 
-/** Плашка как в Telegram: нота, трек жирным, исполнитель рядом; по тапу открывается ссылка, если она есть. */
-export function MusicBar({ music, lang, className = "" }: { music: NowPlaying; lang: Lang; className?: string }) {
+/** Карточка как в Telegram: обложка, трек жирным, исполнитель; рядом кнопка превью, если оно есть, или ссылка на трек. */
+export function MusicBar({ music, lang, onClear }: { music: NowPlaying; lang: Lang; onClear?: () => void }) {
   const n = makeNowPlaying(lang);
-  const body = (
-    <>
-      <MusicNoteIcon className="h-4 w-4 shrink-0 text-[var(--accent-deep)]" />
-      <span className="min-w-0 truncate">
-        <span className="font-bold">{music.title}</span>
-        {music.artist && <span className="text-[var(--ink-soft)]"> {music.artist}</span>}
-      </span>
-    </>
-  );
-  const cls = `flex min-w-0 items-center gap-2 rounded-xl bg-[var(--accent-soft)] px-3 py-2 text-[13px] ${className}`;
+  const s = makeSearch(lang);
   return (
-    <div>
-      <div className="mb-1 px-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{isLive(music.at) ? n("live") : n("recent")}</div>
-      {music.url ? (
-        <a href={music.url} target="_blank" rel="noopener noreferrer" aria-label={`${n("open")}: ${music.title}`} className={`${cls} transition-all active:scale-[0.98]`}>
-          {body}<span aria-hidden className="ml-auto shrink-0 text-[var(--ink-faint)]">›</span>
-        </a>
-      ) : <div className={cls}>{body}</div>}
+    <div className="overflow-hidden rounded-2xl border border-[var(--line)] p-3" style={{ background: "linear-gradient(120deg, var(--accent-soft), var(--panel) 85%)", boxShadow: "var(--shadow-sm)" }}>
+      <div className="mb-2 flex items-center justify-between gap-2 px-0.5">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--accent-deep)]">♪ {isLive(music.at) ? n("live") : n("recent")}</span>
+        {onClear && <button onClick={onClear} className="text-[12px] font-semibold text-[var(--ink-faint)] hover:text-[var(--danger)]">{s("clear")}</button>}
+      </div>
+      <div className="flex items-center gap-3">
+        <Cover src={music.cover} size={64} className="shadow-md" />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[15px] font-bold">{music.title}</div>
+          {music.artist && <div className="truncate text-[13px] text-[var(--ink-soft)]">{music.artist}</div>}
+          {music.url && (
+            <a href={music.url} target="_blank" rel="noopener noreferrer" aria-label={`${n("open")}: ${music.title}`} className="mt-0.5 inline-block text-[12px] font-semibold text-[var(--accent-deep)] hover:underline">
+              {n("open")} ›
+            </a>
+          )}
+        </div>
+        {music.preview && <PreviewButton src={music.preview} lang={lang} size={44} />}
+      </div>
     </div>
   );
 }
 
-/** Редактор своего трека. onSave получает значения колонок music_*; вернуть true при успехе. */
+/** Выбор своего трека «сейчас играет»: нашли, тапнули, готово. */
 export function MusicEditor({ lang, music, onSave }: {
   lang: Lang; music: NowPlaying | null;
-  onSave: (v: { music_title: string | null; music_artist: string | null; music_url: string | null; music_at: string | null }) => Promise<boolean>;
+  onSave: (v: { music_title: string | null; music_artist: string | null; music_url: string | null; music_cover: string | null; music_preview: string | null; music_at: string | null }) => Promise<boolean>;
 }) {
   const n = makeNowPlaying(lang);
-  const [title, setTitle] = useState(music?.title ?? "");
-  const [artist, setArtist] = useState(music?.artist ?? "");
-  const [url, setUrl] = useState(music?.url ?? "");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [busy, setBusy] = useState(false);
 
-  const save = async () => {
-    const c = cleanMusic(title, artist, url);
-    if (!c) return;
-    setBusy(true);
-    const ok = await onSave({ music_title: c.title, music_artist: c.artist, music_url: c.url, music_at: new Date().toISOString() });
-    setBusy(false);
-    setMsg(ok ? { ok: true, text: url.trim() && !c.url ? n("badUrl") : n("saved") } : { ok: false, text: n("failed") });
-    if (ok && !c.url) setUrl("");
+  const save = async (t: FoundTrack) => {
+    const ok = await onSave({ music_title: t.title, music_artist: t.artist, music_url: t.url, music_cover: t.cover, music_preview: t.preview, music_at: new Date().toISOString() });
+    setMsg({ ok, text: ok ? n("saved") : n("failed") });
+    return ok;
   };
   const clear = async () => {
-    setBusy(true);
-    const ok = await onSave({ music_title: null, music_artist: null, music_url: null, music_at: null });
-    setBusy(false);
-    if (ok) { setTitle(""); setArtist(""); setUrl(""); setMsg({ ok: true, text: n("saved") }); } else setMsg({ ok: false, text: n("failed") });
+    const ok = await onSave({ music_title: null, music_artist: null, music_url: null, music_cover: null, music_preview: null, music_at: null });
+    setMsg({ ok, text: ok ? n("saved") : n("failed") });
   };
-  const input = "h-9 min-w-0 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[12.5px] outline-none focus:border-[var(--accent)]";
+
   return (
     <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
       <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{n("title")}</div>
       <p className="mb-3 text-[12.5px] leading-relaxed text-[var(--ink-soft)]">{n("hint")}</p>
-      <div className="flex flex-col gap-1.5">
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={n("trackPh")} maxLength={MUSIC_TITLE_MAX} className={input} />
-        <input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder={n("artistPh")} maxLength={MUSIC_ARTIST_MAX} className={input} />
-        <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={n("urlPh")} maxLength={MUSIC_URL_MAX} inputMode="url" className={input} />
-      </div>
-      <div className="mt-2 flex gap-1.5">
-        <button onClick={save} disabled={busy || !title.trim()} className="h-9 flex-1 rounded-lg bg-[var(--accent)] text-[12.5px] font-semibold text-[var(--accent-ink)] transition-all active:scale-95 disabled:opacity-50">{n("set")}</button>
-        {music && <button onClick={clear} disabled={busy} className="h-9 shrink-0 rounded-lg border border-[var(--line)] px-3 text-[12px] font-semibold text-[var(--ink-faint)] transition-colors hover:bg-[var(--hover)]">{n("clear")}</button>}
-      </div>
+      {music && <div className="mb-3"><MusicBar music={music} lang={lang} onClear={clear} /></div>}
+      <TrackSearch lang={lang} onPick={save} actionLabel={n("set")} />
       {msg && <p className={`mt-2 text-[12px] font-semibold ${msg.ok ? "text-[var(--accent-deep)]" : "text-[var(--danger)]"}`} role="status">{msg.text}</p>}
     </div>
   );
