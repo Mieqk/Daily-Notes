@@ -171,6 +171,13 @@ export const LockIcon = ({ className = "h-5 w-5" }: IconProps) => (
   </svg>
 );
 
+export const LinkIcon = ({ className = "h-5 w-5" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" />
+    <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+  </svg>
+);
+
 export const BellIcon = ({ className = "h-5 w-5" }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} {...base}>
     <path d="M12 3.5a5.8 5.8 0 0 1 5.8 5.8c0 4.6 1.4 5.9 1.4 5.9H4.8s1.4-1.3 1.4-5.9A5.8 5.8 0 0 1 12 3.5Z" />

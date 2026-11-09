@@ -32,6 +32,7 @@ import {
   FingerprintIcon,
   GlobeIcon,
   LockIcon,
+  LinkIcon,
   MoodVisual,
   PaletteIcon,
   PenIcon,
@@ -49,6 +50,9 @@ import NotificationSettings from "./NotificationSettings";
 import PlaceReminders from "./PlaceReminders";
 import GoogleCalendarSettings from "./GoogleCalendarSettings";
 import E2eeSettings from "./E2eeSettings";
+import SpotifyCard from "./SpotifyCard";
+import { spotifyConfigured } from "../lib/spotify";
+import { makeSpotify } from "../spotify-strings";
 import { makeE2ee } from "../e2ee-strings";
 
 interface SettingsViewProps {
@@ -575,7 +579,12 @@ export default function SettingsView(props: SettingsViewProps) {
         {/* Privacy */}
         <NotificationSettings lang={lang} signedIn={Boolean(user)} userId={user?.id ?? null} />
         <PlaceReminders lang={lang} showToast={showToast} />
-        <GoogleCalendarSettings lang={lang} signedIn={Boolean(user)} tasks={tasks} showToast={showToast} />
+        <Section icon={<LinkIcon className="h-4.5 w-4.5" />} title={makeSpotify(lang)("integrations")} sub={makeSpotify(lang)("integrationsSub")} delay={280}>
+          <div className="flex flex-col gap-3 [&>div]:!bg-[var(--panel-2)] [&>div]:!shadow-none">
+            <GoogleCalendarSettings lang={lang} signedIn={Boolean(user)} tasks={tasks} showToast={showToast} />
+            {spotifyConfigured() && <SpotifyCard lang={lang} signedIn={Boolean(user)} />}
+          </div>
+        </Section>
 
         <Section icon={<LockIcon className="h-4.5 w-4.5" />} title={t("secPrivacy")} sub={t("secPrivacySub")} delay={300}>
           <div className="mb-3 flex items-center gap-2">

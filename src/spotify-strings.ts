@@ -2,6 +2,7 @@ import type { Lang } from "./i18n";
 
 /** Строки подключения Spotify. */
 const ru = {
+  integrations: "Интеграции", integrationsSub: "Подключайте сервисы, чтобы они работали вместе с Daily Notes", needLogin: "Войдите в аккаунт, чтобы подключить Spotify", spSub: "Музыка и «сейчас играет»", statusOn: "Подключено", statusOff: "Не подключено",
   title: "Spotify", hint: "Подключите Spotify, и друзья будут видеть в профиле, что вы слушаете. Плейлисты можно добавить в свой плейлист.",
   connect: "Подключить Spotify", connected: "Spotify подключён", disconnect: "Отключить",
   sync: "Показывать, что я сейчас слушаю", syncNote: "Работает, пока приложение открыто.",
@@ -13,6 +14,7 @@ const ru = {
 type Strings = typeof ru;
 
 const en: Strings = {
+  integrations: "Integrations", integrationsSub: "Connect services to work together with Daily Notes", needLogin: "Sign in to connect Spotify", spSub: "Music and \"now playing\"", statusOn: "Connected", statusOff: "Not connected",
   title: "Spotify", hint: "Connect Spotify and friends will see what you're listening to on your profile. You can also add playlists to your own.",
   connect: "Connect Spotify", connected: "Spotify connected", disconnect: "Disconnect",
   sync: "Show what I'm listening to", syncNote: "Works while the app is open.",
@@ -23,6 +25,7 @@ const en: Strings = {
 };
 
 const be: Strings = {
+  integrations: "Інтэграцыі", integrationsSub: "Падключайце сэрвісы, каб яны працавалі разам з Daily Notes", needLogin: "Увайдзіце ў акаўнт, каб падключыць Spotify", spSub: "Музыка і «зараз іграе»", statusOn: "Падключана", statusOff: "Не падключана",
   title: "Spotify", hint: "Падключыце Spotify, і сябры будуць бачыць у профілі, што вы слухаеце. Плэйлісты можна дадаць у свой плэйліст.",
   connect: "Падключыць Spotify", connected: "Spotify падключаны", disconnect: "Адключыць",
   sync: "Паказваць, што я зараз слухаю", syncNote: "Працуе, пакуль праграма адкрытая.",
@@ -33,6 +36,7 @@ const be: Strings = {
 };
 
 const uk: Strings = {
+  integrations: "Інтеграції", integrationsSub: "Підключайте сервіси, щоб вони працювали разом із Daily Notes", needLogin: "Увійдіть в акаунт, щоб підключити Spotify", spSub: "Музика і «зараз грає»", statusOn: "Підключено", statusOff: "Не підключено",
   title: "Spotify", hint: "Підключіть Spotify, і друзі бачитимуть у профілі, що ви слухаєте. Плейлисти можна додати у свій плейлист.",
   connect: "Підключити Spotify", connected: "Spotify підключено", disconnect: "Відключити",
   sync: "Показувати, що я зараз слухаю", syncNote: "Працює, поки застосунок відкритий.",
@@ -43,6 +47,7 @@ const uk: Strings = {
 };
 
 const de: Strings = {
+  integrations: "Integrationen", integrationsSub: "Verbinde Dienste, damit sie mit Daily Notes zusammenarbeiten", needLogin: "Melde dich an, um Spotify zu verbinden", spSub: "Musik und „Gerade läuft“", statusOn: "Verbunden", statusOff: "Nicht verbunden",
   title: "Spotify", hint: "Verbinde Spotify, und Freunde sehen in deinem Profil, was du hörst. Playlists kannst du in deine eigene übernehmen.",
   connect: "Spotify verbinden", connected: "Spotify verbunden", disconnect: "Trennen",
   sync: "Anzeigen, was ich gerade höre", syncNote: "Funktioniert, solange die App geöffnet ist.",
@@ -53,6 +58,7 @@ const de: Strings = {
 };
 
 const fr: Strings = {
+  integrations: "Intégrations", integrationsSub: "Connectez des services pour qu'ils fonctionnent avec Daily Notes", needLogin: "Connectez-vous pour relier Spotify", spSub: "Musique et « en cours d'écoute »", statusOn: "Connecté", statusOff: "Non connecté",
   title: "Spotify", hint: "Connectez Spotify et vos amis verront sur votre profil ce que vous écoutez. Vous pouvez aussi ajouter des playlists à la vôtre.",
   connect: "Connecter Spotify", connected: "Spotify connecté", disconnect: "Déconnecter",
   sync: "Afficher ce que j'écoute", syncNote: "Fonctionne tant que l'application est ouverte.",
@@ -63,6 +69,7 @@ const fr: Strings = {
 };
 
 const es: Strings = {
+  integrations: "Integraciones", integrationsSub: "Conecta servicios para que funcionen con Daily Notes", needLogin: "Inicia sesión para conectar Spotify", spSub: "Música y «escuchando ahora»", statusOn: "Conectado", statusOff: "No conectado",
   title: "Spotify", hint: "Conecta Spotify y tus amigos verán en tu perfil lo que escuchas. También puedes añadir listas a la tuya.",
   connect: "Conectar Spotify", connected: "Spotify conectado", disconnect: "Desconectar",
   sync: "Mostrar lo que escucho", syncNote: "Funciona mientras la app está abierta.",

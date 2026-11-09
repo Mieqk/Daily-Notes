@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Lang } from "../i18n";
-import { api, useMusic } from "../lib/musicStore";
+import { api, isPlayable, useMusic } from "../lib/musicStore";
 import { makeSearch } from "../music-search-strings";
 import { Cover } from "./MusicParts";
 import { Icon, NEXT, PAUSE, PLAY, PREV, SeekBar, Transport, VolumeControl } from "./PlayerControls";
@@ -27,7 +27,7 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
           <button onClick={onClose} aria-label={s("collapse")} className="grid h-10 w-10 place-items-center rounded-full border border-[var(--line)] bg-[var(--panel)]/70 text-[var(--ink-soft)] backdrop-blur transition-transform active:scale-90">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 9l6 6 6-6" /></svg>
           </button>
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-soft)]">♪ {s("preview")}</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-soft)]">♪ {m.kind === "yt" ? s("fullTrack") : s("preview")}</span>
           <button onClick={() => { api.close(); onClose(); }} aria-label={s("closePlayer")} className="grid h-10 w-10 place-items-center rounded-full border border-[var(--line)] bg-[var(--panel)]/70 text-[var(--ink-soft)] backdrop-blur transition-transform active:scale-90">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
@@ -53,7 +53,7 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
             <ul className="flex flex-col gap-1">
               {m.queue.map((t) => (
                 <li key={t.id}>
-                  <button onClick={() => api.play(t.id)} disabled={!t.preview} aria-current={t.id === m.curId}
+                  <button onClick={() => api.play(t.id)} disabled={!isPlayable(t)} aria-current={t.id === m.curId}
                     className={`flex w-full items-center gap-3 rounded-xl p-1.5 text-left transition-colors active:scale-[0.99] disabled:opacity-40 ${t.id === m.curId ? "bg-[var(--accent-soft)]" : "hover:bg-[var(--hover)]"}`}>
                     <Cover src={t.cover} size={42} />
                     <span className="min-w-0 flex-1">
@@ -73,6 +73,22 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
   );
 }
 
+/** Окно YouTube: оно остаётся видно, пока играет полный трек (так требуют правила YouTube). Управляют им наши кнопки. */
+function YouTubeWindow({ visible }: { visible: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    api.attachYtHost(ref.current);
+    return () => api.attachYtHost(null);
+  }, []);
+  return (
+    <div
+      ref={ref}
+      className={`fixed right-3 z-[80] overflow-hidden rounded-xl border border-[var(--line)] bg-black shadow-2xl ${visible ? "" : "pointer-events-none invisible"}`}
+      style={{ width: 176, height: 99, bottom: "calc(76px + env(safe-area-inset-bottom))" }}
+    />
+  );
+}
+
 /** Мини-плеер внизу приложения: виден на любом экране, пока есть трек. По тапу открывается полный плеер. */
 export default function MiniPlayer({ lang }: { lang: Lang }) {
   const s = makeSearch(lang);
@@ -81,7 +97,7 @@ export default function MiniPlayer({ lang }: { lang: Lang }) {
   const cur = m.queue.find((t) => t.id === m.curId) ?? null;
   if (!cur) return null;
   const pct = m.dur ? Math.min(100, (m.time / m.dur) * 100) : 0;
-  const many = m.queue.filter((t) => t.preview).length > 1;
+  const many = m.queue.filter(isPlayable).length > 1;
   const btn = "grid h-10 w-10 shrink-0 place-items-center rounded-full transition-transform active:scale-90 disabled:opacity-40";
   return (
     <>
@@ -103,6 +119,7 @@ export default function MiniPlayer({ lang }: { lang: Lang }) {
           </button>
         </div>
       </div>
+      <YouTubeWindow visible={m.kind === "yt"} />
       {full && <FullPlayer lang={lang} onClose={() => setFull(false)} />}
     </>
   );

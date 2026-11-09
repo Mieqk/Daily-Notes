@@ -8,7 +8,7 @@ import { makePlaylist } from "../music-playlist-strings";
 import { Cover, TrackSearch } from "./MusicParts";
 import MusicPlayer from "./MusicPlayer";
 import SpotifyImport from "./SpotifyImport";
-import { api } from "../lib/musicStore";
+import { api, isPlayable } from "../lib/musicStore";
 
 export interface Track { id: string; title: string; artist: string | null; url: string | null; cover: string | null; preview: string | null }
 const MAX = 50;
@@ -30,7 +30,7 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
   const select = (id: string) => {
     setSelId(id);
     const t = tracks?.find((x) => x.id === id);
-    if (t?.preview) api.playQueue(tracks!.filter((x) => x.preview), id);
+    if (t && isPlayable(t)) api.playQueue(tracks!.filter(isPlayable), id);
   };
   const [adding, setAdding] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);

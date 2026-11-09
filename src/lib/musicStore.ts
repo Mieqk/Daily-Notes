@@ -1,7 +1,14 @@
 import { useSyncExternalStore } from "react";
+import { youtubeId } from "./musicEmbed";
+import { cachedYoutube } from "./youtubeSearch";
 
-/** Общий плеер приложения: один <audio> на всё, играет при переходе между экранами. Играет 30-секундные превью. */
+/** Общий плеер приложения: один <audio> (30-секундные превью) и один плеер YouTube (полные треки), играет при переходе между экранами. */
 export interface PlayerTrack { id: string; title: string; artist: string | null; url: string | null; cover: string | null; preview: string | null }
+
+/** Видео YouTube для полного трека: из ссылки или найденное ранее. */
+export const ytIdOf = (t: Pick<PlayerTrack, "title" | "artist" | "url">): string | null => youtubeId(t.url) ?? cachedYoutube(t.title, t.artist);
+/** Трек можно проиграть: есть превью или полная версия на YouTube. */
+export const isPlayable = (t: PlayerTrack): boolean => !!(t.preview || ytIdOf(t));
 
 export interface MusicState {
   queue: PlayerTrack[];
@@ -12,6 +19,8 @@ export interface MusicState {
   volume: number;
   muted: boolean;
   repeat: boolean;
+  /** что играет: превью через <audio> или полный трек через YouTube */
+  kind: "audio" | "yt";
   /** false, если устройство не даёт менять громкость программно (например, iPhone): тогда ползунок не показываем */
   volumeSupported: boolean;
 }
@@ -20,7 +29,7 @@ const VOL_KEY = "dn.musicVolume";
 
 /** Следующий (dir=1) или предыдущий (dir=-1) трек с превью. wrap: по кругу. */
 export function neighborId(queue: PlayerTrack[], curId: string | null, dir: 1 | -1, wrap: boolean): string | null {
-  const pl = queue.filter((t) => t.preview);
+  const pl = queue.filter(isPlayable);
   if (!pl.length) return null;
   const i = curId ? pl.findIndex((t) => t.id === curId) : -1;
   if (i < 0) return (dir === 1 ? pl[0] : pl[pl.length - 1]).id;
@@ -39,7 +48,7 @@ function loadVolume(): number {
 }
 
 let audio: HTMLAudioElement | null = null;
-let state: MusicState = { queue: [], curId: null, playing: false, time: 0, dur: 30, volume: 1, muted: false, repeat: false, volumeSupported: true };
+let state: MusicState = { queue: [], curId: null, playing: false, time: 0, dur: 30, volume: 1, muted: false, repeat: false, kind: "audio", volumeSupported: true };
 let inited = false;
 const subs = new Set<() => void>();
 const emit = (patch: Partial<MusicState>) => { state = { ...state, ...patch }; subs.forEach((f) => f()); };
@@ -70,6 +79,95 @@ function ensure(): HTMLAudioElement {
   return a;
 }
 
+
+/* ---- YouTube ---- */
+interface YtPlayer {
+  loadVideoById(id: string): void; playVideo(): void; pauseVideo(): void; stopVideo(): void; destroy(): void;
+  seekTo(sec: number, allow: boolean): void; setVolume(v: number): void; mute(): void; unMute(): void;
+  getCurrentTime(): number; getDuration(): number; getPlayerState(): number;
+}
+interface YtApi { Player: new (el: HTMLElement, opts: unknown) => YtPlayer }
+let ytPlayer: YtPlayer | null = null;
+let ytHost: HTMLElement | null = null;
+let ytApi: Promise<YtApi> | null = null;
+let ytTimer = 0;
+let ytWant = 0; // номер последней просьбы включить видео, чтобы поздние ответы не перебили новый выбор
+
+function loadYtApi(): Promise<YtApi> {
+  const w = window as unknown as { YT?: YtApi; onYouTubeIframeAPIReady?: () => void };
+  if (w.YT?.Player) return Promise.resolve(w.YT);
+  if (ytApi) return ytApi;
+  ytApi = new Promise<YtApi>((resolve, reject) => {
+    const prev = w.onYouTubeIframeAPIReady;
+    w.onYouTubeIframeAPIReady = () => { prev?.(); if (w.YT) resolve(w.YT); else reject(new Error("yt")); };
+    const sc = document.createElement("script");
+    sc.src = "https://www.youtube.com/iframe_api";
+    sc.async = true;
+    sc.onerror = () => { ytApi = null; reject(new Error("yt")); };
+    document.head.appendChild(sc);
+  });
+  return ytApi;
+}
+
+const ytStopTimer = () => { if (ytTimer) { window.clearInterval(ytTimer); ytTimer = 0; } };
+const ytStartTimer = () => {
+  ytStopTimer();
+  ytTimer = window.setInterval(() => {
+    if (!ytPlayer || state.kind !== "yt") return;
+    try {
+      const d = ytPlayer.getDuration();
+      emit({ time: ytPlayer.getCurrentTime() || 0, ...(d > 0 ? { dur: d } : {}) });
+    } catch { /* игрок ещё не готов */ }
+  }, 500);
+};
+
+async function ensureYt(): Promise<YtPlayer | null> {
+  const YT = await loadYtApi();
+  // окно плеера появляется вместе с мини-плеером: ждём его до 3 секунд
+  for (let i = 0; i < 60 && !ytHost; i++) await new Promise((r) => setTimeout(r, 50));
+  if (!ytHost) return null;
+  if (ytPlayer) return ytPlayer;
+  const slot = document.createElement("div");
+  ytHost.appendChild(slot);
+  return await new Promise<YtPlayer>((resolve) => {
+    const p: YtPlayer = new YT.Player(slot, {
+      width: "100%", height: "100%",
+      playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 1, origin: location.origin },
+      events: {
+        onReady: () => { ytPlayer = p; resolve(p); },
+        onStateChange: (e: { data: number }) => {
+          if (e.data === 1) { emit({ playing: true }); ytStartTimer(); syncSession(); }
+          else if (e.data === 2) { emit({ playing: false }); }
+          else if (e.data === 0) {
+            if (state.repeat) { p.seekTo(0, true); p.playVideo(); return; }
+            const n = neighborId(state.queue, state.curId, 1, false);
+            if (n) api.play(n); else { ytStopTimer(); emit({ playing: false, time: 0 }); }
+          }
+        },
+        onError: () => { emit({ playing: false }); },
+      },
+    });
+  });
+}
+
+function playYt(id: string, vid: string) {
+  audio?.pause();
+  const mine = ++ytWant;
+  emit({ curId: id, kind: "yt", time: 0, dur: 1, playing: true });
+  void ensureYt().then((p) => {
+    if (!p || mine !== ytWant || state.curId !== id) return;
+    p.setVolume(Math.round(state.volume * 100));
+    if (state.muted) p.mute(); else p.unMute();
+    p.loadVideoById(vid);
+  }, () => emit({ playing: false }));
+}
+
+function stopYt() {
+  ytWant++;
+  ytStopTimer();
+  try { ytPlayer?.pauseVideo(); } catch { /* ignore */ }
+}
+
 function syncSession() {
   if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
   const t = state.queue.find((x) => x.id === state.curId);
@@ -91,15 +189,24 @@ export const api = {
   },
   play(id: string) {
     const t = state.queue.find((x) => x.id === id);
-    if (!t?.preview) return;
+    if (!t) return;
+    const vid = ytIdOf(t);
+    if (vid) { playYt(id, vid); return; }
+    if (!t.preview) return;
+    stopYt();
     const a = ensure();
     if (a.src !== t.preview) { a.src = t.preview; emit({ time: 0, dur: 30 }); }
     a.volume = state.volume;
     a.muted = state.muted;
-    emit({ curId: id });
+    emit({ curId: id, kind: "audio" });
     void a.play().catch(() => emit({ playing: false }));
   },
   toggle() {
+    if (state.kind === "yt") {
+      if (!ytPlayer || !state.curId) return;
+      if (ytPlayer.getPlayerState() === 1) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
+      return;
+    }
     const a = ensure();
     if (!state.curId) return;
     if (a.paused) void a.play().catch(() => {}); else a.pause();
@@ -107,27 +214,42 @@ export const api = {
   next() { const n = neighborId(state.queue, state.curId, 1, true); if (n) api.play(n); },
   prev() {
     // как на площадках: если трек уже играет больше 3 секунд, возвращаемся в его начало
-    if (audio && audio.currentTime > 3) { audio.currentTime = 0; return; }
+    if (state.kind === "yt" && ytPlayer && state.time > 3) { ytPlayer.seekTo(0, true); emit({ time: 0 }); return; }
+    if (state.kind === "audio" && audio && audio.currentTime > 3) { audio.currentTime = 0; return; }
     const n = neighborId(state.queue, state.curId, -1, true);
     if (n) api.play(n);
   },
-  seek(sec: number) { const a = ensure(); a.currentTime = Math.max(0, sec); emit({ time: a.currentTime }); },
+  seek(sec: number) {
+    if (state.kind === "yt") { ytPlayer?.seekTo(Math.max(0, sec), true); emit({ time: Math.max(0, sec) }); return; }
+    const a = ensure(); a.currentTime = Math.max(0, sec); emit({ time: a.currentTime }); },
   setVolume(v: number) {
     const vol = clamp01(v);
     const a = ensure();
     a.volume = vol;
     a.muted = false;
+    if (ytPlayer) { ytPlayer.setVolume(Math.round(vol * 100)); ytPlayer.unMute(); }
     try { localStorage.setItem(VOL_KEY, String(vol)); } catch { /* ignore */ }
     emit({ volume: vol, muted: false });
   },
-  toggleMute() { const a = ensure(); a.muted = !state.muted; emit({ muted: a.muted }); },
+  toggleMute() {
+    const a = ensure();
+    a.muted = !state.muted;
+    if (ytPlayer) { if (a.muted) ytPlayer.mute(); else ytPlayer.unMute(); }
+    emit({ muted: a.muted });
+  },
   toggleRepeat() { emit({ repeat: !state.repeat }); },
   /** Остановить и убрать мини-плеер. */
   close() {
     audio?.pause();
     if (audio) audio.removeAttribute("src");
-    emit({ queue: [], curId: null, playing: false, time: 0, dur: 30 });
+    ytWant++;
+    ytStopTimer();
+    try { ytPlayer?.destroy(); } catch { /* ignore */ }
+    ytPlayer = null;
+    emit({ queue: [], curId: null, playing: false, time: 0, dur: 30, kind: "audio" });
   },
+  /** Контейнер для окна YouTube (его показывает мини-плеер); null, когда окна нет. */
+  attachYtHost(el: HTMLElement | null) { ytHost = el; },
 };
 
 export const getMusic = () => state;
@@ -135,4 +257,4 @@ const subscribe = (f: () => void) => { subs.add(f); return () => { subs.delete(f
 export function useMusic(): MusicState { return useSyncExternalStore(subscribe, getMusic, getMusic); }
 
 /** Только для тестов. */
-export function _resetMusic() { audio = null; inited = false; state = { queue: [], curId: null, playing: false, time: 0, dur: 30, volume: 1, muted: false, repeat: false, volumeSupported: true }; }
+export function _resetMusic() { audio = null; inited = false; state = { queue: [], curId: null, playing: false, time: 0, dur: 30, volume: 1, muted: false, repeat: false, kind: "audio", volumeSupported: true }; }

@@ -40,3 +40,9 @@ export function coverFromLink(raw: string | null | undefined): string | null {
   const id = e.src.split("/embed/")[1];
   return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
 }
+
+/** Идентификатор видео YouTube из ссылки (или null). */
+export function youtubeId(raw: string | null | undefined): string | null {
+  const e = embedOf(raw);
+  return e?.kind === "youtube" ? e.src.split("/embed/")[1] ?? null : null;
+}
