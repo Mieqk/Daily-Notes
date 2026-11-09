@@ -1,5 +1,5 @@
 /** Поиск полной версии трека на YouTube (Data API v3). Ключ публичный: в Google Cloud его нужно ограничить адресом сайта. */
-export const YOUTUBE_KEY_DEFAULT = "";
+export const YOUTUBE_KEY_DEFAULT = "AIzaSyDzOE3UM7PKCSmqwuBBjVKTlrYT1CPkhyg";
 const KEY: string = (import.meta.env.VITE_YOUTUBE_API_KEY as string | undefined) || YOUTUBE_KEY_DEFAULT;
 export const youtubeConfigured = () => KEY.length > 0;
 
