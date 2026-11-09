@@ -6,6 +6,7 @@ import { coverFromLink, embedOf } from "../lib/musicEmbed";
 import { safePreviewUrl } from "../lib/trackSearch";
 import { makePlaylist } from "../music-playlist-strings";
 import { searchTracks, type FoundTrack } from "../lib/trackSearch";
+import { looksRelevant, searchYoutubeTracks, youtubeConfigured } from "../lib/youtubeSearch";
 import { makeSearch } from "../music-search-strings";
 import { makeNowPlaying } from "../now-playing-strings";
 import { adhocTrack, api, useMusic, type PlayerTrack } from "../lib/musicStore";
@@ -55,6 +56,8 @@ export function TrackSearch({ lang, onPick, actionLabel, autoFocus }: { lang: La
   const [state, setState] = useState<"idle" | "loading" | "fail">("idle");
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [doneKey, setDoneKey] = useState<string | null>(null);
+  const [yt, setYt] = useState<FoundTrack[] | null>(null);
+  const [ytState, setYtState] = useState<"idle" | "loading" | "fail">("idle");
   const [manual, setManual] = useState(false);
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
@@ -63,6 +66,8 @@ export function TrackSearch({ lang, onPick, actionLabel, autoFocus }: { lang: La
 
   useEffect(() => {
     const text = q.trim();
+    setYt(null);
+    setYtState("idle");
     if (text.length < 2) { setRes(null); setState("idle"); return; }
     setState("loading");
     const ctl = new AbortController();
@@ -71,6 +76,11 @@ export function TrackSearch({ lang, onPick, actionLabel, autoFocus }: { lang: La
     }, 400);
     return () => { window.clearTimeout(id); ctl.abort(); };
   }, [q, country]);
+
+  const searchYt = async () => {
+    setYtState("loading");
+    try { setYt(await searchYoutubeTracks(q)); setYtState("idle"); } catch { setYt(null); setYtState("fail"); }
+  };
 
   const pick = async (t: FoundTrack, key: string) => {
     if (busyKey) return;
@@ -90,6 +100,33 @@ export function TrackSearch({ lang, onPick, actionLabel, autoFocus }: { lang: La
     if (ok) { setTitle(""); setArtist(""); setUrl(""); }
   };
 
+  const renderList = (list: FoundTrack[], prefix: string) => (
+    <ul className="mt-2 flex flex-col gap-1">
+      {list.map((t, i) => {
+        const key = `${prefix}${i}-${t.title}`;
+        return (
+          <li key={key}>
+            <button
+              onClick={() => pick(t, key)} disabled={busyKey !== null}
+              className="flex w-full items-center gap-3 rounded-xl p-1.5 text-left transition-colors hover:bg-[var(--hover)] active:scale-[0.99] disabled:opacity-60"
+            >
+              <Cover src={t.cover} size={44} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13.5px] font-bold">{t.title}</span>
+                {t.artist && <span className="block truncate text-[12px] text-[var(--ink-soft)]">{t.artist}</span>}
+              </span>
+              <span className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold ${doneKey === key ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "bg-[var(--accent-soft)] text-[var(--accent-deep)]"}`}>
+                {doneKey === key ? s("added") : actionLabel ?? s("add")}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+  const showYtBtn = youtubeConfigured() && state === "idle" && res !== null && q.trim().length >= 2 && yt === null;
+  const noMatch = res !== null && !looksRelevant(q, res);
+
   const input = "h-10 w-full min-w-0 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[13px] outline-none transition-colors focus:border-[var(--accent)]";
   return (
     <div>
@@ -100,30 +137,15 @@ export function TrackSearch({ lang, onPick, actionLabel, autoFocus }: { lang: La
       {state === "loading" && <p className="mt-2 text-[12px] text-[var(--ink-faint)]" role="status">{s("searching")}</p>}
       {state === "fail" && <p className="mt-2 text-[12px] font-semibold text-[var(--danger)]" role="status">{s("fail")}</p>}
       {state === "idle" && res && res.length === 0 && <p className="mt-2 text-[12px] text-[var(--ink-faint)]" role="status">{s("none")}</p>}
-      {res && res.length > 0 && (
-        <ul className="mt-2 flex flex-col gap-1">
-          {res.map((t, i) => {
-            const key = `${i}-${t.title}`;
-            return (
-              <li key={key}>
-                <button
-                  onClick={() => pick(t, key)} disabled={busyKey !== null}
-                  className="flex w-full items-center gap-3 rounded-xl p-1.5 text-left transition-colors hover:bg-[var(--hover)] active:scale-[0.99] disabled:opacity-60"
-                >
-                  <Cover src={t.cover} size={44} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13.5px] font-bold">{t.title}</span>
-                    {t.artist && <span className="block truncate text-[12px] text-[var(--ink-soft)]">{t.artist}</span>}
-                  </span>
-                  <span className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold ${doneKey === key ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "bg-[var(--accent-soft)] text-[var(--accent-deep)]"}`}>
-                    {doneKey === key ? s("added") : actionLabel ?? s("add")}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+      {res && res.length > 0 && renderList(res, "a")}
+      {showYtBtn && (
+        <button onClick={() => void searchYt()} disabled={ytState === "loading"} className={`mt-2 h-9 rounded-full px-4 text-[12.5px] font-semibold transition-all active:scale-95 disabled:opacity-60 ${noMatch ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "border border-[var(--line)] text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>
+          {ytState === "loading" ? s("searching") : s("ytSearch")}
+        </button>
       )}
+      {ytState === "fail" && <p className="mt-2 text-[12px] font-semibold text-[var(--danger)]" role="status">{s("fail")}</p>}
+      {yt && yt.length === 0 && <p className="mt-2 text-[12px] text-[var(--ink-faint)]" role="status">{s("none")}</p>}
+      {yt && yt.length > 0 && (<><div className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{s("fromYt")}</div>{renderList(yt, "y")}</>)}
       <button onClick={() => setManual((v) => !v)} aria-expanded={manual} className="mt-2 text-[12px] font-semibold text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--ink)] hover:underline">
         {manual ? s("manualHide") : s("manual")}
       </button>
