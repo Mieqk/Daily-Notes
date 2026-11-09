@@ -6,6 +6,7 @@ const ru = {
   fail: "Поиск сейчас недоступен. Можно ввести трек вручную", manual: "Ввести вручную", manualHide: "Скрыть ручной ввод",
   add: "Добавить", added: "Добавлено", preview: "Превью 30 секунд", full: "Слушать полностью", play: "Играть", pause: "Пауза",
   searchNote: "Поиск и обложки даёт Apple Music. Играет 30-секундное превью.", clear: "Убрать",
+  prev: "Предыдущий", next: "Следующий", repeat: "Повтор", queue: "Очередь", pickOne: "Выберите трек, чтобы включить плеер", noPreview: "Для этого трека нет превью: он откроется в плеере сервиса",
 };
 type Strings = typeof ru;
 
@@ -14,6 +15,7 @@ const en: Strings = {
   fail: "Search is unavailable right now. You can type the track in manually", manual: "Type manually", manualHide: "Hide manual entry",
   add: "Add", added: "Added", preview: "30-second preview", full: "Listen in full", play: "Play", pause: "Pause",
   searchNote: "Search and covers come from Apple Music. A 30-second preview plays.", clear: "Remove",
+  prev: "Previous", next: "Next", repeat: "Repeat", queue: "Queue", pickOne: "Pick a track to start the player", noPreview: "This track has no preview: it opens in the service player",
 };
 
 const be: Strings = {
@@ -21,6 +23,7 @@ const be: Strings = {
   fail: "Пошук зараз недаступны. Можна ўвесці трэк уручную", manual: "Увесці ўручную", manualHide: "Схаваць ручны ўвод",
   add: "Дадаць", added: "Дададзена", preview: "Прэв'ю 30 секунд", full: "Слухаць цалкам", play: "Іграць", pause: "Паўза",
   searchNote: "Пошук і вокладкі дае Apple Music. Іграе 30-секунднае прэв'ю.", clear: "Прыбраць",
+  prev: "Папярэдні", next: "Наступны", repeat: "Паўтор", queue: "Чарга", pickOne: "Абярыце трэк, каб уключыць плэер", noPreview: "Для гэтага трэка няма прэв'ю: ён адкрыецца ў плэеры сэрвісу",
 };
 
 const uk: Strings = {
@@ -28,6 +31,7 @@ const uk: Strings = {
   fail: "Пошук зараз недоступний. Можна ввести трек вручну", manual: "Ввести вручну", manualHide: "Сховати ручне введення",
   add: "Додати", added: "Додано", preview: "Прев'ю 30 секунд", full: "Слухати повністю", play: "Грати", pause: "Пауза",
   searchNote: "Пошук і обкладинки дає Apple Music. Грає 30-секундне прев'ю.", clear: "Прибрати",
+  prev: "Попередній", next: "Наступний", repeat: "Повтор", queue: "Черга", pickOne: "Оберіть трек, щоб увімкнути плеєр", noPreview: "Для цього треку немає прев'ю: він відкриється в плеєрі сервісу",
 };
 
 const de: Strings = {
@@ -35,6 +39,7 @@ const de: Strings = {
   fail: "Die Suche ist gerade nicht verfügbar. Du kannst den Titel manuell eingeben", manual: "Manuell eingeben", manualHide: "Manuelle Eingabe ausblenden",
   add: "Hinzufügen", added: "Hinzugefügt", preview: "30-Sekunden-Vorschau", full: "Ganz anhören", play: "Abspielen", pause: "Pause",
   searchNote: "Suche und Cover kommen von Apple Music. Es spielt eine 30-Sekunden-Vorschau.", clear: "Entfernen",
+  prev: "Zurück", next: "Weiter", repeat: "Wiederholen", queue: "Warteschlange", pickOne: "Wähle einen Titel, um den Player zu starten", noPreview: "Für diesen Titel gibt es keine Vorschau: Er öffnet sich im Player des Dienstes",
 };
 
 const fr: Strings = {
@@ -42,6 +47,7 @@ const fr: Strings = {
   fail: "La recherche est indisponible pour le moment. Vous pouvez saisir le titre à la main", manual: "Saisir à la main", manualHide: "Masquer la saisie manuelle",
   add: "Ajouter", added: "Ajouté", preview: "Aperçu de 30 secondes", full: "Écouter en entier", play: "Lire", pause: "Pause",
   searchNote: "La recherche et les pochettes viennent d'Apple Music. Un aperçu de 30 secondes est lu.", clear: "Retirer",
+  prev: "Précédent", next: "Suivant", repeat: "Répéter", queue: "File d'attente", pickOne: "Choisissez un titre pour lancer le lecteur", noPreview: "Ce titre n'a pas d'aperçu : il s'ouvre dans le lecteur du service",
 };
 
 const es: Strings = {
@@ -49,6 +55,7 @@ const es: Strings = {
   fail: "La búsqueda no está disponible ahora. Puedes escribir la canción a mano", manual: "Escribir a mano", manualHide: "Ocultar entrada manual",
   add: "Añadir", added: "Añadido", preview: "Vista previa de 30 segundos", full: "Escuchar completa", play: "Reproducir", pause: "Pausa",
   searchNote: "La búsqueda y las portadas vienen de Apple Music. Suena una vista previa de 30 segundos.", clear: "Quitar",
+  prev: "Anterior", next: "Siguiente", repeat: "Repetir", queue: "Cola", pickOne: "Elige una canción para iniciar el reproductor", noPreview: "Esta canción no tiene vista previa: se abre en el reproductor del servicio",
 };
 
 const ALL: Record<Lang, Strings> = { ru, en, be, uk, de, fr, es };

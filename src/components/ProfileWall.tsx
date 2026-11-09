@@ -4,9 +4,8 @@ import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { prepareWallImage } from "../lib/images";
-import { Cover } from "./MusicParts";
+import { Cover, TrackPlayer } from "./MusicParts";
 import { safeCoverUrl } from "../lib/trackSearch";
-import { TrackPlayer } from "./MusicPlaylist";
 import { makePlaylist } from "../music-playlist-strings";
 
 interface Props {
