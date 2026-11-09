@@ -162,10 +162,10 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
 
   return (
     <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{p("title")}{tracks && tracks.length > 0 ? ` · ${tracks.length}` : ""}</div>
         {isOwn && (
-          <button onClick={() => setAdding((v) => !v)} aria-expanded={adding} className="h-9 rounded-lg bg-[var(--accent)] px-3 text-[12.5px] font-semibold text-[var(--accent-ink)] active:scale-95">
+          <button onClick={() => setAdding((v) => !v)} aria-expanded={adding} className="h-9 shrink-0 whitespace-nowrap rounded-lg bg-[var(--accent)] px-4 text-[12.5px] font-semibold text-[var(--accent-ink)] active:scale-95">
             {adding ? "×" : `+ ${p("add")}`}
           </button>
         )}
@@ -203,7 +203,7 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
                   <span aria-hidden className="shrink-0 text-[var(--accent-deep)]">{active ? "♪" : "▶"}</span>
                 </button>
                 {isOwn && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
+                  <div className="mt-2.5 flex flex-wrap gap-2">
                     {onToWall && <button onClick={() => act(onToWall, t, p("onWall"))} className={chip}>{p("toWall")}</button>}
                     {onSetNow && <button onClick={() => act(onSetNow, t, p("nowSet"))} className={chip}>{p("setNow")}</button>}
                     <button onClick={() => remove(t)} className={`${chip} ml-auto ${confirmId === t.id ? "!border-transparent !bg-[var(--danger)] !text-white" : ""}`}>{confirmId === t.id ? p("delSure") : p("del")}</button>
