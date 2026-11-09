@@ -3,7 +3,9 @@ import { createPortal } from "react-dom";
 import type { Lang } from "../i18n";
 import { api, isPlayable, useMusic } from "../lib/musicStore";
 import { makeSearch } from "../music-search-strings";
+import { makeLyrics } from "../lyrics-strings";
 import { Cover } from "./MusicParts";
+import { LyricsPanel } from "./LyricsPanel";
 import { Icon, NEXT, PAUSE, PLAY, PREV, SeekBar, Transport, VolumeControl } from "./PlayerControls";
 
 /** Полноэкранный плеер: размытая обложка на фоне, большая обложка, перемотка, управление, громкость и очередь. */
@@ -11,6 +13,8 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
   const s = makeSearch(lang);
   const m = useMusic();
   const cur = m.queue.find((t) => t.id === m.curId) ?? null;
+  const ls = makeLyrics(lang);
+  const [showLyrics, setShowLyrics] = useState(false);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
@@ -45,6 +49,14 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
           <Transport lang={lang} big />
           <VolumeControl lang={lang} className="mx-auto w-full max-w-xs" />
           {cur.url && <div className="text-center"><a href={cur.url} target="_blank" rel="noopener noreferrer" className="text-[12.5px] font-semibold text-[var(--accent-deep)] hover:underline">{s("full")} ›</a></div>}
+        </div>
+
+        <div className="mt-4">
+          <button onClick={() => setShowLyrics((v) => !v)} aria-expanded={showLyrics}
+            className={`mx-auto flex h-10 items-center gap-2 rounded-full border px-5 text-[13.5px] font-bold transition-transform active:scale-95 ${showLyrics ? "border-transparent bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel)]/70 text-[var(--ink)]"}`}>
+            <span aria-hidden>♪</span>{showLyrics ? ls("hide") : ls("lyrics")}
+          </button>
+          {showLyrics && <div className="mt-3"><LyricsPanel lang={lang} title={cur.title} artist={cur.artist} /></div>}
         </div>
 
         {m.queue.length > 1 && (
