@@ -139,14 +139,14 @@ export function TrackSearch({ lang, onPick, actionLabel, autoFocus }: { lang: La
       {state === "idle" && res && res.length === 0 && <p className="mt-2 text-[12px] text-[var(--ink-faint)]" role="status">{s("none")}</p>}
       {res && res.length > 0 && renderList(res, "a")}
       {showYtBtn && (
-        <button onClick={() => void searchYt()} disabled={ytState === "loading"} className={`mt-2 h-9 rounded-full px-4 text-[12.5px] font-semibold transition-all active:scale-95 disabled:opacity-60 ${noMatch ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "border border-[var(--line)] text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>
+        <button onClick={() => void searchYt()} disabled={ytState === "loading"} className={`mt-2 flex h-10 w-full items-center justify-center rounded-full px-4 text-[13px] font-semibold transition-all active:scale-[0.98] disabled:opacity-60 ${noMatch ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "border border-[var(--line)] text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>
           {ytState === "loading" ? s("searching") : s("ytSearch")}
         </button>
       )}
       {ytState === "fail" && <p className="mt-2 text-[12px] font-semibold text-[var(--danger)]" role="status">{s("fail")}</p>}
       {yt && yt.length === 0 && <p className="mt-2 text-[12px] text-[var(--ink-faint)]" role="status">{s("none")}</p>}
       {yt && yt.length > 0 && (<><div className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{s("fromYt")}</div>{renderList(yt, "y")}</>)}
-      <button onClick={() => setManual((v) => !v)} aria-expanded={manual} className="mt-2 text-[12px] font-semibold text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--ink)] hover:underline">
+      <button onClick={() => setManual((v) => !v)} aria-expanded={manual} className="mt-3 block text-[12px] font-semibold text-[var(--ink-faint)] underline-offset-2 hover:text-[var(--ink)] hover:underline">
         {manual ? s("manualHide") : s("manual")}
       </button>
       {manual && (
