@@ -52,3 +52,45 @@ export async function findYoutube(title: string, artist: string | null): Promise
   if (id) cacheYoutube(title, artist, id);
   return id;
 }
+
+const ENT: Record<string, string> = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": "\"", "&#39;": "'" };
+const unescapeHtml = (t: string) => t.replace(/&(amp|lt|gt|quot|#39);/g, (m) => ENT[m] ?? m);
+
+export interface YtTrack { title: string; artist: string | null; url: string; cover: string | null; preview: null }
+
+/** Разбор ответа поиска YouTube в треки: канал «Исполнитель - Topic» превращаем в исполнителя. */
+export function parseYoutubeTracks(j: unknown): YtTrack[] {
+  const items = (j as { items?: { id?: { videoId?: unknown }; snippet?: { title?: unknown; channelTitle?: unknown; thumbnails?: { medium?: { url?: unknown }; default?: { url?: unknown } } } }[] } | null)?.items;
+  const out: YtTrack[] = [];
+  for (const it of items ?? []) {
+    const id = it?.id?.videoId;
+    const title = it?.snippet?.title;
+    if (typeof id !== "string" || !ID_RE.test(id) || typeof title !== "string" || !title.trim()) continue;
+    const ch = typeof it.snippet?.channelTitle === "string" ? unescapeHtml(it.snippet.channelTitle).replace(/\s*-\s*Topic$/i, "").trim() : "";
+    const th = it.snippet?.thumbnails?.medium?.url ?? it.snippet?.thumbnails?.default?.url;
+    out.push({
+      title: unescapeHtml(title).trim().slice(0, 80),
+      artist: ch ? ch.slice(0, 80) : null,
+      url: `https://www.youtube.com/watch?v=${id}`,
+      cover: typeof th === "string" ? th : null,
+      preview: null,
+    });
+  }
+  return out;
+}
+
+/** Поиск треков на YouTube (когда Apple Music трек не знает). */
+export async function searchYoutubeTracks(query: string, signal?: AbortSignal): Promise<YtTrack[]> {
+  if (!KEY) return [];
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&videoCategoryId=10&maxResults=8&q=${encodeURIComponent(query.trim())}&key=${encodeURIComponent(KEY)}`;
+  const res = await fetch(url, { signal });
+  if (!res.ok) throw new YoutubeError(res.status);
+  return parseYoutubeTracks(await res.json());
+}
+
+/** Есть ли среди результатов Apple что-то похожее на запрос (все слова запроса встречаются в названии или исполнителе). */
+export function looksRelevant(query: string, res: { title: string; artist: string | null }[]): boolean {
+  const words = query.toLowerCase().split(/\s+/).filter((w) => w.length >= 3);
+  if (!words.length) return res.length > 0;
+  return res.some((r) => { const hay = `${r.artist ?? ""} ${r.title}`.toLowerCase(); return words.every((w) => hay.includes(w)); });
+}
