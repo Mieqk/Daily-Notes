@@ -13,6 +13,7 @@ import FriendsSection, { EmptyState } from "./FriendsSection";
 import PairPlant from "./PairPlant";
 import PairDistance from "./PairDistance";
 import PairAvailability from "./PairAvailability";
+import PairPlaylist from "./PairPlaylist";
 
 interface Goal { id: string; title: string; target: number; created_by: string }
 interface PairEvent { id: string; title: string; emoji: string; starts_at: string }
@@ -80,7 +81,12 @@ export default function PairTogether({ userId, lang, other, section, moods, mood
           <Events linkId={linkId} userId={userId} lang={lang} />
         </>
       )}
-      {section === "memories" && <MonthRecap linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} moodEmoji={moodEmoji} />}
+      {section === "memories" && (
+        <>
+          <PairPlaylist linkId={linkId} userId={userId} lang={lang} name={other.name} />
+          <MonthRecap linkId={linkId} userId={userId} lang={lang} otherId={other.id} name={other.name} moodEmoji={moodEmoji} />
+        </>
+      )}
     </>
   );
 }
