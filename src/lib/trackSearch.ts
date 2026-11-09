@@ -62,3 +62,27 @@ export async function searchTracks(query: string, country: string, signal?: Abor
   if (!res.ok) throw new Error(`search ${res.status}`);
   return parseItunes(await res.json());
 }
+
+const norm = (x: string) => x.toLowerCase().replace(/\([^)]*\)|\[[^\]]*\]/g, " ").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+
+/** Из результатов поиска берёт тот, что точно совпал по названию (и по исполнителю, если он указан); иначе null, чтобы не подставить чужой трек. */
+export function bestMatch(found: FoundTrack[], title: string, artist: string | null): FoundTrack | null {
+  const t = norm(title);
+  const a = artist ? norm(artist) : "";
+  if (!t) return null;
+  for (const f of found) {
+    if (norm(f.title) !== t) continue;
+    if (a) {
+      const fa = f.artist ? norm(f.artist) : "";
+      if (!fa || !(fa.includes(a) || a.includes(fa))) continue;
+    }
+    return f;
+  }
+  return null;
+}
+
+/** Ищет обложку и превью для трека, добавленного без них (вручную или до появления обложек). */
+export async function enrichTrack(title: string, artist: string | null, country: string, signal?: AbortSignal): Promise<FoundTrack | null> {
+  const found = await searchTracks(`${title} ${artist ?? ""}`, country, signal);
+  return bestMatch(found, title, artist);
+}

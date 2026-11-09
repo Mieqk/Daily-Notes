@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bigArt, parseItunes, safeCoverUrl, safePreviewUrl } from "./trackSearch";
+import { bestMatch, bigArt, parseItunes, safeCoverUrl, safePreviewUrl, type FoundTrack } from "./trackSearch";
 
 describe("trackSearch", () => {
   it("разбирает ответ и отбрасывает лишнее", () => {
@@ -25,5 +25,14 @@ describe("trackSearch", () => {
   });
   it("увеличивает обложку", () => {
     expect(bigArt("https://a.mzstatic.com/100x100bb.jpg")).toBe("https://a.mzstatic.com/300x300bb.jpg");
+  });
+  it("подбирает только точное совпадение", () => {
+    const f = (title: string, artist: string): FoundTrack => ({ title, artist, url: null, cover: "c", preview: "p" });
+    const list = [f("Natural (Live)", "Imagine Dragons"), f("Natural Woman", "Aretha"), f("Natural", "Imagine Dragons")];
+    expect(bestMatch(list, "natural", "Imagine Dragons")).toBe(list[0]);
+    expect(bestMatch(list, "Natural", "Aretha")).toBeNull();
+    expect(bestMatch(list, "Natural", null)).toBe(list[0]);
+    expect(bestMatch(list, "Other", null)).toBeNull();
+    expect(bestMatch([], "x", null)).toBeNull();
   });
 });

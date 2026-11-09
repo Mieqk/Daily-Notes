@@ -1,42 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Lang } from "../i18n";
 import { supabase } from "../lib/supabase";
-import { embedOf } from "../lib/musicEmbed";
+import { coverFromLink } from "../lib/musicEmbed";
 import { cleanMusic } from "../lib/nowPlaying";
-import { safeCoverUrl, safePreviewUrl, type FoundTrack } from "../lib/trackSearch";
+import { enrichTrack, safeCoverUrl, safePreviewUrl, type FoundTrack } from "../lib/trackSearch";
 import { makePlaylist } from "../music-playlist-strings";
-import { makeSearch } from "../music-search-strings";
-import { Cover, PreviewButton, TrackSearch } from "./MusicParts";
+import { Cover, TrackSearch } from "./MusicParts";
+import MusicPlayer from "./MusicPlayer";
 
 export interface Track { id: string; title: string; artist: string | null; url: string | null; cover: string | null; preview: string | null }
 const MAX = 50;
-
-/** Плеер трека: 30-секундное превью, если оно есть, иначе встроенный плеер сервиса (iframe), иначе ссылка. */
-export function TrackPlayer({ url, preview, lang }: { url: string | null; preview?: string | null; lang: Lang }) {
-  const p = makePlaylist(lang);
-  const s = makeSearch(lang);
-  const e = embedOf(url);
-  const pv = safePreviewUrl(preview);
-  if (pv) {
-    return (
-      <div className="flex items-center gap-3">
-        <PreviewButton src={pv} lang={lang} size={40} />
-        <span className="text-[12px] text-[var(--ink-faint)]">{s("preview")}</span>
-        {url && <a href={url} target="_blank" rel="noopener noreferrer" className="ml-auto text-[12px] font-semibold text-[var(--accent-deep)] hover:underline">{s("full")} ›</a>}
-      </div>
-    );
-  }
-  if (!url) return null;
-  if (!e) return <a href={url} target="_blank" rel="noopener noreferrer" className="text-[12px] font-semibold text-[var(--accent-deep)] hover:underline">{p("open")} ›</a>;
-  return (
-    <iframe
-      src={e.src} title="player" height={e.height} loading="lazy"
-      allow="autoplay; encrypted-media; clipboard-write" referrerPolicy="strict-origin-when-cross-origin"
-      sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
-      className="w-full rounded-lg border-0 bg-[var(--panel-2)]"
-    />
-  );
-}
 
 interface Props {
   viewerId: string; profileId: string; lang: Lang;
@@ -50,7 +23,10 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
   const isOwn = viewerId === profileId;
   const p = makePlaylist(lang);
   const [tracks, setTracks] = useState<Track[] | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
+  const [curId, setCurId] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
+  const tried = useRef<Set<string>>(new Set());
+  const select = (id: string) => { setCurId(id); setNonce((n) => n + 1); };
   const [adding, setAdding] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -62,9 +38,32 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
     const q = (cols: string) => supabase!.from("profile_tracks").select(cols).eq("user_id", profileId).order("created_at", { ascending: true }).limit(MAX);
     const full = await q("id, title, artist, url, cover, preview");
     const rows = (full.error ? (await q("id, title, artist, url")).data : full.data) as unknown as Partial<Track>[] | null;
-    setTracks((rows ?? []).map((t) => ({ id: t.id!, title: t.title!, artist: t.artist ?? null, url: t.url ?? null, cover: safeCoverUrl(t.cover), preview: safePreviewUrl(t.preview) })));
+    setTracks((rows ?? []).map((t) => ({ id: t.id!, title: t.title!, artist: t.artist ?? null, url: t.url ?? null, cover: safeCoverUrl(t.cover) ?? coverFromLink(t.url ?? null), preview: safePreviewUrl(t.preview) })));
   }, [profileId]);
   useEffect(() => { void load(); }, [load]);
+
+  // старые треки без обложки или превью: ищем их по названию (только свои, по одному разу за сеанс)
+  useEffect(() => {
+    if (!isOwn || !tracks) return;
+    const todo = tracks.filter((t) => (!t.preview || !t.cover || t.cover.includes("ytimg.com")) && !tried.current.has(t.id)).slice(0, 8);
+    if (!todo.length) return;
+    todo.forEach((t) => tried.current.add(t.id));
+    const country = (/^[a-z]{2}-([A-Z]{2})$/.exec(navigator.language)?.[1]) || "US";
+    let dead = false;
+    (async () => {
+      for (const t of todo) {
+        try {
+          const f = await enrichTrack(t.title, t.artist, country);
+          if (dead || !f || (!f.cover && !f.preview)) continue;
+          const patch = { cover: f.cover ?? t.cover, preview: f.preview ?? t.preview };
+          setTracks((l) => (l ?? []).map((x) => (x.id === t.id ? { ...x, ...patch } : x)));
+          // если миграция с правом обновления ещё не выполнена, обложка просто не сохранится в базе
+          void supabase!.from("profile_tracks").update(patch).eq("id", t.id).then(() => {}, () => {});
+        } catch { /* поиск недоступен: оставляем как есть */ }
+      }
+    })();
+    return () => { dead = true; };
+  }, [tracks, isOwn]);
   useEffect(() => {
     if (!msg) return;
     const id = window.setTimeout(() => setMsg(null), 3000);
@@ -124,23 +123,21 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
       ) : tracks.length === 0 ? (
         <div className="py-4 text-center text-[13px] text-[var(--ink-faint)]">{p("empty")}</div>
       ) : (
+        <>
+        <MusicPlayer tracks={tracks} curId={curId} nonce={nonce} onSelect={select} lang={lang} />
         <ul className="flex flex-col gap-2">
           {tracks.map((t) => {
-            const embed = !t.preview && !!embedOf(t.url);
-            const shown = open === t.id;
+            const active = t.id === curId;
             return (
-              <li key={t.id} className="rounded-xl bg-[var(--panel-2)] p-2.5">
-                <div className="flex items-center gap-3">
+              <li key={t.id} className={`rounded-xl p-2.5 transition-colors ${active ? "bg-[var(--accent-soft)]" : "bg-[var(--panel-2)]"}`}>
+                <button onClick={() => select(t.id)} aria-label={`${p("play")}: ${t.title}`} aria-current={active} className="flex w-full items-center gap-3 text-left active:scale-[0.99]">
                   <Cover src={t.cover} size={52} />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[14px] font-bold">{t.title}</div>
-                    {t.artist && <div className="truncate text-[12.5px] text-[var(--ink-soft)]">{t.artist}</div>}
-                  </div>
-                  {t.preview ? <PreviewButton src={t.preview} lang={lang} size={40} /> : embed ? (
-                    <button onClick={() => setOpen(shown ? null : t.id)} aria-pressed={shown} className={chip}>{shown ? p("hide") : p("play")}</button>
-                  ) : t.url ? <a href={t.url} target="_blank" rel="noopener noreferrer" className={`${chip} grid place-items-center`}>{p("open")}</a> : null}
-                </div>
-                {shown && embed && <div className="mt-2"><TrackPlayer url={t.url} lang={lang} /></div>}
+                  <span className="min-w-0 flex-1">
+                    <span className={`block truncate text-[14px] font-bold ${active ? "text-[var(--accent-deep)]" : ""}`}>{t.title}</span>
+                    {t.artist && <span className="block truncate text-[12.5px] text-[var(--ink-soft)]">{t.artist}</span>}
+                  </span>
+                  <span aria-hidden className="shrink-0 text-[var(--accent-deep)]">{active ? "♪" : "▶"}</span>
+                </button>
                 {isOwn && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {onToWall && <button onClick={() => act(onToWall, t, p("onWall"))} className={chip}>{p("toWall")}</button>}
@@ -152,6 +149,7 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
             );
           })}
         </ul>
+        </>
       )}
     </div>
   );

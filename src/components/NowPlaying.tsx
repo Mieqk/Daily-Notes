@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Lang } from "../i18n";
 import { isLive, type NowPlaying } from "../lib/nowPlaying";
-import type { FoundTrack } from "../lib/trackSearch";
+import { enrichTrack, type FoundTrack } from "../lib/trackSearch";
 import { makeNowPlaying } from "../now-playing-strings";
 import { makeSearch } from "../music-search-strings";
 import { Cover, PreviewButton, TrackSearch } from "./MusicParts";
@@ -40,6 +40,19 @@ export function MusicEditor({ lang, music, onSave }: {
 }) {
   const n = makeNowPlaying(lang);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const tried = useRef(false);
+
+  // трек выбран до появления обложек или вручную: дописываем обложку и превью по названию (один раз)
+  useEffect(() => {
+    if (!music || tried.current || (music.preview && music.cover && !music.cover.includes("ytimg.com"))) return;
+    tried.current = true;
+    const country = (/^[a-z]{2}-([A-Z]{2})$/.exec(navigator.language)?.[1]) || "US";
+    enrichTrack(music.title, music.artist, country).then((f) => {
+      if (!f || (!f.cover && !f.preview)) return;
+      void onSave({ music_title: music.title, music_artist: music.artist, music_url: music.url, music_cover: f.cover ?? music.cover, music_preview: f.preview ?? music.preview, music_at: music.at });
+    }, () => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [music?.title, music?.artist]);
 
   const save = async (t: FoundTrack) => {
     const ok = await onSave({ music_title: t.title, music_artist: t.artist, music_url: t.url, music_cover: t.cover, music_preview: t.preview, music_at: new Date().toISOString() });

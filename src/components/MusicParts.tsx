@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import type { Lang } from "../i18n";
 import { MusicNoteIcon } from "../icons";
 import { MUSIC_ARTIST_MAX, MUSIC_TITLE_MAX, MUSIC_URL_MAX, safeMusicUrl } from "../lib/nowPlaying";
-import { coverFromLink } from "../lib/musicEmbed";
+import { coverFromLink, embedOf } from "../lib/musicEmbed";
+import { safePreviewUrl } from "../lib/trackSearch";
+import { makePlaylist } from "../music-playlist-strings";
 import { searchTracks, type FoundTrack } from "../lib/trackSearch";
 import { makeSearch } from "../music-search-strings";
 import { makeNowPlaying } from "../now-playing-strings";
@@ -19,6 +21,12 @@ export function Cover({ src, size = 48, className = "" }: { src: string | null |
 }
 
 let current: HTMLAudioElement | null = null;
+/** Одновременно играет только одно аудио: остановить прежнее и запомнить новое. */
+export function claimAudio(a: HTMLAudioElement) {
+  if (current && current !== a) current.pause();
+  current = a;
+}
+export function releaseAudio(a: HTMLAudioElement) { if (current === a) current = null; }
 
 /** Кнопка плей/пауза для 30-секундного превью с тонкой полосой прогресса. Одновременно играет только одно превью. */
 export function PreviewButton({ src, lang, size = 40 }: { src: string; lang: Lang; size?: number }) {
@@ -26,7 +34,7 @@ export function PreviewButton({ src, lang, size = 40 }: { src: string; lang: Lan
   const audio = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [pct, setPct] = useState(0);
-  useEffect(() => () => { audio.current?.pause(); if (current === audio.current) current = null; }, []);
+  useEffect(() => () => { const a = audio.current; if (a) { a.pause(); releaseAudio(a); } }, []);
   const toggle = () => {
     let a = audio.current;
     if (!a) {
@@ -39,8 +47,7 @@ export function PreviewButton({ src, lang, size = 40 }: { src: string; lang: Lan
       audio.current = a;
     }
     if (a.paused) {
-      if (current && current !== a) current.pause();
-      current = a;
+      claimAudio(a);
       void a.play().catch(() => setPlaying(false));
     } else a.pause();
   };
@@ -157,3 +164,31 @@ export function TrackSearch({ lang, onPick, actionLabel, autoFocus }: { lang: La
     </div>
   );
 }
+
+/** Плеер трека: 30-секундное превью, если оно есть, иначе встроенный плеер сервиса (iframe), иначе ссылка. */
+export function TrackPlayer({ url, preview, lang }: { url: string | null; preview?: string | null; lang: Lang }) {
+  const p = makePlaylist(lang);
+  const s = makeSearch(lang);
+  const e = embedOf(url);
+  const pv = safePreviewUrl(preview);
+  if (pv) {
+    return (
+      <div className="flex items-center gap-3">
+        <PreviewButton src={pv} lang={lang} size={40} />
+        <span className="text-[12px] text-[var(--ink-faint)]">{s("preview")}</span>
+        {url && <a href={url} target="_blank" rel="noopener noreferrer" className="ml-auto text-[12px] font-semibold text-[var(--accent-deep)] hover:underline">{s("full")} ›</a>}
+      </div>
+    );
+  }
+  if (!url) return null;
+  if (!e) return <a href={url} target="_blank" rel="noopener noreferrer" className="text-[12px] font-semibold text-[var(--accent-deep)] hover:underline">{p("open")} ›</a>;
+  return (
+    <iframe
+      src={e.src} title="player" height={e.height} loading="lazy"
+      allow="autoplay; encrypted-media; clipboard-write" referrerPolicy="strict-origin-when-cross-origin"
+      sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
+      className="w-full rounded-lg border-0 bg-[var(--panel-2)]"
+    />
+  );
+}
+

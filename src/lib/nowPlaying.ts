@@ -1,3 +1,4 @@
+import { coverFromLink } from "./musicEmbed";
 import { safeCoverUrl, safePreviewUrl } from "./trackSearch";
 
 /** Плашка «сейчас играет» в профиле: трек, который человек выбрал вручную. */
@@ -42,5 +43,5 @@ export function isLive(at: string | null | undefined, now = Date.now()): boolean
 export function nowPlayingOf(p: { music_title?: string | null; music_artist?: string | null; music_url?: string | null; music_cover?: string | null; music_preview?: string | null; music_at?: string | null } | null | undefined): NowPlaying | null {
   const title = p?.music_title?.trim();
   if (!title) return null;
-  return { title, artist: p?.music_artist?.trim() || null, url: safeMusicUrl(p?.music_url), cover: safeCoverUrl(p?.music_cover), preview: safePreviewUrl(p?.music_preview), at: p?.music_at ?? null };
+  return { title, artist: p?.music_artist?.trim() || null, url: safeMusicUrl(p?.music_url), cover: safeCoverUrl(p?.music_cover) ?? coverFromLink(safeMusicUrl(p?.music_url)), preview: safePreviewUrl(p?.music_preview), at: p?.music_at ?? null };
 }
