@@ -5,7 +5,7 @@ import type { FoundTrack } from "./trackSearch";
  * подключиться могут только люди из списка пользователей приложения. Client ID публичный, секрет не нужен.
  */
 // Client ID приложения Spotify (его можно переопределить переменной VITE_SPOTIFY_CLIENT_ID)
-export const SPOTIFY_CLIENT_ID_DEFAULT = "";
+export const SPOTIFY_CLIENT_ID_DEFAULT = "4e3e2b14daf14deea35bfafe0ff93d93";
 const CLIENT_ID: string = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined) || SPOTIFY_CLIENT_ID_DEFAULT;
 export const spotifyConfigured = () => !!CLIENT_ID;
 
