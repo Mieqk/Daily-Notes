@@ -4,6 +4,7 @@ import { isLive, type NowPlaying } from "../lib/nowPlaying";
 import { enrichTrack, type FoundTrack } from "../lib/trackSearch";
 import { makeNowPlaying } from "../now-playing-strings";
 import { makeSearch } from "../music-search-strings";
+import { adhocTrack } from "../lib/musicStore";
 import { Cover, PreviewButton, TrackSearch } from "./MusicParts";
 
 /** Карточка как в Telegram: обложка, трек жирным, исполнитель; рядом кнопка превью, если оно есть, или ссылка на трек. */
@@ -27,7 +28,7 @@ export function MusicBar({ music, lang, onClear }: { music: NowPlaying; lang: La
             </a>
           )}
         </div>
-        {music.preview && <PreviewButton src={music.preview} lang={lang} size={44} />}
+        {music.preview && <PreviewButton track={adhocTrack({ title: music.title, artist: music.artist, url: music.url, cover: music.cover, preview: music.preview })} lang={lang} size={44} />}
       </div>
     </div>
   );

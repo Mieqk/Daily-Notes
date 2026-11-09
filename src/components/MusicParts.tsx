@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Lang } from "../i18n";
 import { MusicNoteIcon } from "../icons";
 import { MUSIC_ARTIST_MAX, MUSIC_TITLE_MAX, MUSIC_URL_MAX, safeMusicUrl } from "../lib/nowPlaying";
@@ -8,6 +8,8 @@ import { makePlaylist } from "../music-playlist-strings";
 import { searchTracks, type FoundTrack } from "../lib/trackSearch";
 import { makeSearch } from "../music-search-strings";
 import { makeNowPlaying } from "../now-playing-strings";
+import { adhocTrack, api, useMusic, type PlayerTrack } from "../lib/musicStore";
+import { Icon, PAUSE, PLAY } from "./PlayerControls";
 
 /** Обложка трека; без картинки или при ошибке загрузки показывает ноту на мягком фоне. */
 export function Cover({ src, size = 48, className = "" }: { src: string | null | undefined; size?: number; className?: string }) {
@@ -20,47 +22,22 @@ export function Cover({ src, size = 48, className = "" }: { src: string | null |
   );
 }
 
-let current: HTMLAudioElement | null = null;
-/** Одновременно играет только одно аудио: остановить прежнее и запомнить новое. */
-export function claimAudio(a: HTMLAudioElement) {
-  if (current && current !== a) current.pause();
-  current = a;
-}
-export function releaseAudio(a: HTMLAudioElement) { if (current === a) current = null; }
-
-/** Кнопка плей/пауза для 30-секундного превью с тонкой полосой прогресса. Одновременно играет только одно превью. */
-export function PreviewButton({ src, lang, size = 40 }: { src: string; lang: Lang; size?: number }) {
+/** Кнопка плей/пауза для 30-секундного превью с кольцом прогресса. Играет через общий плеер: звук не обрывается при переходе по экранам, внизу появляется мини-плеер. */
+export function PreviewButton({ track, lang, size = 40 }: { track: PlayerTrack; lang: Lang; size?: number }) {
   const s = makeSearch(lang);
-  const audio = useRef<HTMLAudioElement | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const [pct, setPct] = useState(0);
-  useEffect(() => () => { const a = audio.current; if (a) { a.pause(); releaseAudio(a); } }, []);
-  const toggle = () => {
-    let a = audio.current;
-    if (!a) {
-      a = new Audio(src);
-      a.preload = "none";
-      a.onended = () => { setPlaying(false); setPct(0); };
-      a.onpause = () => setPlaying(false);
-      a.onplay = () => setPlaying(true);
-      a.ontimeupdate = () => setPct(a!.duration ? (a!.currentTime / a!.duration) * 100 : 0);
-      audio.current = a;
-    }
-    if (a.paused) {
-      claimAudio(a);
-      void a.play().catch(() => setPlaying(false));
-    } else a.pause();
-  };
+  const m = useMusic();
+  const active = m.curId === track.id;
+  const playing = active && m.playing;
+  const pct = active && m.dur ? (m.time / m.dur) * 100 : 0;
+  const toggle = () => { if (active) api.toggle(); else api.playQueue([track], track.id); };
   return (
     <button
       onClick={toggle} aria-label={playing ? s("pause") : s("play")} aria-pressed={playing} title={s("preview")}
-      className="relative grid shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-ink)] transition-transform active:scale-90"
+      className="relative grid shrink-0 place-items-center rounded-full text-[var(--accent-ink)] transition-transform active:scale-90"
       style={{ width: size, height: size, background: `conic-gradient(var(--accent-ink) ${pct}%, transparent 0)` }}
     >
       <span className="grid place-items-center rounded-full bg-[var(--accent)]" style={{ width: size - 6, height: size - 6 }}>
-        {playing
-          ? <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
-          : <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" /></svg>}
+        <Icon d={playing ? PAUSE : PLAY} size={16} />
       </span>
     </button>
   );
@@ -165,8 +142,8 @@ export function TrackSearch({ lang, onPick, actionLabel, autoFocus }: { lang: La
   );
 }
 
-/** Плеер трека: 30-секундное превью, если оно есть, иначе встроенный плеер сервиса (iframe), иначе ссылка. */
-export function TrackPlayer({ url, preview, lang }: { url: string | null; preview?: string | null; lang: Lang }) {
+/** Плеер трека: 30-секундное превью через общий плеер, иначе встроенный плеер сервиса (iframe), иначе ссылка. */
+export function TrackPlayer({ url, preview, lang, title = "", artist = null, cover = null }: { url: string | null; preview?: string | null; lang: Lang; title?: string; artist?: string | null; cover?: string | null }) {
   const p = makePlaylist(lang);
   const s = makeSearch(lang);
   const e = embedOf(url);
@@ -174,7 +151,7 @@ export function TrackPlayer({ url, preview, lang }: { url: string | null; previe
   if (pv) {
     return (
       <div className="flex items-center gap-3">
-        <PreviewButton src={pv} lang={lang} size={40} />
+        <PreviewButton track={adhocTrack({ title, artist, url, cover, preview: pv })} lang={lang} size={40} />
         <span className="text-[12px] text-[var(--ink-faint)]">{s("preview")}</span>
         {url && <a href={url} target="_blank" rel="noopener noreferrer" className="ml-auto text-[12px] font-semibold text-[var(--accent-deep)] hover:underline">{s("full")} ›</a>}
       </div>
@@ -191,4 +168,3 @@ export function TrackPlayer({ url, preview, lang }: { url: string | null; previe
     />
   );
 }
-

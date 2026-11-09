@@ -39,6 +39,7 @@ import { initE2ee, useE2eeStatus, encryptionActive, convertAllRemote, openEntry 
 import { makeE2ee } from "./e2ee-strings";
 import { makeSleepAuto } from "./sleep-auto-strings";
 import MobileMenu from "./components/MobileMenu";
+import MiniPlayer from "./components/MiniPlayer";
 import FriendsView from "./components/FriendsView";
 import AccountMenu from "./components/AccountMenu";
 import { useNotifications } from "./hooks/useNotifications";
@@ -578,6 +579,7 @@ export default function App() {
           {tab === "friends" && userId && <FriendsView userId={userId} lang={lang} moodEmoji={moodEmoji} moods={moods} sleep={sleep} streak={streak} notesCount={notesCount} chatUnread={chatUnread.byFriend} />}
           {tab === "settings" && <SettingsView userId={userId} look={look} onLook={setLook} theme={theme} onTheme={handleThemeChange} lang={lang} onLang={setLang} writingFont={writingFont} onWritingFont={setWritingFont} fontScale={fontScale} onFontScale={setFontScale} bg={bg} onBg={setBg} customBgs={customBgs} onCustomBgs={setCustomBgs} bgOpts={bgOpts} onBgOpts={setBgOpts} moodEmoji={moodEmoji} onMoodEmoji={setMoodEmoji} pinHash={pinHash} onPinChange={(h) => { setPinHash(h); if (!h) setBioId(null); }} bioId={bioId} onBioChange={setBioId} onClearAll={clearAll} onExportMd={exportMd} onExportJson={exportJson} t={t} notesCount={notesCount} tasksCount={tasksCount} tasks={tasks} showToast={showToast} />}
         </main>
+        <MiniPlayer lang={lang} />
       </div>
 
       {toast && (

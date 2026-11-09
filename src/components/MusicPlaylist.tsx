@@ -7,6 +7,7 @@ import { enrichTrack, safeCoverUrl, safePreviewUrl, type FoundTrack } from "../l
 import { makePlaylist } from "../music-playlist-strings";
 import { Cover, TrackSearch } from "./MusicParts";
 import MusicPlayer from "./MusicPlayer";
+import { api } from "../lib/musicStore";
 
 export interface Track { id: string; title: string; artist: string | null; url: string | null; cover: string | null; preview: string | null }
 const MAX = 50;
@@ -23,10 +24,13 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
   const isOwn = viewerId === profileId;
   const p = makePlaylist(lang);
   const [tracks, setTracks] = useState<Track[] | null>(null);
-  const [curId, setCurId] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
+  const [selId, setSelId] = useState<string | null>(null);
   const tried = useRef<Set<string>>(new Set());
-  const select = (id: string) => { setCurId(id); setNonce((n) => n + 1); };
+  const select = (id: string) => {
+    setSelId(id);
+    const t = tracks?.find((x) => x.id === id);
+    if (t?.preview) api.playQueue(tracks!.filter((x) => x.preview), id);
+  };
   const [adding, setAdding] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -124,10 +128,10 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
         <div className="py-4 text-center text-[13px] text-[var(--ink-faint)]">{p("empty")}</div>
       ) : (
         <>
-        <MusicPlayer tracks={tracks} curId={curId} nonce={nonce} onSelect={select} lang={lang} />
+        <MusicPlayer tracks={tracks} selId={selId} onSel={setSelId} lang={lang} />
         <ul className="flex flex-col gap-2">
           {tracks.map((t) => {
-            const active = t.id === curId;
+            const active = t.id === selId;
             return (
               <li key={t.id} className={`rounded-xl p-2.5 transition-colors ${active ? "bg-[var(--accent-soft)]" : "bg-[var(--panel-2)]"}`}>
                 <button onClick={() => select(t.id)} aria-label={`${p("play")}: ${t.title}`} aria-current={active} className="flex w-full items-center gap-3 text-left active:scale-[0.99]">

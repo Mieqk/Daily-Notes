@@ -242,7 +242,7 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
                       {p.track_artist && <div className="truncate text-[13px] text-[var(--ink-soft)]">{p.track_artist}</div>}
                     </div>
                   </div>
-                  {(p.track_url || p.track_preview) && <div className="mt-3"><TrackPlayer url={p.track_url ?? null} preview={p.track_preview} lang={lang} /></div>}
+                  {(p.track_url || p.track_preview) && <div className="mt-3"><TrackPlayer url={p.track_url ?? null} preview={p.track_preview} lang={lang} title={p.track_title ?? ""} artist={p.track_artist ?? null} cover={safeCoverUrl(p.track_cover)} /></div>}
                 </div>
               ) : p.media_path && urls[p.media_path] ? (
                 <img src={urls[p.media_path!]} alt={p.caption ?? ""} loading="lazy" className="max-h-[480px] w-full object-contain" />
