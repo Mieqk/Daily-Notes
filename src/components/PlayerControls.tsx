@@ -10,6 +10,10 @@ export const fmtTime = (sec: number) => {
 export const Icon = ({ d, size = 22 }: { d: string; size?: number }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden><path d={d} /></svg>
 );
+/** Три прыгающие полоски: показывают, что трек играет. На паузе замирают. */
+export const Equalizer = ({ playing, className = "" }: { playing: boolean; className?: string }) => (
+  <span aria-hidden className={`eq ${playing ? "" : "paused"} ${className}`}><i /><i /><i /></span>
+);
 export const PLAY = "M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z";
 export const PAUSE = "M7 5h3.5v14H7zM13.5 5H17v14h-3.5z";
 export const PREV = "M6 5h2v14H6zM9.5 12l9 6.5v-13z";
