@@ -4,6 +4,9 @@ import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { prepareWallImage } from "../lib/images";
+import { MusicNoteIcon } from "../icons";
+import { TrackPlayer } from "./MusicPlaylist";
+import { makePlaylist } from "../music-playlist-strings";
 
 interface Props {
   viewerId: string;
@@ -14,7 +17,10 @@ interface Props {
 interface Post {
   id: string;
   caption: string | null;
-  media_path: string;
+  media_path: string | null;
+  track_title?: string | null;
+  track_artist?: string | null;
+  track_url?: string | null;
   created_at: string;
 }
 
@@ -94,14 +100,15 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
     if (!supabase) return;
     const { data } = await supabase
       .from("wall_posts")
-      .select("id, caption, media_path, created_at")
+      .select("id, caption, media_path, track_title, track_artist, track_url, created_at")
       .eq("user_id", profileId)
       .order("created_at", { ascending: false })
       .limit(POSTS_MAX);
     const list = (data ?? []) as Post[];
     setPosts(list);
-    if (list.length) {
-      const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrls(list.map((p) => p.media_path), URL_TTL);
+    const paths = list.map((p) => p.media_path).filter((x): x is string => !!x);
+    if (paths.length) {
+      const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrls(paths, URL_TTL);
       const map: Record<string, string> = {};
       for (const r of signed ?? []) if (r.path && r.signedUrl) map[r.path] = r.signedUrl;
       setUrls(map);
@@ -170,7 +177,7 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
     if (!supabase) return;
     const { error } = await supabase.from("wall_posts").delete().eq("id", post.id);
     if (error) { setMsg(t("err")); return; }
-    void supabase.storage.from(BUCKET).remove([post.media_path]).then(() => {}, () => {});
+    if (post.media_path) void supabase.storage.from(BUCKET).remove([post.media_path]).then(() => {}, () => {});
     setPosts((l) => (l ?? []).filter((p) => p.id !== post.id));
   };
 
@@ -225,8 +232,17 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
         <div className="flex flex-col gap-4">
           {posts.map((p) => (
             <figure key={p.id} className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel-2)]">
-              {urls[p.media_path] ? (
-                <img src={urls[p.media_path]} alt={p.caption ?? ""} loading="lazy" className="max-h-[480px] w-full object-contain" />
+              {p.track_title ? (
+                <div className="px-3 pt-3">
+                  <div className="flex items-center gap-2 rounded-xl bg-[var(--accent-soft)] px-3 py-2 text-[13px]">
+                    <MusicNoteIcon className="h-4 w-4 shrink-0 text-[var(--accent-deep)]" />
+                    <span className="min-w-0 truncate"><span className="font-bold">{p.track_title}</span>{p.track_artist && <span className="text-[var(--ink-soft)]"> {p.track_artist}</span>}</span>
+                    <span className="sr-only">{makePlaylist(lang)("wallTrack")}</span>
+                  </div>
+                  {p.track_url && <div className="mt-2"><TrackPlayer url={p.track_url} lang={lang} /></div>}
+                </div>
+              ) : p.media_path && urls[p.media_path] ? (
+                <img src={urls[p.media_path!]} alt={p.caption ?? ""} loading="lazy" className="max-h-[480px] w-full object-contain" />
               ) : (
                 <div className="h-40 animate-pulse bg-[var(--hover)]" />
               )}

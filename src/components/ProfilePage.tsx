@@ -5,6 +5,7 @@ import { MusicBar, MusicEditor } from "./NowPlaying";
 import { nowPlayingOf } from "../lib/nowPlaying";
 import { makeNowPlaying } from "../now-playing-strings";
 import ProfileWall from "./ProfileWall";
+import MusicPlaylist from "./MusicPlaylist";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type { Lang } from "../i18n";
@@ -180,6 +181,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
 
   const [p, setP] = useState<Profile | null>(null);
   const [friendSince, setFriendSince] = useState<string | null>(null);
+  const [wallKey, setWallKey] = useState(0);
   const [busy, setBusy] = useState<"banner" | "avatar" | null>(null);
   const [avatarEdit, setAvatarEdit] = useState(false);
   const [bioEdit, setBioEdit] = useState(false);
@@ -482,7 +484,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
 
             {/* Музыка: у друга плашка, у себя редактор */}
             {isOwn ? (
-              <MusicEditor lang={lang} music={nowPlayingOf(p)} onSave={(v) => saveProfile(v)} />
+              <MusicEditor key={p.music_at ?? "none"} lang={lang} music={nowPlayingOf(p)} onSave={(v) => saveProfile(v)} />
             ) : nowPlayingOf(p) && <MusicBar music={nowPlayingOf(p)!} lang={lang} />}
 
             {/* Приватность (только свой) */}
@@ -589,7 +591,16 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
             </div>
 
             {/* Стенка */}
-            <ProfileWall viewerId={viewerId} profileId={profileId} lang={lang} />
+            <MusicPlaylist
+              viewerId={viewerId} profileId={profileId} lang={lang}
+              onSetNow={isOwn ? (tr) => saveProfile({ music_title: tr.title, music_artist: tr.artist, music_url: tr.url, music_at: new Date().toISOString() }) : undefined}
+              onToWall={isOwn ? async (tr) => {
+                const { error } = await supabase!.from("wall_posts").insert({ user_id: viewerId, track_title: tr.title, track_artist: tr.artist, track_url: tr.url });
+                if (!error) setWallKey((k) => k + 1);
+                return !error;
+              } : undefined}
+            />
+            <ProfileWall key={wallKey} viewerId={viewerId} profileId={profileId} lang={lang} />
 
             {msg && (
               <div className={`rounded-lg px-4 py-2.5 text-[13px] font-semibold ${msg.kind === "ok" ? "bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "bg-[var(--danger-soft)] text-[var(--danger)]"}`}>
