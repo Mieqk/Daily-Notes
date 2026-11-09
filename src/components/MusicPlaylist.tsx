@@ -7,6 +7,7 @@ import { enrichTrack, safeCoverUrl, safePreviewUrl, type FoundTrack } from "../l
 import { makePlaylist } from "../music-playlist-strings";
 import { Cover, TrackSearch } from "./MusicParts";
 import MusicPlayer from "./MusicPlayer";
+import SpotifyImport from "./SpotifyImport";
 import { api } from "../lib/musicStore";
 
 export interface Track { id: string; title: string; artist: string | null; url: string | null; cover: string | null; preview: string | null }
@@ -84,6 +85,27 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
     return true;
   };
 
+  /** Пачка треков из Spotify: без повторов и не больше свободных мест. Возвращает, сколько добавлено. */
+  const importMany = async (list: FoundTrack[]): Promise<number> => {
+    if (!supabase) return 0;
+    const have = new Set((tracks ?? []).map((t) => `${t.title}|${t.artist ?? ""}`.toLowerCase()));
+    const rows: { user_id: string; title: string; artist: string | null; url: string | null; cover: string | null; preview: string | null }[] = [];
+    for (const f of list) {
+      const c = cleanMusic(f.title, f.artist ?? "", f.url ?? "", { cover: f.cover, preview: f.preview });
+      if (!c) continue;
+      const key = `${c.title}|${c.artist ?? ""}`.toLowerCase();
+      if (have.has(key)) continue;
+      have.add(key);
+      rows.push({ user_id: viewerId, title: c.title, artist: c.artist, url: c.url, cover: c.cover, preview: c.preview });
+      if ((tracks?.length ?? 0) + rows.length >= MAX) break;
+    }
+    if (!rows.length) return 0;
+    const { error } = await supabase.from("profile_tracks").insert(rows);
+    if (error) throw error;
+    await load();
+    return rows.length;
+  };
+
   const remove = async (t: Track) => {
     if (confirmId !== t.id) {
       setConfirmId(t.id);
@@ -118,6 +140,7 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
         )}
       </div>
 
+      {isOwn && adding && <SpotifyImport lang={lang} onImport={importMany} />}
       {isOwn && adding && <div className="mb-4 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-3"><TrackSearch lang={lang} onPick={add} autoFocus /></div>}
 
       {msg && <div role="status" className={`mb-3 rounded-lg px-3 py-2 text-[12.5px] font-semibold ${msg.ok ? "bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "bg-[var(--danger-soft)] text-[var(--danger)]"}`}>{msg.text}</div>}

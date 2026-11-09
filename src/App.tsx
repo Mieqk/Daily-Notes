@@ -50,6 +50,9 @@ import { startPresenceHeartbeat } from "./lib/presence";
 import { useCalls } from "./hooks/useCalls";
 import CallOverlay from "./components/CallOverlay";
 import { useGcalSync } from "./hooks/useGcalSync";
+import { useSpotifySync } from "./hooks/useSpotifySync";
+import { completeSpotifyLogin } from "./lib/spotify";
+import { makeSpotify } from "./spotify-strings";
 import { useAuth } from "./contexts/AuthContext";
 import { supabase } from "./lib/supabase";
 import { startCloudSync, stopCloudSync, deleteAllCloudDocs, wipeCloudLocal } from "./lib/cloudSync";
@@ -137,6 +140,7 @@ export default function App() {
   const call = useCalls(userId, lang);
   useEffect(() => (userId ? startPresenceHeartbeat(userId) : undefined), [userId]);
   useGcalSync(userId, tasks);
+  useSpotifySync(userId);
 
   const now = useNow(1000);
   const locale = localeOf(lang);
@@ -148,6 +152,8 @@ export default function App() {
   useHealthSleep(healthSleep, sleep, (days) => { setSleep((prev) => { const next = { ...prev }; for (const [k, v] of Object.entries(days)) if (!next[k]?.bedtime && !next[k]?.waketime) next[k] = v; return next; }); showToast(makeHealthSleep(lang)("imported")); });
   usePlaceReminders(lang, showToast);
   useQuickReminders(lang, showToast);
+  useEffect(() => { void completeSpotifyLogin().then((r) => { if (r) setToast({ id: Date.now(), msg: makeSpotify(lang)(r === 'ok' ? 'toastOk' : 'toastErr') }); }); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(null), 2600); return () => window.clearTimeout(id); }, [toast]);
   useEffect(() => {
     const onFull = () => showToast(u('storageFull'));

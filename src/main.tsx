@@ -1,3 +1,4 @@
+import './lib/spotify'; // первым: запоминает адрес страницы до остальных модулей
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
