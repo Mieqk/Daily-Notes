@@ -663,3 +663,13 @@ html[data-contrast="high"] {
 .bgx-sand-grain { opacity: .3 !important; }
 .bgx-static .bgx-sand-grain { opacity: .45 !important; }
 .bgx-grain { background-size: 140px 140px; }
+
+
+/* Ползунки плеера (перемотка и громкость): заливка до текущего значения задаётся через --p */
+.dn-range { -webkit-appearance: none; appearance: none; height: 22px; background: transparent; cursor: pointer; touch-action: pan-y; }
+.dn-range:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 99px; }
+.dn-range::-webkit-slider-runnable-track { height: 5px; border-radius: 99px; background: linear-gradient(to right, var(--accent) var(--p, 0%), var(--line) var(--p, 0%)); }
+.dn-range::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; margin-top: -5px; border-radius: 50%; background: var(--accent); border: 2px solid var(--panel); box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
+.dn-range::-moz-range-track { height: 5px; border-radius: 99px; background: var(--line); }
+.dn-range::-moz-range-progress { height: 5px; border-radius: 99px; background: var(--accent); }
+.dn-range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--panel); }

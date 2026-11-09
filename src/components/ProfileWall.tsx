@@ -297,7 +297,7 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
                       {p.track_artist && <div className="truncate text-[13px] text-[var(--ink-soft)]">{p.track_artist}</div>}
                     </div>
                   </div>
-                  {(p.track_url || p.track_preview) && <div className="mt-3"><TrackPlayer url={p.track_url ?? null} preview={p.track_preview} lang={lang} /></div>}
+                  {(p.track_url || p.track_preview) && <div className="mt-3"><TrackPlayer url={p.track_url ?? null} preview={p.track_preview} lang={lang} title={p.track_title ?? ""} artist={p.track_artist ?? null} cover={safeCoverUrl(p.track_cover)} /></div>}
                   {p.caption && <p className="mt-2 whitespace-pre-wrap break-words text-[13px] leading-snug">{p.caption}</p>}
                 </div>
                 {isOwn && (
