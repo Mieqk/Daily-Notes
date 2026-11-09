@@ -25,9 +25,9 @@ import { ImageIcon, MusicNoteIcon, PairIcon, SunIcon, UsersIcon } from "../icons
 type Sub = "friends" | "feed" | "together" | "care";
 const SUBS: { id: Sub; icon: (p: { className?: string }) => ReactNode; label: "gConnect" | "gFeed" | "gTogether" | "gCare" }[] = [
   { id: "friends", icon: UsersIcon, label: "gConnect" },
-  { id: "feed", icon: ImageIcon, label: "gFeed" },
   { id: "together", icon: PairIcon, label: "gTogether" },
   { id: "care", icon: SunIcon, label: "gCare" },
+  { id: "feed", icon: ImageIcon, label: "gFeed" },
 ];
 import FriendNoteEditor from "./FriendNoteEditor";
 import type { FriendNote } from "./FriendNoteEditor";
@@ -412,7 +412,7 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
       )}
 
       {/* разделы вкладки: как в «Хобби», одна плашка с переключателем */}
-      <div className="sticky -top-6 z-30 mx-auto mb-4 w-full max-w-xl rounded-xl bg-[var(--bg)] sm:-top-8">
+      <div className="sticky -top-6 z-30 mx-auto mb-4 w-full max-w-2xl rounded-xl bg-[var(--bg)] sm:-top-8">
         <div className="flex gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1" role="tablist" style={{ boxShadow: "var(--shadow-sm)" }}>
           {SUBS.map(({ id, icon: Icon, label }) => (
             <button key={id} role="tab" aria-label={t(label)} title={t(label)} aria-selected={sub === id} onClick={() => setSub(id)} className={`flex h-10 min-w-0 flex-auto items-center justify-center gap-1.5 rounded-lg px-2 text-[12px] font-semibold transition-all sm:text-[13px] ${sub === id ? "bg-[var(--accent)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover)]"}`}>
