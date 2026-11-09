@@ -439,3 +439,11 @@ export const GamepadIcon = ({ className = "h-5 w-5" }: IconProps) => (
     <path d="M15.5 10.8h.01M17.5 12.8h.01" />
   </svg>
 );
+
+export const MusicNoteIcon = ({ className = "h-4 w-4" }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...base} strokeWidth={2}>
+    <path d="M9 18V6l10-2v12" />
+    <circle cx="6.5" cy="18" r="2.5" />
+    <circle cx="16.5" cy="16" r="2.5" />
+  </svg>
+);

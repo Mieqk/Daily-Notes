@@ -1,7 +1,11 @@
 import { createPortal } from "react-dom";
 import { fetchProfiles } from "../lib/profiles";
 import Achievements from "./Achievements";
+import { MusicBar, MusicEditor } from "./NowPlaying";
+import { nowPlayingOf } from "../lib/nowPlaying";
+import { makeNowPlaying } from "../now-playing-strings";
 import ProfileWall from "./ProfileWall";
+import MusicPlaylist from "./MusicPlaylist";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type { Lang } from "../i18n";
@@ -31,6 +35,10 @@ interface Profile {
   status_emoji: string | null;
   status_text: string | null;
   privacy?: Record<string, string> | null;
+  music_title?: string | null;
+  music_artist?: string | null;
+  music_url?: string | null;
+  music_at?: string | null;
 }
 
 const AVATARS = ["😎", "🌙", "🌸", "🐶", "", "🐼", "🐸", "⭐", "🎧", "", "🌊", "🍩"];
@@ -173,6 +181,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
 
   const [p, setP] = useState<Profile | null>(null);
   const [friendSince, setFriendSince] = useState<string | null>(null);
+  const [wallKey, setWallKey] = useState(0);
   const [busy, setBusy] = useState<"banner" | "avatar" | null>(null);
   const [avatarEdit, setAvatarEdit] = useState(false);
   const [bioEdit, setBioEdit] = useState(false);
@@ -473,13 +482,18 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
               </div>
             )}
 
+            {/* Музыка: у друга плашка, у себя редактор */}
+            {isOwn ? (
+              <MusicEditor key={p.music_at ?? "none"} lang={lang} music={nowPlayingOf(p)} onSave={(v) => saveProfile(v)} />
+            ) : nowPlayingOf(p) && <MusicBar music={nowPlayingOf(p)!} lang={lang} />}
+
             {/* Приватность (только свой) */}
             {isOwn && (
               <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
                 <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{t("privTitle")}</div>
                 <p className="mb-3 text-[12.5px] leading-relaxed text-[var(--ink-soft)]">{t("privNote")}</p>
                 <div className="flex flex-col gap-2">
-                  {([["status", t("privStatus")], ["bio", t("privBio")], ["banner", t("privBanner")]] as const).map(([key, title]) => {
+                  {([["status", t("privStatus")], ["bio", t("privBio")], ["banner", t("privBanner")], ["music", makeNowPlaying(lang)("privMusic")]] as const).map(([key, title]) => {
                     const value = p.privacy?.[key] === "nobody" ? "nobody" : "friends";
                     return (
                       <div key={key} className="flex items-center justify-between gap-3">
@@ -577,7 +591,16 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
             </div>
 
             {/* Стенка */}
-            <ProfileWall viewerId={viewerId} profileId={profileId} lang={lang} />
+            <MusicPlaylist
+              viewerId={viewerId} profileId={profileId} lang={lang}
+              onSetNow={isOwn ? (tr) => saveProfile({ music_title: tr.title, music_artist: tr.artist, music_url: tr.url, music_at: new Date().toISOString() }) : undefined}
+              onToWall={isOwn ? async (tr) => {
+                const { error } = await supabase!.from("wall_posts").insert({ user_id: viewerId, track_title: tr.title, track_artist: tr.artist, track_url: tr.url });
+                if (!error) setWallKey((k) => k + 1);
+                return !error;
+              } : undefined}
+            />
+            <ProfileWall key={wallKey} viewerId={viewerId} profileId={profileId} lang={lang} />
 
             {msg && (
               <div className={`rounded-lg px-4 py-2.5 text-[13px] font-semibold ${msg.kind === "ok" ? "bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "bg-[var(--danger-soft)] text-[var(--danger)]"}`}>

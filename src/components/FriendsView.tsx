@@ -19,7 +19,7 @@ import FriendChat from "./FriendChat";
 import PairHub from "./PairHub";
 import { useStored } from "../store";
 import type { SleepData } from "../store";
-import { PairIcon, SunIcon, UsersIcon } from "../icons";
+import { MusicNoteIcon, PairIcon, SunIcon, UsersIcon } from "../icons";
 
 type Sub = "friends" | "together" | "care";
 const SUBS: { id: Sub; icon: (p: { className?: string }) => ReactNode; label: "gConnect" | "gTogether" | "gCare" }[] = [
@@ -55,6 +55,10 @@ interface Profile {
   presence_mode?: PresenceMode | null;
   presence_state?: PresenceState | null;
   last_seen_at?: string | null;
+  music_title?: string | null;
+  music_artist?: string | null;
+  music_url?: string | null;
+  music_at?: string | null;
 }
 
 interface Friendship {
@@ -386,6 +390,12 @@ export default function FriendsView({ userId, lang, sleep, moodEmoji, moods, cha
             p.bio || "\u00A0"
           )}
         </span>
+        {p.music_title && (
+          <span className="mt-0.5 flex items-center gap-1 truncate text-[11.5px] text-[var(--accent-deep)]">
+            <MusicNoteIcon className="h-3 w-3 shrink-0" />
+            <span className="truncate"><b>{p.music_title}</b>{p.music_artist ? ` ${p.music_artist}` : ""}</span>
+          </span>
+        )}
         {notes[p.id]?.note && <span className="mt-0.5 block truncate text-[11.5px] italic text-[var(--ink-soft)]">🔒 {notes[p.id].note}</span>}
       </span>
     </span>
