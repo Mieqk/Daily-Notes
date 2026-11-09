@@ -121,3 +121,30 @@ export async function shrinkPhoto(file: File): Promise<string> {
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   return canvas.toDataURL("image/jpeg", 0.8);
 }
+
+/** Картинка для стенки профиля: до 1280 px по длинной стороне, WebP. Анимированные GIF/WebP до 6 МБ грузим как есть. */
+export async function prepareWallImage(file: File): Promise<ProcessedImage> {
+  if (!file.type.startsWith("image/")) throw new Error("not-image");
+  if (await isAnimatedImage(file)) {
+    if (file.size > MAX_ANIM_BANNER_MB * 1024 * 1024) throw new Error("anim-too-big");
+    return { blob: file, ext: file.type === "image/gif" ? "gif" : "webp" };
+  }
+  if (file.size > 8 * 1024 * 1024) throw new Error("too-big");
+  const img = await loadImage(file);
+  const nw = img.naturalWidth;
+  const nh = img.naturalHeight;
+  if (!nw || !nh) throw new Error("not-image");
+  const scale = Math.min(1, MAX_BANNER / Math.max(nw, nh));
+  const w = Math.max(1, Math.round(nw * scale));
+  const h = Math.max(1, Math.round(nh * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("encode-fail");
+  ctx.drawImage(img, 0, 0, w, h);
+  const blob: Blob = await new Promise((resolve, reject) => {
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("encode-fail"))), "image/webp", 0.85);
+  });
+  return { blob, ext: blob.type === "image/webp" ? "webp" : "png" };
+}
