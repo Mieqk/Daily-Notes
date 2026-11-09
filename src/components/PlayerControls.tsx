@@ -1,5 +1,5 @@
 import type { Lang } from "../i18n";
-import { api, useMusic } from "../lib/musicStore";
+import { api, isPlayable, useMusic } from "../lib/musicStore";
 import { makeSearch } from "../music-search-strings";
 
 export const fmtTime = (sec: number) => {
@@ -65,7 +65,7 @@ export function VolumeControl({ lang, className = "" }: { lang: Lang; className?
 export function Transport({ lang, big = false, active = true, onToggle }: { lang: Lang; big?: boolean; active?: boolean; onToggle?: () => void }) {
   const s = makeSearch(lang);
   const m = useMusic();
-  const many = m.queue.filter((t) => t.preview).length > 1;
+  const many = m.queue.filter(isPlayable).length > 1;
   const playing = active && m.playing;
   const btn = "grid place-items-center rounded-full text-[var(--ink)] transition-transform active:scale-90 disabled:opacity-40";
   const main = big ? 72 : 60;

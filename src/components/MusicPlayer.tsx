@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Lang } from "../i18n";
 import { embedOf } from "../lib/musicEmbed";
-import { api, useMusic, type PlayerTrack } from "../lib/musicStore";
+import { api, isPlayable, useMusic, ytIdOf, type PlayerTrack } from "../lib/musicStore";
+import { YoutubeError, findYoutube, youtubeConfigured } from "../lib/youtubeSearch";
 import { makeSearch } from "../music-search-strings";
 import { Cover, TrackPlayer } from "./MusicParts";
 import { SeekBar, Transport, VolumeControl } from "./PlayerControls";
@@ -18,6 +19,8 @@ export default function MusicPlayer({ tracks, selId, onSel, lang }: { tracks: Pl
   const cur = tracks.find((t) => t.id === selId) ?? null;
   const active = !!cur && m.curId === cur.id;
   const [fullId, setFullId] = useState<string | null>(null);
+  const [finding, setFinding] = useState(false);
+  const [findMsg, setFindMsg] = useState<string | null>(null);
 
   // автопереход на следующий трек или перемотка кнопками: выбранной строкой становится играющий трек плейлиста
   useEffect(() => {
@@ -28,11 +31,27 @@ export default function MusicPlayer({ tracks, selId, onSel, lang }: { tracks: Pl
   if (!cur) {
     return <div className="mb-3 rounded-2xl border border-dashed border-[var(--line)] px-4 py-5 text-center text-[13px] text-[var(--ink-faint)]">{s("pickOne")}</div>;
   }
-  const playable = tracks.filter((t) => t.preview);
-  const canFull = !!embedOf(cur.url);
+  const playable = tracks.filter(isPlayable);
+  const hasVid = !!ytIdOf(cur);
+  const curPlayable = isPlayable(cur);
+  // встроенные плееры Spotify и Яндекса играют целиком в своём окне; YouTube играет в нашем плеере
+  const embed = embedOf(cur.url);
+  const canFull = !!embed && embed.kind !== "youtube";
+  const findFull = async () => {
+    setFinding(true);
+    setFindMsg(null);
+    try {
+      const id = await findYoutube(cur.title, cur.artist);
+      if (id) api.playQueue(playable.some((t) => t.id === cur.id) ? playable : [...playable, cur], cur.id);
+      else setFindMsg(s("noFull"));
+    } catch (e) {
+      setFindMsg(e instanceof YoutubeError && e.status === 403 ? s("ytLimit") : s("noFull"));
+    }
+    setFinding(false);
+  };
   const showFull = canFull && fullId === cur.id;
   const openFull = () => { if (active && m.playing) api.toggle(); setFullId(cur.id); };
-  const toggle = () => { if (active) api.toggle(); else if (cur.preview) api.playQueue(playable, cur.id); };
+  const toggle = () => { if (active) api.toggle(); else if (curPlayable) api.playQueue(playable, cur.id); };
 
   return (
     <div className="relative mb-3 overflow-hidden rounded-3xl border border-[var(--line)]" style={{ boxShadow: "var(--shadow-sm)" }}>
@@ -53,15 +72,19 @@ export default function MusicPlayer({ tracks, selId, onSel, lang }: { tracks: Pl
             <TrackPlayer url={cur.url} lang={lang} />
             {cur.preview && <button onClick={() => setFullId(null)} className="mx-auto h-8 rounded-full px-3 text-[12px] font-semibold text-[var(--accent-deep)] hover:underline">‹ {s("backPreview")}</button>}
           </div>
-        ) : cur.preview ? (
+        ) : curPlayable ? (
           <div className="mt-4 flex flex-col gap-2">
             <SeekBar lang={lang} active={active} />
             <Transport lang={lang} active={active} onToggle={toggle} />
             <VolumeControl lang={lang} className="mx-auto w-full max-w-xs" />
-            {canFull && (
+            {!hasVid && youtubeConfigured() && (
+              <button onClick={() => void findFull()} disabled={finding} title={s("fullHint")} className="mx-auto h-9 rounded-full bg-[var(--accent)] px-4 text-[12.5px] font-bold text-[var(--accent-ink)] transition-all hover:brightness-110 active:scale-95 disabled:opacity-60">{finding ? s("searching") : s("fullHere")}</button>
+            )}
+            {findMsg && <p className="text-center text-[12px] text-[var(--danger)]">{findMsg}</p>}
+            {canFull && !(!hasVid && youtubeConfigured()) && (
               <button onClick={openFull} title={s("fullHint")} className="mx-auto h-9 rounded-full bg-[var(--accent)] px-4 text-[12.5px] font-bold text-[var(--accent-ink)] transition-all hover:brightness-110 active:scale-95">{s("fullHere")}</button>
             )}
-            <p className="text-center text-[11px] text-[var(--ink-faint)]">{s("preview")}{cur.url && !canFull && <> · <a href={cur.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--accent-deep)] hover:underline">{s("full")} ›</a></>}</p>
+            <p className="text-center text-[11px] text-[var(--ink-faint)]">{hasVid ? s("fullTrack") : s("preview")}{cur.url && !canFull && !hasVid && <> · <a href={cur.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--accent-deep)] hover:underline">{s("full")} ›</a></>}</p>
           </div>
         ) : (
           <div className="mt-4">
