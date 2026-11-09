@@ -9,8 +9,9 @@ import { Cover, TrackSearch } from "./MusicParts";
 import MusicPlayer from "./MusicPlayer";
 import SpotifyImport from "./SpotifyImport";
 import { api, isPlayable } from "../lib/musicStore";
+import { MAX_FILES, checkMusicFile, musicFileLinks, removeMusicFile, titleFromFilename, uploadMusicFile } from "../lib/musicFiles";
 
-export interface Track { id: string; title: string; artist: string | null; url: string | null; cover: string | null; preview: string | null }
+export interface Track { id: string; title: string; artist: string | null; url: string | null; cover: string | null; preview: string | null; audio_path?: string | null }
 const MAX = 50;
 
 interface Props {
@@ -39,18 +40,27 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
 
   const load = useCallback(async () => {
     if (!supabase) return;
-    // cover и preview появились позже: если миграция ещё не выполнена, читаем без них
+    // cover, preview и audio_path появились позже: если миграции ещё не выполнены, читаем без них
     const q = (cols: string) => supabase!.from("profile_tracks").select(cols).eq("user_id", profileId).order("created_at", { ascending: true }).limit(MAX);
-    const full = await q("id, title, artist, url, cover, preview");
-    const rows = (full.error ? (await q("id, title, artist, url")).data : full.data) as unknown as Partial<Track>[] | null;
-    setTracks((rows ?? []).map((t) => ({ id: t.id!, title: t.title!, artist: t.artist ?? null, url: t.url ?? null, cover: safeCoverUrl(t.cover) ?? coverFromLink(t.url ?? null), preview: safePreviewUrl(t.preview) })));
+    let res = await q("id, title, artist, url, cover, preview, audio_path");
+    if (res.error) res = await q("id, title, artist, url, cover, preview");
+    if (res.error) res = await q("id, title, artist, url");
+    const rows = (res.data ?? []) as unknown as Partial<Track>[];
+    const links = await musicFileLinks(rows.map((t) => t.audio_path).filter((x): x is string => !!x));
+    setTracks(rows.map((t) => ({
+      id: t.id!, title: t.title!, artist: t.artist ?? null, url: t.url ?? null,
+      cover: safeCoverUrl(t.cover) ?? coverFromLink(t.url ?? null),
+      // свой файл играет по временной ссылке хранилища, остальное только с проверенных адресов
+      preview: t.audio_path ? links[t.audio_path] ?? null : safePreviewUrl(t.preview),
+      audio_path: t.audio_path ?? null,
+    })));
   }, [profileId]);
   useEffect(() => { void load(); }, [load]);
 
   // старые треки без обложки или превью: ищем их по названию (только свои, по одному разу за сеанс)
   useEffect(() => {
     if (!isOwn || !tracks) return;
-    const todo = tracks.filter((t) => (!t.preview || !t.cover || t.cover.includes("ytimg.com")) && !tried.current.has(t.id)).slice(0, 8);
+    const todo = tracks.filter((t) => (t.audio_path ? !t.cover : !t.preview || !t.cover || t.cover.includes("ytimg.com")) && !tried.current.has(t.id)).slice(0, 8);
     if (!todo.length) return;
     todo.forEach((t) => tried.current.add(t.id));
     const country = (/^[a-z]{2}-([A-Z]{2})$/.exec(navigator.language)?.[1]) || "US";
@@ -59,8 +69,9 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
       for (const t of todo) {
         try {
           const f = await enrichTrack(t.title, t.artist, country);
-          if (dead || !f || (!f.cover && !f.preview)) continue;
-          const patch = { cover: f.cover ?? t.cover, preview: f.preview ?? t.preview };
+          if (dead || !f || (!f.cover && (t.audio_path || !f.preview))) continue;
+          // у своего файла дополняем только обложку: в базу подмену ссылки не пишем
+          const patch = t.audio_path ? { cover: f.cover ?? t.cover } : { cover: f.cover ?? t.cover, preview: f.preview ?? t.preview };
           setTracks((l) => (l ?? []).map((x) => (x.id === t.id ? { ...x, ...patch } : x)));
           // если миграция с правом обновления ещё не выполнена, обложка просто не сохранится в базе
           void supabase!.from("profile_tracks").update(patch).eq("id", t.id).then(() => {}, () => {});
@@ -116,7 +127,27 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
     setConfirmId(null);
     const { error } = await supabase!.from("profile_tracks").delete().eq("id", t.id);
     if (error) { setMsg({ ok: false, text: p("err") }); return; }
+    if (t.audio_path) void removeMusicFile(t.audio_path);
     setTracks((l) => (l ?? []).filter((x) => x.id !== t.id));
+  };
+
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const uploadFile = async (f: File) => {
+    if (!supabase || uploading) return;
+    const chk = checkMusicFile(f);
+    if (chk !== "ok") { setMsg({ ok: false, text: p(chk) }); return; }
+    if ((tracks?.length ?? 0) >= MAX) { setMsg({ ok: false, text: p("full") }); return; }
+    if ((tracks ?? []).filter((t) => t.audio_path).length >= MAX_FILES) { setMsg({ ok: false, text: p("filesFull") }); return; }
+    setUploading(true);
+    const path = await uploadMusicFile(viewerId, f);
+    if (!path) { setUploading(false); setMsg({ ok: false, text: p("uploadErr") }); return; }
+    const { title, artist } = titleFromFilename(f.name);
+    const { error } = await supabase.from("profile_tracks").insert({ user_id: viewerId, title, artist, audio_path: path });
+    if (error) { void removeMusicFile(path); setUploading(false); setMsg({ ok: false, text: p("uploadErr") }); return; }
+    await load();
+    setUploading(false);
+    setMsg({ ok: true, text: p("uploaded") });
   };
 
   const act = async (fn: ((t: Track) => Promise<boolean>) | undefined, t: Track, okText: string) => {
@@ -141,7 +172,13 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
       </div>
 
       {isOwn && adding && <SpotifyImport lang={lang} onImport={importMany} />}
-      {isOwn && adding && <div className="mb-4 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-3"><TrackSearch lang={lang} onPick={add} autoFocus /></div>}
+      {isOwn && adding && <div className="mb-4 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-3"><TrackSearch lang={lang} onPick={add} autoFocus />
+        <div className="mt-3 border-t border-[var(--line)] pt-3">
+          <input ref={fileRef} type="file" accept="audio/*,.mp3,.m4a,.aac,.ogg,.wav,.flac" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void uploadFile(f); }} />
+          <button onClick={() => fileRef.current?.click()} disabled={uploading} className="h-9 rounded-full border border-[var(--line)] px-4 text-[12.5px] font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--hover)] active:scale-95 disabled:opacity-60">{uploading ? p("uploading") : `♪ ${p("upload")}`}</button>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--ink-faint)]">{p("uploadNote")}</p>
+        </div>
+      </div>}
 
       {msg && <div role="status" className={`mb-3 rounded-lg px-3 py-2 text-[12.5px] font-semibold ${msg.ok ? "bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "bg-[var(--danger-soft)] text-[var(--danger)]"}`}>{msg.text}</div>}
 
