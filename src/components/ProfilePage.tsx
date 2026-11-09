@@ -6,7 +6,6 @@ import { nowPlayingOf } from "../lib/nowPlaying";
 import { makeNowPlaying } from "../now-playing-strings";
 import ProfileWall from "./ProfileWall";
 import MusicPlaylist from "./MusicPlaylist";
-import SpotifyCard from "./SpotifyCard";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type { Lang } from "../i18n";
@@ -487,7 +486,7 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
 
             {/* Музыка: у друга плашка, у себя редактор */}
             {isOwn ? (
-              <><MusicEditor key={p.music_at ?? "none"} lang={lang} music={nowPlayingOf(p)} onSave={(v) => saveProfile(v)} /><SpotifyCard lang={lang} /></>
+              <MusicEditor key={p.music_at ?? "none"} lang={lang} music={nowPlayingOf(p)} onSave={(v) => saveProfile(v)} />
             ) : nowPlayingOf(p) && <MusicBar music={nowPlayingOf(p)!} lang={lang} />}
 
             {/* Приватность (только свой) */}
