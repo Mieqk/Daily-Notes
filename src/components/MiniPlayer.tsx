@@ -8,7 +8,7 @@ import { Cover } from "./MusicParts";
 import { BackgroundPicker, PlayerBackdrop, usePlayerBg } from "./PlayerBackground";
 import { makePlayerBg } from "../player-bg-strings";
 import { LyricsPanel } from "./LyricsPanel";
-import { Equalizer, Icon, NEXT, PAUSE, PLAY, PREV, SeekBar, Transport, VolumeControl } from "./PlayerControls";
+import { Equalizer, Icon, NEXT, PAUSE, PLAY, PREV, REPEAT, SeekBar, Transport, VolumeControl } from "./PlayerControls";
 
 /** Полноэкранный плеер: размытая обложка на фоне, большая обложка, перемотка, управление, громкость и очередь. */
 function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
@@ -121,6 +121,21 @@ function YouTubeWindow({ visible }: { visible: boolean }) {
   );
 }
 
+const CloseX = () => <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>;
+
+function TrackInfo({ cur, playing, lang, onOpen, className = "" }: { cur: { title: string; artist: string | null; cover: string | null }; playing: boolean; lang: Lang; onOpen: () => void; className?: string }) {
+  const s = makeSearch(lang);
+  return (
+    <button onClick={onOpen} aria-label={s("openPlayer")} className={`group flex items-center gap-3 text-left transition-transform active:scale-[0.99] ${className}`}>
+      <Cover src={cur.cover} size={48} className="shrink-0 !rounded-xl shadow-md transition-transform duration-300 group-hover:scale-105" />
+      <span className="min-w-0">
+        <span className="flex items-center gap-1.5 text-[13.5px] font-bold"><Equalizer playing={playing} className="shrink-0 text-[var(--accent)]" /><span className="truncate">{cur.title}</span></span>
+        {cur.artist && <span className="block truncate text-[12px] text-[var(--ink-soft)]">{cur.artist}</span>}
+      </span>
+    </button>
+  );
+}
+
 /** Мини-плеер внизу приложения: виден на любом экране, пока есть трек. По тапу открывается полный плеер. */
 export default function MiniPlayer({ lang }: { lang: Lang }) {
   const s = makeSearch(lang);
@@ -134,26 +149,34 @@ export default function MiniPlayer({ lang }: { lang: Lang }) {
   return (
     <>
       <div className="animate-slideup safe-bottom relative z-20 shrink-0 border-t border-[var(--line)] bg-[var(--panel)]/95 backdrop-blur" role="region" aria-label={s("openPlayer")} style={{ boxShadow: "0 -6px 24px -12px rgba(0,0,0,.35)" }}>
-        <div className="absolute inset-x-0 top-0 h-[3px] bg-[var(--line)] sm:hidden" aria-hidden><div className="h-full bg-[var(--accent)]" style={{ width: `${pct}%` }} /></div>
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-[var(--line)] md:hidden" aria-hidden><div className="h-full bg-[var(--accent)]" style={{ width: `${pct}%` }} /></div>
         {/* на телефоне: невидимый ползунок по верхней кромке, им можно перемотать трек */}
         <input type="range" min={0} max={m.dur} step={0.1} value={Math.min(m.time, m.dur)} onChange={(e) => api.seek(Number(e.target.value))}
-          aria-label={s("preview")} className="absolute inset-x-0 -top-2.5 z-10 h-5 w-full cursor-pointer opacity-0 sm:hidden" style={{ touchAction: "none" }} />
-        <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2 sm:gap-4 sm:px-8">
-          <button onClick={() => setFull(true)} aria-label={s("openPlayer")} className="flex min-w-0 flex-1 items-center gap-3 text-left active:scale-[0.99] md:max-w-[16rem] md:flex-none lg:max-w-[18rem]">
-            <Cover src={cur.cover} size={44} />
-            <span className="min-w-0">
-              <span className="flex items-center gap-1.5 text-[13.5px] font-bold"><Equalizer playing={m.playing} className="shrink-0 text-[var(--accent)]" /><span className="truncate">{cur.title}</span></span>
-              {cur.artist && <span className="block truncate text-[12px] text-[var(--ink-soft)]">{cur.artist}</span>}
-            </span>
-          </button>
-          <div className="hidden min-w-0 flex-1 items-center md:flex"><SeekBar lang={lang} /></div>
-          <div className="hidden w-32 shrink-0 lg:block"><VolumeControl lang={lang} /></div>
-          <button onClick={api.prev} aria-label={s("prev")} className={`${btn} hidden text-[var(--ink-soft)] sm:grid`}><Icon d={PREV} size={20} /></button>
+          aria-label={s("preview")} className="absolute inset-x-0 -top-2.5 z-10 h-5 w-full cursor-pointer opacity-0 md:hidden" style={{ touchAction: "none" }} />
+        {/* телефон: одна строка */}
+        <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2 md:hidden">
+          <TrackInfo cur={cur} playing={m.playing} lang={lang} onOpen={() => setFull(true)} className="min-w-0 flex-1" />
           <button onClick={api.toggle} aria-label={m.playing ? s("pause") : s("play")} className={`${btn} bg-[var(--accent)] text-[var(--accent-ink)]`}><Icon d={m.playing ? PAUSE : PLAY} size={20} /></button>
           <button onClick={api.next} disabled={!many} aria-label={s("next")} className={`${btn} text-[var(--ink-soft)]`}><Icon d={NEXT} size={20} /></button>
-          <button onClick={api.close} aria-label={s("closePlayer")} className={`${btn} text-[var(--ink-faint)] hover:text-[var(--ink)]`}>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
-          </button>
+          <button onClick={api.close} aria-label={s("closePlayer")} className={`${btn} text-[var(--ink-faint)] hover:text-[var(--ink)]`}><CloseX /></button>
+        </div>
+        {/* планшет и ПК: три группы, ничего не наезжает */}
+        <div className="mx-auto hidden max-w-6xl grid-cols-[minmax(0,1fr)_minmax(0,30rem)_minmax(0,1fr)] items-center gap-6 px-8 py-2.5 md:grid">
+          <TrackInfo cur={cur} playing={m.playing} lang={lang} onOpen={() => setFull(true)} className="min-w-0 justify-self-start" />
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <div className="flex items-center justify-center gap-3">
+              <button onClick={api.toggleRepeat} aria-pressed={m.repeat} aria-label={s("repeat")} className={`${btn} h-9 w-9 ${m.repeat ? "bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "text-[var(--ink-faint)] hover:text-[var(--ink)]"}`}><Icon d={REPEAT} size={17} /></button>
+              <button onClick={api.prev} aria-label={s("prev")} className={`${btn} text-[var(--ink-soft)] hover:text-[var(--ink)]`}><Icon d={PREV} size={20} /></button>
+              <button onClick={api.toggle} aria-label={m.playing ? s("pause") : s("play")} className={`${btn} !h-11 !w-11 bg-[var(--accent)] text-[var(--accent-ink)]`} style={{ boxShadow: "0 6px 16px -6px var(--accent)" }}><Icon d={m.playing ? PAUSE : PLAY} size={22} /></button>
+              <button onClick={api.next} disabled={!many} aria-label={s("next")} className={`${btn} text-[var(--ink-soft)] hover:text-[var(--ink)]`}><Icon d={NEXT} size={20} /></button>
+              <span className="h-9 w-9" aria-hidden />
+            </div>
+            <SeekBar lang={lang} />
+          </div>
+          <div className="flex min-w-0 items-center gap-2 justify-self-end">
+            <div className="w-24 lg:w-32"><VolumeControl lang={lang} /></div>
+            <button onClick={api.close} aria-label={s("closePlayer")} className={`${btn} text-[var(--ink-faint)] hover:bg-[var(--hover)] hover:text-[var(--ink)]`}><CloseX /></button>
+          </div>
         </div>
       </div>
       <YouTubeWindow visible={m.kind === "yt"} />
