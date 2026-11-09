@@ -5,6 +5,8 @@ import { api, isPlayable, useMusic } from "../lib/musicStore";
 import { makeSearch } from "../music-search-strings";
 import { makeLyrics } from "../lyrics-strings";
 import { Cover } from "./MusicParts";
+import { BackgroundPicker, PlayerBackdrop, usePlayerBg } from "./PlayerBackground";
+import { makePlayerBg } from "../player-bg-strings";
 import { LyricsPanel } from "./LyricsPanel";
 import { Icon, NEXT, PAUSE, PLAY, PREV, SeekBar, Transport, VolumeControl } from "./PlayerControls";
 
@@ -15,6 +17,9 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
   const cur = m.queue.find((t) => t.id === m.curId) ?? null;
   const ls = makeLyrics(lang);
   const [showLyrics, setShowLyrics] = useState(false);
+  const [showBg, setShowBg] = useState(false);
+  const bg = usePlayerBg();
+  const bs = makePlayerBg(lang);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
@@ -24,7 +29,7 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
   if (!cur) return null;
   return createPortal(
     <div className="fixed inset-0 z-[75] overflow-y-auto overscroll-contain bg-[var(--bg)]" role="dialog" aria-modal="true" aria-label={s("openPlayer")}>
-      {cur.cover && <img src={cur.cover} alt="" aria-hidden referrerPolicy="no-referrer" className="pointer-events-none fixed inset-0 h-full w-full scale-150 object-cover opacity-45 blur-3xl" />}
+      <PlayerBackdrop prefs={bg.prefs} fileUrl={bg.fileUrl} cover={cur.cover} />
       <div className="pointer-events-none fixed inset-0" style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--bg) 40%, transparent), var(--bg) 95%)" }} />
       <div className="safe-top safe-bottom relative mx-auto flex min-h-full max-w-md flex-col px-5 pb-6 pt-3">
         <div className="flex items-center justify-between">
@@ -56,6 +61,9 @@ function FullPlayer({ lang, onClose }: { lang: Lang; onClose: () => void }) {
             className={`mx-auto flex h-10 items-center gap-2 rounded-full border px-5 text-[13.5px] font-bold transition-transform active:scale-95 ${showLyrics ? "border-transparent bg-[var(--accent)] text-white" : "border-[var(--line)] bg-[var(--panel)]/70 text-[var(--ink)]"}`}>
             <span aria-hidden>♪</span>{showLyrics ? ls("hide") : ls("lyrics")}
           </button>
+          <button onClick={() => setShowBg((v) => !v)} aria-expanded={showBg}
+            className="mx-auto mt-2 flex h-9 items-center rounded-full px-4 text-[12.5px] font-semibold text-[var(--ink-soft)] transition-transform active:scale-95">{bs("bg")} {showBg ? "▴" : "▾"}</button>
+          {showBg && <div className="mt-1"><BackgroundPicker lang={lang} prefs={bg.prefs} onChange={bg.update} /></div>}
           {showLyrics && <div className="mt-3"><LyricsPanel lang={lang} title={cur.title} artist={cur.artist} /></div>}
         </div>
 

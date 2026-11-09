@@ -1,0 +1,14 @@
+import type { Lang } from "./i18n";
+
+/** Строки выбора фона полноэкранного плеера. */
+const ru = { bg: "Фон", cover: "Обложка", color: "Цвет", file: "Своё", pick: "Выбрать картинку, GIF или видео", change: "Заменить", remove: "Убрать файл", note: "Файл хранится только на этом устройстве.", tooBig: "Файл слишком большой: до 8 МБ для картинки и 25 МБ для видео", badType: "Подойдёт картинка, GIF или видео", saveFail: "Не удалось сохранить файл" };
+type S = typeof ru;
+const en: S = { bg: "Background", cover: "Cover", color: "Colour", file: "Own", pick: "Pick an image, GIF or video", change: "Replace", remove: "Remove file", note: "The file is stored on this device only.", tooBig: "File is too large: up to 8 MB for an image and 25 MB for a video", badType: "Pick an image, GIF or video", saveFail: "Couldn't save the file" };
+const be: S = { bg: "Фон", cover: "Вокладка", color: "Колер", file: "Сваё", pick: "Выбраць карцінку, GIF або відэа", change: "Замяніць", remove: "Прыбраць файл", note: "Файл захоўваецца толькі на гэтай прыладзе.", tooBig: "Файл занадта вялікі: да 8 МБ для карцінкі і 25 МБ для відэа", badType: "Падыдзе карцінка, GIF або відэа", saveFail: "Не атрымалася захаваць файл" };
+const uk: S = { bg: "Тло", cover: "Обкладинка", color: "Колір", file: "Своє", pick: "Обрати картинку, GIF або відео", change: "Замінити", remove: "Прибрати файл", note: "Файл зберігається лише на цьому пристрої.", tooBig: "Файл завеликий: до 8 МБ для картинки і 25 МБ для відео", badType: "Підійде картинка, GIF або відео", saveFail: "Не вдалося зберегти файл" };
+const de: S = { bg: "Hintergrund", cover: "Cover", color: "Farbe", file: "Eigenes", pick: "Bild, GIF oder Video wählen", change: "Ersetzen", remove: "Datei entfernen", note: "Die Datei bleibt nur auf diesem Gerät.", tooBig: "Datei zu groß: bis 8 MB für Bilder und 25 MB für Videos", badType: "Wähle ein Bild, GIF oder Video", saveFail: "Datei konnte nicht gespeichert werden" };
+const fr: S = { bg: "Arrière-plan", cover: "Pochette", color: "Couleur", file: "Perso", pick: "Choisir une image, un GIF ou une vidéo", change: "Remplacer", remove: "Supprimer le fichier", note: "Le fichier reste uniquement sur cet appareil.", tooBig: "Fichier trop lourd : 8 Mo max pour une image, 25 Mo pour une vidéo", badType: "Choisissez une image, un GIF ou une vidéo", saveFail: "Impossible d’enregistrer le fichier" };
+const es: S = { bg: "Fondo", cover: "Portada", color: "Color", file: "Propio", pick: "Elegir imagen, GIF o vídeo", change: "Cambiar", remove: "Quitar archivo", note: "El archivo se guarda solo en este dispositivo.", tooBig: "Archivo demasiado grande: hasta 8 MB una imagen y 25 MB un vídeo", badType: "Elige una imagen, GIF o vídeo", saveFail: "No se pudo guardar el archivo" };
+
+const ALL: Record<Lang, S> = { ru, en, be, uk, de, fr, es };
+export const makePlayerBg = (lang: Lang) => (k: keyof S): string => (ALL[lang] ?? ALL.ru)[k];
