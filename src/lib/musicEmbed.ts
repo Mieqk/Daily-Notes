@@ -32,3 +32,11 @@ export function embedOf(raw: string | null | undefined): Embed | null {
   }
   return null;
 }
+
+/** Обложка из ссылки на YouTube (у Spotify и Яндекса без ключей обложку по ссылке не достать). */
+export function coverFromLink(raw: string | null | undefined): string | null {
+  const e = embedOf(raw);
+  if (e?.kind !== "youtube") return null;
+  const id = e.src.split("/embed/")[1];
+  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
+}

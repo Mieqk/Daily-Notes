@@ -4,7 +4,8 @@ import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
 import { supabase } from "../lib/supabase";
 import { prepareWallImage } from "../lib/images";
-import { MusicNoteIcon } from "../icons";
+import { Cover } from "./MusicParts";
+import { safeCoverUrl } from "../lib/trackSearch";
 import { TrackPlayer } from "./MusicPlaylist";
 import { makePlaylist } from "../music-playlist-strings";
 
@@ -21,6 +22,8 @@ interface Post {
   track_title?: string | null;
   track_artist?: string | null;
   track_url?: string | null;
+  track_cover?: string | null;
+  track_preview?: string | null;
   created_at: string;
 }
 
@@ -98,13 +101,11 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
 
   const load = useCallback(async () => {
     if (!supabase) return;
-    const { data } = await supabase
-      .from("wall_posts")
-      .select("id, caption, media_path, track_title, track_artist, track_url, created_at")
-      .eq("user_id", profileId)
-      .order("created_at", { ascending: false })
-      .limit(POSTS_MAX);
-    const list = (data ?? []) as Post[];
+    const q = (cols: string) => supabase!.from("wall_posts").select(cols).eq("user_id", profileId).order("created_at", { ascending: false }).limit(POSTS_MAX);
+    // колонки обложки появились позже: если миграция ещё не выполнена, читаем без них
+    const full = await q("id, caption, media_path, track_title, track_artist, track_url, track_cover, track_preview, created_at");
+    const data = full.error ? (await q("id, caption, media_path, track_title, track_artist, track_url, created_at")).data : full.data;
+    const list = (data ?? []) as unknown as Post[];
     setPosts(list);
     const paths = list.map((p) => p.media_path).filter((x): x is string => !!x);
     if (paths.length) {
@@ -233,13 +234,16 @@ export default function ProfileWall({ viewerId, profileId, lang }: Props) {
           {posts.map((p) => (
             <figure key={p.id} className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel-2)]">
               {p.track_title ? (
-                <div className="px-3 pt-3">
-                  <div className="flex items-center gap-2 rounded-xl bg-[var(--accent-soft)] px-3 py-2 text-[13px]">
-                    <MusicNoteIcon className="h-4 w-4 shrink-0 text-[var(--accent-deep)]" />
-                    <span className="min-w-0 truncate"><span className="font-bold">{p.track_title}</span>{p.track_artist && <span className="text-[var(--ink-soft)]"> {p.track_artist}</span>}</span>
-                    <span className="sr-only">{makePlaylist(lang)("wallTrack")}</span>
+                <div className="p-3" style={{ background: "linear-gradient(120deg, var(--accent-soft), var(--panel-2) 85%)" }}>
+                  <div className="flex items-center gap-3">
+                    <Cover src={safeCoverUrl(p.track_cover)} size={72} className="shadow-md" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--accent-deep)]">♪ {makePlaylist(lang)("wallTrack")}</div>
+                      <div className="truncate text-[15px] font-bold">{p.track_title}</div>
+                      {p.track_artist && <div className="truncate text-[13px] text-[var(--ink-soft)]">{p.track_artist}</div>}
+                    </div>
                   </div>
-                  {p.track_url && <div className="mt-2"><TrackPlayer url={p.track_url} lang={lang} /></div>}
+                  {(p.track_url || p.track_preview) && <div className="mt-3"><TrackPlayer url={p.track_url ?? null} preview={p.track_preview} lang={lang} /></div>}
                 </div>
               ) : p.media_path && urls[p.media_path] ? (
                 <img src={urls[p.media_path!]} alt={p.caption ?? ""} loading="lazy" className="max-h-[480px] w-full object-contain" />

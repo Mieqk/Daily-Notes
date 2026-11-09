@@ -38,6 +38,8 @@ interface Profile {
   music_title?: string | null;
   music_artist?: string | null;
   music_url?: string | null;
+  music_cover?: string | null;
+  music_preview?: string | null;
   music_at?: string | null;
 }
 
@@ -593,9 +595,9 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
             {/* Стенка */}
             <MusicPlaylist
               viewerId={viewerId} profileId={profileId} lang={lang}
-              onSetNow={isOwn ? (tr) => saveProfile({ music_title: tr.title, music_artist: tr.artist, music_url: tr.url, music_at: new Date().toISOString() }) : undefined}
+              onSetNow={isOwn ? (tr) => saveProfile({ music_title: tr.title, music_artist: tr.artist, music_url: tr.url, music_cover: tr.cover, music_preview: tr.preview, music_at: new Date().toISOString() }) : undefined}
               onToWall={isOwn ? async (tr) => {
-                const { error } = await supabase!.from("wall_posts").insert({ user_id: viewerId, track_title: tr.title, track_artist: tr.artist, track_url: tr.url });
+                const { error } = await supabase!.from("wall_posts").insert({ user_id: viewerId, track_title: tr.title, track_artist: tr.artist, track_url: tr.url, track_cover: tr.cover, track_preview: tr.preview });
                 if (!error) setWallKey((k) => k + 1);
                 return !error;
               } : undefined}

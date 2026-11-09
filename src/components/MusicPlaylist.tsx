@@ -1,21 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Lang } from "../i18n";
-import { MusicNoteIcon } from "../icons";
 import { supabase } from "../lib/supabase";
-import { cleanMusic, MUSIC_ARTIST_MAX, MUSIC_TITLE_MAX, MUSIC_URL_MAX } from "../lib/nowPlaying";
 import { embedOf } from "../lib/musicEmbed";
+import { cleanMusic } from "../lib/nowPlaying";
+import { safeCoverUrl, safePreviewUrl, type FoundTrack } from "../lib/trackSearch";
 import { makePlaylist } from "../music-playlist-strings";
-import { makeNowPlaying } from "../now-playing-strings";
+import { makeSearch } from "../music-search-strings";
+import { Cover, PreviewButton, TrackSearch } from "./MusicParts";
 
-export interface Track { id: string; title: string; artist: string | null; url: string | null }
+export interface Track { id: string; title: string; artist: string | null; url: string | null; cover: string | null; preview: string | null }
 const MAX = 50;
 
-/** Встроенный плеер сервиса (iframe) или ссылка, если для сервиса плеера нет. */
-export function TrackPlayer({ url, lang }: { url: string | null; lang: Lang }) {
+/** Плеер трека: 30-секундное превью, если оно есть, иначе встроенный плеер сервиса (iframe), иначе ссылка. */
+export function TrackPlayer({ url, preview, lang }: { url: string | null; preview?: string | null; lang: Lang }) {
   const p = makePlaylist(lang);
+  const s = makeSearch(lang);
   const e = embedOf(url);
+  const pv = safePreviewUrl(preview);
+  if (pv) {
+    return (
+      <div className="flex items-center gap-3">
+        <PreviewButton src={pv} lang={lang} size={40} />
+        <span className="text-[12px] text-[var(--ink-faint)]">{s("preview")}</span>
+        {url && <a href={url} target="_blank" rel="noopener noreferrer" className="ml-auto text-[12px] font-semibold text-[var(--accent-deep)] hover:underline">{s("full")} ›</a>}
+      </div>
+    );
+  }
   if (!url) return null;
-  if (!e) return <a href={url} target="_blank" rel="noopener noreferrer" className="text-[12px] font-semibold text-[var(--accent-deep)] underline">{p("open")}</a>;
+  if (!e) return <a href={url} target="_blank" rel="noopener noreferrer" className="text-[12px] font-semibold text-[var(--accent-deep)] hover:underline">{p("open")} ›</a>;
   return (
     <iframe
       src={e.src} title="player" height={e.height} loading="lazy"
@@ -37,22 +49,20 @@ interface Props {
 export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onToWall }: Props) {
   const isOwn = viewerId === profileId;
   const p = makePlaylist(lang);
-  const np = makeNowPlaying(lang);
   const [tracks, setTracks] = useState<Track[] | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [title, setTitle] = useState("");
-  const [artist, setArtist] = useState("");
-  const [url, setUrl] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [busy, setBusy] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const confirmTimer = useRef<number>(0);
 
   const load = useCallback(async () => {
     if (!supabase) return;
-    const { data } = await supabase.from("profile_tracks").select("id, title, artist, url").eq("user_id", profileId).order("created_at", { ascending: true }).limit(MAX);
-    setTracks((data ?? []) as Track[]);
+    // cover и preview появились позже: если миграция ещё не выполнена, читаем без них
+    const q = (cols: string) => supabase!.from("profile_tracks").select(cols).eq("user_id", profileId).order("created_at", { ascending: true }).limit(MAX);
+    const full = await q("id, title, artist, url, cover, preview");
+    const rows = (full.error ? (await q("id, title, artist, url")).data : full.data) as unknown as Partial<Track>[] | null;
+    setTracks((rows ?? []).map((t) => ({ id: t.id!, title: t.title!, artist: t.artist ?? null, url: t.url ?? null, cover: safeCoverUrl(t.cover), preview: safePreviewUrl(t.preview) })));
   }, [profileId]);
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
@@ -61,17 +71,14 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
     return () => window.clearTimeout(id);
   }, [msg]);
 
-  const add = async () => {
-    const c = cleanMusic(title, artist, url);
-    if (!c || !supabase || busy) return;
-    if ((tracks?.length ?? 0) >= MAX) { setMsg({ ok: false, text: p("full") }); return; }
-    setBusy(true);
-    const { error } = await supabase.from("profile_tracks").insert({ user_id: viewerId, title: c.title, artist: c.artist, url: c.url });
-    setBusy(false);
-    if (error) { setMsg({ ok: false, text: p("err") }); return; }
-    if (url.trim() && !c.url) setMsg({ ok: true, text: np("badUrl") });
-    setTitle(""); setArtist(""); setUrl(""); setAdding(false);
+  const add = async (t: FoundTrack): Promise<boolean> => {
+    const c = cleanMusic(t.title, t.artist ?? "", t.url ?? "", { cover: t.cover, preview: t.preview });
+    if (!c || !supabase) return false;
+    if ((tracks?.length ?? 0) >= MAX) { setMsg({ ok: false, text: p("full") }); return false; }
+    const { error } = await supabase.from("profile_tracks").insert({ user_id: viewerId, title: c.title, artist: c.artist, url: c.url, cover: c.cover, preview: c.preview });
+    if (error) { setMsg({ ok: false, text: p("err") }); return false; }
     await load();
+    return true;
   };
 
   const remove = async (t: Track) => {
@@ -95,29 +102,20 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
 
   // у чужого пустого плейлиста карточку не рисуем: незачем занимать место
   if (!isOwn && tracks !== null && tracks.length === 0) return null;
-  const input = "h-9 min-w-0 w-full rounded-lg border border-[var(--line)] bg-[var(--panel-2)] px-3 text-[12.5px] outline-none focus:border-[var(--accent)]";
-  const small = "h-9 shrink-0 rounded-lg border border-[var(--line)] px-2.5 text-[12px] font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--hover)]";
+  const chip = "h-8 shrink-0 rounded-full border border-[var(--line)] px-3 text-[12px] font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--hover)] active:scale-95";
 
   return (
     <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4" style={{ boxShadow: "var(--shadow-sm)" }}>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{p("title")}</div>
-        {isOwn && !adding && (
-          <button onClick={() => setAdding(true)} className="h-9 rounded-lg bg-[var(--accent)] px-3 text-[12.5px] font-semibold text-[var(--accent-ink)] active:scale-95">+ {p("add")}</button>
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-faint)]">{p("title")}{tracks && tracks.length > 0 ? ` · ${tracks.length}` : ""}</div>
+        {isOwn && (
+          <button onClick={() => setAdding((v) => !v)} aria-expanded={adding} className="h-9 rounded-lg bg-[var(--accent)] px-3 text-[12.5px] font-semibold text-[var(--accent-ink)] active:scale-95">
+            {adding ? "×" : `+ ${p("add")}`}
+          </button>
         )}
       </div>
 
-      {isOwn && adding && (
-        <div className="mb-3 flex flex-col gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel-2)] p-3">
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={np("trackPh")} maxLength={MUSIC_TITLE_MAX} className={input} />
-          <input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder={np("artistPh")} maxLength={MUSIC_ARTIST_MAX} className={input} />
-          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={np("urlPh")} maxLength={MUSIC_URL_MAX} inputMode="url" className={input} />
-          <div className="flex justify-end gap-1.5">
-            <button onClick={() => setAdding(false)} className={small}>{np("clear")}</button>
-            <button onClick={add} disabled={busy || !title.trim()} className="h-9 rounded-lg bg-[var(--accent)] px-3 text-[12.5px] font-semibold text-[var(--accent-ink)] active:scale-95 disabled:opacity-50">{p("add")}</button>
-          </div>
-        </div>
-      )}
+      {isOwn && adding && <div className="mb-4 rounded-xl border border-[var(--line)] bg-[var(--panel-2)] p-3"><TrackSearch lang={lang} onPick={add} autoFocus /></div>}
 
       {msg && <div role="status" className={`mb-3 rounded-lg px-3 py-2 text-[12.5px] font-semibold ${msg.ok ? "bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "bg-[var(--danger-soft)] text-[var(--danger)]"}`}>{msg.text}</div>}
 
@@ -126,34 +124,28 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
       ) : tracks.length === 0 ? (
         <div className="py-4 text-center text-[13px] text-[var(--ink-faint)]">{p("empty")}</div>
       ) : (
-        <ul className="flex flex-col divide-y divide-[var(--line)]">
+        <ul className="flex flex-col gap-2">
           {tracks.map((t) => {
+            const embed = !t.preview && !!embedOf(t.url);
             const shown = open === t.id;
             return (
-              <li key={t.id} className="py-2">
-                <div className="flex items-center gap-2.5">
-                  <button
-                    onClick={() => setOpen(shown ? null : t.id)} disabled={!t.url}
-                    aria-label={`${shown ? p("hide") : p("play")}: ${t.title}`} aria-pressed={shown}
-                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-deep)] transition-all active:scale-90 disabled:opacity-40"
-                  >
-                    {shown ? <span aria-hidden className="text-[13px] font-bold">❚❚</span> : <MusicNoteIcon className="h-4 w-4" />}
-                  </button>
+              <li key={t.id} className="rounded-xl bg-[var(--panel-2)] p-2.5">
+                <div className="flex items-center gap-3">
+                  <Cover src={t.cover} size={52} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13.5px] font-bold">{t.title}</div>
-                    {t.artist && <div className="truncate text-[12px] text-[var(--ink-soft)]">{t.artist}</div>}
+                    <div className="truncate text-[14px] font-bold">{t.title}</div>
+                    {t.artist && <div className="truncate text-[12.5px] text-[var(--ink-soft)]">{t.artist}</div>}
                   </div>
-                  {isOwn && (
-                    <button onClick={() => remove(t)} className={`${small} ${confirmId === t.id ? "!border-transparent !bg-[var(--danger)] !text-white" : ""}`}>
-                      {confirmId === t.id ? p("delSure") : p("del")}
-                    </button>
-                  )}
+                  {t.preview ? <PreviewButton src={t.preview} lang={lang} size={40} /> : embed ? (
+                    <button onClick={() => setOpen(shown ? null : t.id)} aria-pressed={shown} className={chip}>{shown ? p("hide") : p("play")}</button>
+                  ) : t.url ? <a href={t.url} target="_blank" rel="noopener noreferrer" className={`${chip} grid place-items-center`}>{p("open")}</a> : null}
                 </div>
-                {shown && <div className="mt-2"><TrackPlayer url={t.url} lang={lang} /></div>}
+                {shown && embed && <div className="mt-2"><TrackPlayer url={t.url} lang={lang} /></div>}
                 {isOwn && (
-                  <div className="mt-1.5 flex flex-wrap gap-1.5 pl-[52px]">
-                    {onToWall && <button onClick={() => act(onToWall, t, p("onWall"))} className={small}>{p("toWall")}</button>}
-                    {onSetNow && <button onClick={() => act(onSetNow, t, p("nowSet"))} className={small}>{p("setNow")}</button>}
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {onToWall && <button onClick={() => act(onToWall, t, p("onWall"))} className={chip}>{p("toWall")}</button>}
+                    {onSetNow && <button onClick={() => act(onSetNow, t, p("nowSet"))} className={chip}>{p("setNow")}</button>}
+                    <button onClick={() => remove(t)} className={`${chip} ml-auto ${confirmId === t.id ? "!border-transparent !bg-[var(--danger)] !text-white" : ""}`}>{confirmId === t.id ? p("delSure") : p("del")}</button>
                   </div>
                 )}
               </li>
@@ -161,7 +153,6 @@ export default function MusicPlaylist({ viewerId, profileId, lang, onSetNow, onT
           })}
         </ul>
       )}
-      {tracks && tracks.some((t) => embedOf(t.url)) && <p className="mt-3 text-[11.5px] leading-relaxed text-[var(--ink-faint)]">{p("playerNote")}</p>}
     </div>
   );
 }
