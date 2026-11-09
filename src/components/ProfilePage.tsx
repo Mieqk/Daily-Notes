@@ -4,6 +4,7 @@ import Achievements from "./Achievements";
 import { MusicBar, MusicEditor } from "./NowPlaying";
 import { nowPlayingOf } from "../lib/nowPlaying";
 import { makeNowPlaying } from "../now-playing-strings";
+import ProfileWall from "./ProfileWall";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type { Lang } from "../i18n";
@@ -586,6 +587,9 @@ export default function ProfilePage({ viewerId, profileId, lang, streak = 0, not
                 </div>
               )}
             </div>
+
+            {/* Стенка */}
+            <ProfileWall viewerId={viewerId} profileId={profileId} lang={lang} />
 
             {msg && (
               <div className={`rounded-lg px-4 py-2.5 text-[13px] font-semibold ${msg.kind === "ok" ? "bg-[var(--accent-soft)] text-[var(--accent-deep)]" : "bg-[var(--danger-soft)] text-[var(--danger)]"}`}>
