@@ -7,6 +7,7 @@ import type { ChangeEvent } from "react";
 import type { Lang, TKey } from "../i18n";
 import { MOODS, TEMPLATES, localeOf } from "../i18n";
 import PluginWidgets from "./PluginWidgets";
+import { islandActivity, islandClear } from "../lib/island";
 import { plural } from "../plural";
 import { useDayTemplates } from "../hooks/useAddons";
 import type { Task, WritingFontId, SleepData } from "../store";
@@ -98,6 +99,15 @@ export default function DailyView(props: DailyViewProps) {
   const dayPhotos = photos[date] ?? [];
   const done = dayTasks.filter((x) => x.done).length;
   const pct = dayTasks.length ? Math.round((done / dayTasks.length) * 100) : 0;
+
+  // Прогресс задач сегодняшнего дня на острове Atoll (только для сегодняшней даты)
+  const taskTotal = dayTasks.length;
+  const taskLabel = t("tasksTitle");
+  useEffect(() => {
+    if (!isToday) return;   // листаем другой день: прогресс сегодняшнего остаётся как есть
+    if (taskTotal === 0) { islandClear("tasks"); return; }
+    islandActivity("tasks", { text: `${taskLabel} ${done}/${taskTotal}`, progress: done / taskTotal, ttlSec: 3600 });
+  }, [isToday, done, taskTotal, taskLabel]);
 
   const u = makeUI(lang);
   const dv = makeDevice(lang);

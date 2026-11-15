@@ -4,6 +4,11 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('dailyNotesDesktop', {
   openExternal: (url) => ipcRenderer.invoke('open-external', String(url)),
   getLaunchUrl: () => ipcRenderer.invoke('launch-url'),
+  // Остров Atoll (Windows): уведомление и «живая активность» в его пилюле; без острова вызовы ничего не делают.
+  island: {
+    notify: (p) => ipcRenderer.invoke('island-send', 'notify', p),
+    activity: (p) => ipcRenderer.invoke('island-send', 'activity', p),
+  },
   onUrl: (cb) => {
     const handler = (_e, url) => cb(url);
     ipcRenderer.on('app-url', handler);
