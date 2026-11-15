@@ -3,6 +3,8 @@
 // (Google не пускает OAuth во встроенные окна) и возвращается по ссылке io.vercel.dailynotes://auth.
 const { app, BrowserWindow, Menu, ipcMain, session, shell } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const http = require('http');
 
 const SITE = process.env.DAILY_NOTES_URL || 'https://daily-notes-io.vercel.app';
 const SITE_ORIGIN = new URL(SITE).origin;
@@ -79,6 +81,49 @@ function createWindow() {
 
 // Ссылка, с которой приложение запустили (холодный старт): страница забирает её сама, когда подписалась, иначе событие ушло бы раньше слушателя.
 ipcMain.handle('launch-url', () => { const u = pendingUrl; pendingUrl = null; return u; });
+// Остров Atoll (необязательный сосед на Windows): показываем на нём прогресс задач, напоминание и таймер отдыха.
+// Остров слушает только localhost и принимает вызовы с секретом из %LOCALAPPDATA%\DynamicIsland\bridge.token;
+// сайт этого секрета не видит, его читает и шлёт только это приложение. Нет острова или токена: молча ничего не делаем.
+const ISLAND_PORT = 47811;
+function islandToken() {
+  try {
+    const base = process.env.LOCALAPPDATA;
+    if (!base) return null;
+    const t = fs.readFileSync(path.join(base, 'DynamicIsland', 'bridge.token'), 'utf8').trim();
+    return t.length >= 32 ? t : null;
+  } catch { return null; }
+}
+const str = (v, max) => (typeof v === 'string' ? v.slice(0, max) : undefined);
+const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
+// Из страницы берём только известные поля: остров получает ровно то, что мы разрешили.
+function islandPayload(kind, p) {
+  if (kind === 'notify') {
+    const url = str(p.url, 500);
+    return { title: str(p.title, 80), text: str(p.text, 200), url: url && isSite(url) ? url : undefined };
+  }
+  return {
+    id: str(p.id, 40), text: str(p.text, 80), progress: num(p.progress), endsAt: num(p.endsAt),
+    durationSec: num(p.durationSec), ttlSec: num(p.ttlSec), clear: p.clear === true ? true : undefined,
+  };
+}
+ipcMain.handle('island-send', (e, kind, payload) => {
+  if (process.platform !== 'win32') return false;
+  if (!e.senderFrame || !isSite(e.senderFrame.url)) return false;
+  if (kind !== 'notify' && kind !== 'activity') return false;
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return false;
+  const token = islandToken();
+  if (!token) return false;
+  const body = JSON.stringify({ ...islandPayload(kind, payload), app: 'Daily Note' });
+  return new Promise((resolve) => {
+    const req = http.request({
+      host: 'localhost', port: ISLAND_PORT, path: `/app/${kind}`, method: 'POST', timeout: 1500,
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'X-Island-Token': token },
+    }, (res) => { res.resume(); resolve(res.statusCode === 200); });
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => { req.destroy(); resolve(false); });
+    req.end(body);
+  });
+});
 ipcMain.handle('open-external', (_e, url) => { if (/^https:/.test(url)) return shell.openExternal(url); });
 
 if (process.defaultApp && process.argv[1]) {

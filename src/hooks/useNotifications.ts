@@ -8,6 +8,7 @@ import { makeSocial } from "../social-strings";
 import { makeChat } from "../chat-strings";
 import { makeMedia } from "../media-strings";
 import { todayISO } from "../store";
+import { islandNotify } from "../lib/island";
 
 interface Reminder { time: string; enabled: boolean }
 
@@ -38,6 +39,8 @@ export function useNotifications(userId: string | null, lang: Lang, reminder: Re
       try { localStorage.setItem("dn.reminderFired", today); } catch { /* ignore */ }
       if (wroteRef.current()) return; // запись за сегодня уже есть: как и сервер, не напоминаем
       notify(sRef.current("ntReminder"), sRef.current("ntReminderBody"), "dn-reminder");
+      // «Записать день» на острове Atoll: клик по уведомлению открывает запись дня
+      islandNotify(sRef.current("ntReminder"), sRef.current("ntReminderBody"), `${window.location.origin}/?tab=daily`);
     };
     tick();
     const id = window.setInterval(tick, 30_000);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Lang } from "../i18n";
 import { localeOf } from "../i18n";
@@ -8,6 +8,7 @@ import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
 import CoachChat, { SEG, type CoachItem } from "./CoachChat";
 import DayCalendar from "./DayCalendar";
 import { makeUI } from "../ui-strings";
+import { islandActivity, islandClear } from "../lib/island";
 
 interface WSet { id: string; kg: number; reps: number; done: boolean }
 interface WEx { id: string; name: string; sets: WSet[] }
@@ -55,6 +56,22 @@ export default function WorkoutView({ lang, barHost }: { lang: Lang; barHost?: H
     const id = setTimeout(() => setRest((r) => r - 1), 1000);
     return () => clearTimeout(id);
   }, [rest]);
+
+  // Таймер отдыха на острове Atoll: шлём конец отсчёта один раз, остров считает сам; Стоп или конец убирают его.
+  const restEnd = useRef(0);
+  useEffect(() => {
+    if (rest > 0) {
+      const end = Date.now() + rest * 1000;
+      if (!restEnd.current || Math.abs(end - restEnd.current) > 1500) {
+        restEnd.current = end;
+        islandActivity("rest", { text: l.rest, endsAt: end, durationSec: Math.max(restLen, rest) });
+      }
+    } else if (restEnd.current) {
+      restEnd.current = 0;
+      islandClear("rest");
+    }
+  }, [rest, restLen, l.rest]);
+  useEffect(() => () => { if (restEnd.current) islandClear("rest"); }, []);
 
   const day = log[date] ?? [];
   const setDay = (next: WEx[]) => setLog((prev) => { const n = { ...prev }; if (next.length) n[date] = next; else delete n[date]; return n; });
