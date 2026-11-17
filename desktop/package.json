@@ -20,7 +20,7 @@
     "productName": "Daily Note",
     "artifactName": "Daily-Note-${version}-${os}-${arch}.${ext}",
     "directories": { "buildResources": "build", "output": "dist" },
-    "files": ["main.js", "preload.js", "package.json"],
+    "files": ["main.js", "preload.js", "island-tasks.js", "package.json"],
     "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "build/icon.png" },
     "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
     "mac": { "target": [{ "target": "dmg", "arch": ["universal"] }], "category": "public.app-category.productivity", "icon": "build/icon.png", "identity": null },

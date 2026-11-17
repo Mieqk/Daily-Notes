@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('dailyNotesDesktop', {
   island: {
     notify: (p) => ipcRenderer.invoke('island-send', 'notify', p),
     activity: (p) => ipcRenderer.invoke('island-send', 'activity', p),
+    // общий список задач на сегодня: возвращает действия с острова или null
+    syncTasks: (p) => ipcRenderer.invoke('island-tasks', p),
   },
   onUrl: (cb) => {
     const handler = (_e, url) => cb(url);

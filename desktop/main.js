@@ -5,6 +5,7 @@ const { app, BrowserWindow, Menu, ipcMain, session, shell } = require('electron'
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const { tasksBody, islandActions } = require('./island-tasks');
 
 const SITE = process.env.DAILY_NOTES_URL || 'https://daily-notes-io.vercel.app';
 const SITE_ORIGIN = new URL(SITE).origin;
@@ -121,6 +122,30 @@ ipcMain.handle('island-send', (e, kind, payload) => {
     }, (res) => { res.resume(); resolve(res.statusCode === 200); });
     req.on('error', () => resolve(false));
     req.on('timeout', () => { req.destroy(); resolve(false); });
+    req.end(body);
+  });
+});
+// Общий список задач на сегодня: шлём свои задачи, остров отвечает тем, что отметили или добавили на нём
+// (каждое действие приходит один раз). null: острова нет, он выключен или не умеет этого.
+ipcMain.handle('island-tasks', (e, payload) => {
+  if (process.platform !== 'win32') return null;
+  if (!e.senderFrame || !isSite(e.senderFrame.url)) return null;
+  const body = tasksBody(payload);
+  if (!body) return null;
+  const token = islandToken();
+  if (!token) return null;
+  return new Promise((resolve) => {
+    const req = http.request({
+      host: 'localhost', port: ISLAND_PORT, path: '/app/tasks/sync', method: 'POST', timeout: 2500,
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'X-Island-Token': token },
+    }, (res) => {
+      let text = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { if (text.length < 200000) text += chunk; });
+      res.on('end', () => resolve(res.statusCode === 200 ? islandActions(text) : null));
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
     req.end(body);
   });
 });

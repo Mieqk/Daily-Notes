@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { islandActivity, islandAvailable, islandClear, islandNotify } from "./island";
+import { applyIslandActions, islandActivity, islandAvailable, islandClear, islandNotify, islandSyncTasks, islandTasksLinked } from "./island";
 
 type W = { dailyNotesDesktop?: { island?: { notify: unknown; activity: unknown } } };
 const w = () => window as unknown as W;
@@ -42,5 +42,62 @@ describe("мост к острову Atoll", () => {
     w().dailyNotesDesktop = { island: { notify: vi.fn().mockRejectedValue(new Error("нет острова")), activity: vi.fn() } };
     expect(() => islandNotify("a", "b")).not.toThrow();
     await Promise.resolve();
+  });
+});
+
+describe("общий список задач с островом", () => {
+  afterEach(() => { delete w().dailyNotesDesktop; localStorage.clear(); });
+
+  const tasks = [{ id: "a", text: "Зарядка", done: false }, { id: "b", text: "Отчёт", done: true }];
+
+  it("отправляет задачи дня и возвращает действия с острова", async () => {
+    const syncTasks = vi.fn().mockResolvedValue([{ type: "toggle", id: "a", text: "", done: true }]);
+    (w() as any).dailyNotesDesktop = { island: { notify: vi.fn(), activity: vi.fn(), syncTasks } };
+
+    const actions = await islandSyncTasks("2026-03-10", [{ ...tasks[0], extra: 1 } as any, tasks[1]]);
+    expect(syncTasks).toHaveBeenCalledWith({ day: "2026-03-10", tasks });   // только id, text, done
+    expect(actions).toEqual([{ type: "toggle", id: "a", text: "", done: true }]);
+    expect(islandTasksLinked()).toBe(true);
+  });
+
+  it("старое приложение (нет syncTasks), ошибка или null: связи нет", async () => {
+    (w() as any).dailyNotesDesktop = { island: { notify: vi.fn(), activity: vi.fn() } };
+    expect(await islandSyncTasks("2026-03-10", tasks)).toBeNull();
+    expect(islandTasksLinked()).toBe(false);
+
+    (w() as any).dailyNotesDesktop = { island: { notify: vi.fn(), activity: vi.fn(), syncTasks: vi.fn().mockRejectedValue(new Error("x")) } };
+    expect(await islandSyncTasks("2026-03-10", tasks)).toBeNull();
+
+    (w() as any).dailyNotesDesktop = { island: { notify: vi.fn(), activity: vi.fn(), syncTasks: vi.fn().mockResolvedValue(null) } };
+    expect(await islandSyncTasks("2026-03-10", tasks)).toBeNull();
+    expect(islandTasksLinked()).toBe(false);
+  });
+
+  it("пустой список действий — связь есть, менять нечего", async () => {
+    (w() as any).dailyNotesDesktop = { island: { notify: vi.fn(), activity: vi.fn(), syncTasks: vi.fn().mockResolvedValue([]) } };
+    expect(await islandSyncTasks("2026-03-10", tasks)).toEqual([]);
+    expect(islandTasksLinked()).toBe(true);
+  });
+
+  it("применяет отметку и новую задачу", () => {
+    const next = applyIslandActions(tasks, [
+      { type: "toggle", id: "a", text: "", done: true },
+      { type: "add", id: "tmp", text: "  Купить хлеб  ", done: false },
+    ], () => "new-id");
+    expect(next).toEqual([
+      { id: "a", text: "Зарядка", done: true },
+      { id: "b", text: "Отчёт", done: true },
+      { id: "new-id", text: "Купить хлеб", done: false },
+    ]);
+    expect(tasks[0].done).toBe(false);   // исходный список не тронут
+  });
+
+  it("если менять нечего, возвращает тот же список", () => {
+    const same = applyIslandActions(tasks, [
+      { type: "toggle", id: "b", text: "", done: true },        // уже отмечена
+      { type: "toggle", id: "нет такой", text: "", done: true },
+      { type: "add", id: "tmp", text: "   ", done: false },      // пустая
+    ], () => "new-id");
+    expect(same).toBe(tasks);
   });
 });

@@ -50,6 +50,7 @@ import { startPresenceHeartbeat } from "./lib/presence";
 import { useCalls } from "./hooks/useCalls";
 import CallOverlay from "./components/CallOverlay";
 import { useGcalSync } from "./hooks/useGcalSync";
+import { useIslandTasks } from "./hooks/useIslandTasks";
 import { useSpotifySync } from "./hooks/useSpotifySync";
 import { completeSpotifyLogin } from "./lib/spotify";
 import { makeSpotify } from "./spotify-strings";
@@ -140,6 +141,7 @@ export default function App() {
   const call = useCalls(userId, lang);
   useEffect(() => (userId ? startPresenceHeartbeat(userId) : undefined), [userId]);
   useGcalSync(userId, tasks);
+  useIslandTasks(tasks, setTasks);
   useSpotifySync(userId);
 
   const now = useNow(1000);
