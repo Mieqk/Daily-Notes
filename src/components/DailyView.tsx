@@ -7,7 +7,7 @@ import type { ChangeEvent } from "react";
 import type { Lang, TKey } from "../i18n";
 import { MOODS, TEMPLATES, localeOf } from "../i18n";
 import PluginWidgets from "./PluginWidgets";
-import { islandActivity, islandClear } from "../lib/island";
+import { islandActivity, islandClear, islandTasksLinked } from "../lib/island";
 import { plural } from "../plural";
 import { useDayTemplates } from "../hooks/useAddons";
 import type { Task, WritingFontId, SleepData } from "../store";
@@ -105,6 +105,7 @@ export default function DailyView(props: DailyViewProps) {
   const taskLabel = t("tasksTitle");
   useEffect(() => {
     if (!isToday) return;   // листаем другой день: прогресс сегодняшнего остаётся как есть
+    if (islandTasksLinked()) return;   // новый остров ведёт общий список задач и показывает прогресс сам (useIslandTasks)
     if (taskTotal === 0) { islandClear("tasks"); return; }
     islandActivity("tasks", { text: `${taskLabel} ${done}/${taskTotal}`, progress: done / taskTotal, ttlSec: 3600 });
   }, [isToday, done, taskTotal, taskLabel]);
